@@ -1,18 +1,13 @@
 defmodule El do
-  @moduledoc """
-  Documentation for `El`.
-  """
+  def start(name) when is_atom(name) do
+    {:ok, _pid} = ClaudeCode.start_link(name: name)
+    name
+  end
 
-  @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> El.hello()
-      :world
-
-  """
-  def hello do
-    :world
+  def tell(name, message) do
+    name
+    |> ClaudeCode.stream(message)
+    |> ClaudeCode.Stream.text_content()
+    |> Enum.join()
   end
 end
