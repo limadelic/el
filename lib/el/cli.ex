@@ -114,41 +114,37 @@ defmodule El.CLI do
 
         :not_found ->
           # No daemon found — try to start one
-          # First, try to connect to el@127.0.0.1 in case it's running but file is missing
-          Node.set_cookie(:el)
-          case Node.connect(:"el@127.0.0.1") do
-            true ->
-              # Successfully connected to existing daemon
-              {:ok, _} = Application.ensure_all_started(:el)
-              write_daemon_node()
-              :"el@127.0.0.1"
-
-            :ignored ->
-              # Already connected (this is the daemon)
+          case Node.start(:"el@127.0.0.1") do
+            {:ok, _} ->
+              # New node started successfully
+              Node.set_cookie(:el)
               {:ok, _} = Application.ensure_all_started(:el)
               write_daemon_node()
               Node.self()
 
-            false ->
-              # Not connected — try to start our own daemon node
+            {:error, {:already_started, _}} ->
+              # Node is already started in this VM (we are the daemon)
+              Node.set_cookie(:el)
+              {:ok, _} = Application.ensure_all_started(:el)
+              write_daemon_node()
+              Node.self()
+
+            {:error, reason} ->
+              IO.puts(:stderr, "FATAL: Cannot start daemon node el@127.0.0.1: #{inspect(reason)}")
+              IO.puts(:stderr, "This usually means the port 4369 (epmd) is in use or another Erlang VM is running.")
+              IO.puts(:stderr, "Attempting cleanup and retry...")
+              # Try to clean up stale epmd processes
+              System.cmd("pkill", ["-f", "epmd"], [])
+              # Give epmd a moment to die
+              Process.sleep(500)
+              # Retry starting the node
               case Node.start(:"el@127.0.0.1") do
                 {:ok, _} ->
-                  # New node started successfully
                   Node.set_cookie(:el)
                   {:ok, _} = Application.ensure_all_started(:el)
                   write_daemon_node()
                   Node.self()
-
-                {:error, {:already_started, _}} ->
-                  # Node is already started in this VM (we are the daemon)
-                  Node.set_cookie(:el)
-                  {:ok, _} = Application.ensure_all_started(:el)
-                  write_daemon_node()
-                  Node.self()
-
-                {:error, reason} ->
-                  IO.puts(:stderr, "FATAL: Cannot start daemon node el@127.0.0.1: #{inspect(reason)}")
-                  IO.puts(:stderr, "This usually means the port 4369 (epmd) is in use or another Erlang VM is running.")
+                {:error, _} ->
                   System.halt(1)
               end
           end
