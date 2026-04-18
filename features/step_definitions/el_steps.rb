@@ -15,12 +15,27 @@ When(/^> (.+)$/) do |*args|
   command = resolve_command(command)
 
   if command.end_with?("&")
-    # Background the process in a way that truly frees the parent
+    # Background the process by forking — & needs to be passed as argument
     out_err = "/tmp/el_#{Time.now.to_i}.log"
     cmd_without_amp = command.chomp("&").strip
-    # Use disown to truly background: (cmd > log 2>&1 & disown)
-    system("(#{cmd_without_amp} >> #{out_err} 2>&1 & disown) 2>/dev/null")
-    sleep 3  # Give process time to initialize Erlang node
+
+    # Parse command into parts
+    parts = cmd_without_amp.split(" ")
+    parts << "&"  # Add & as literal argument
+
+    # Fork and exec with & as argument
+    @pid = Process.fork do
+      # Redirect stdout/stderr to log file
+      File.open(out_err, "a") do |log|
+        $stdout.reopen(log)
+        $stderr.reopen(log)
+      end
+      # Exec with & as argument
+      exec(*parts)
+    end
+
+    # Parent: wait a bit for child to start, then return (don't wait for child)
+    sleep 3
   else
     @output = `#{command} 2>&1`.strip
 

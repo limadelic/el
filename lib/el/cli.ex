@@ -1,9 +1,13 @@
 defmodule El.CLI do
-  def main([]) do
+  def main(args) do
+    main_impl(args)
+  end
+
+  defp main_impl([]) do
     IO.puts("usage: el ls | el <name> [&] | el <name> tell <message> | el <name> ask <message> | el <name> log | el <name> kill")
   end
 
-  def main(["ls"]) do
+  defp main_impl(["ls"]) do
     daemon_node = ensure_node()
 
     sessions = if daemon_node && daemon_node != Node.self() do
@@ -24,7 +28,7 @@ defmodule El.CLI do
     end)
   end
 
-  def main([name]) do
+  defp main_impl([name]) do
     ensure_node()
     El.start(String.to_atom(name))
     # Try to run PTY if available, else fall back to daemon mode
@@ -46,28 +50,28 @@ defmodule El.CLI do
     end
   end
 
-  def main([name, "&"]) do
+  defp main_impl([name, "&"]) do
     ensure_node()
     El.start(String.to_atom(name))
     IO.puts("el: #{name} is up on #{Node.self()}")
     Process.sleep(:infinity)
   end
 
-  def main([name, "tell" | words]) do
+  defp main_impl([name, "tell" | words]) do
     ensure_node()
     msg = Enum.join(words, " ")
     response = El.tell(String.to_atom(name), msg)
     IO.write(response)
   end
 
-  def main([name, "ask" | words]) do
+  defp main_impl([name, "ask" | words]) do
     ensure_node()
     msg = Enum.join(words, " ")
     response = El.ask(String.to_atom(name), msg)
     IO.write(response)
   end
 
-  def main([name, "log"]) do
+  defp main_impl([name, "log"]) do
     ensure_node()
     El.log(String.to_atom(name))
     |> Enum.each(fn {type, message, response} ->
@@ -76,13 +80,13 @@ defmodule El.CLI do
     end)
   end
 
-  def main([name, "kill"]) do
+  defp main_impl([name, "kill"]) do
     ensure_node()
     El.kill(String.to_atom(name))
   end
 
-  def main(_) do
-    main([])
+  defp main_impl(_) do
+    main_impl([])
   end
 
   defp ensure_node do
@@ -99,12 +103,30 @@ defmodule El.CLI do
           daemon_node
 
         :not_found ->
-          # Start new daemon
-          {:ok, _} = Node.start(:"el@127.0.0.1")
-          Node.set_cookie(:el)
-          {:ok, _} = Application.ensure_all_started(:el)
-          write_daemon_node()
-          Node.self()
+          # Start new daemon or connect to existing
+          case Node.start(:"el@127.0.0.1") do
+            {:ok, _} ->
+              # New node started
+              Node.set_cookie(:el)
+              {:ok, _} = Application.ensure_all_started(:el)
+              write_daemon_node()
+              Node.self()
+            {:error, {:already_started, _}} ->
+              # Node already exists, connect to it
+              Node.set_cookie(:el)
+              if Node.connect(:"el@127.0.0.1") do
+                write_daemon_node()
+                :"el@127.0.0.1"
+              else
+                # Failed to connect to existing node, bail out
+                {:ok, _} = Application.ensure_all_started(:el)
+                Node.self()
+              end
+            {:error, reason} ->
+              IO.puts(:stderr, "DEBUG: Node.start failed: #{inspect(reason)}")
+              {:ok, _} = Application.ensure_all_started(:el)
+              Node.self()
+          end
       end
     end
   end
@@ -133,17 +155,31 @@ defmodule El.CLI do
         client_node = :"el_client_#{System.os_time()}@127.0.0.1"
 
         try do
-          {:ok, _} = Node.start(client_node)
-          Node.set_cookie(:el)
-
-          if Node.connect(node_name) do
-            {:ok, node_name}
-          else
-            cleanup_stale_node(node_file)
-            :not_found
+          case Node.start(client_node) do
+            {:ok, _} ->
+              Node.set_cookie(:el)
+              if Node.connect(node_name) do
+                {:ok, node_name}
+              else
+                cleanup_stale_node(node_file)
+                :not_found
+              end
+            {:error, {:already_started, _}} ->
+              # Node already exists, just try to connect
+              Node.set_cookie(:el)
+              if Node.connect(node_name) do
+                {:ok, node_name}
+              else
+                cleanup_stale_node(node_file)
+                :not_found
+              end
+            {:error, reason} ->
+              IO.puts(:stderr, "DEBUG: Node.start failed: #{inspect(reason)}")
+              cleanup_stale_node(node_file)
+              :not_found
           end
         catch
-          :error, _ ->
+          _, _ ->
             cleanup_stale_node(node_file)
             :not_found
         end
