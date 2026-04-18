@@ -44,6 +44,12 @@ defmodule El.CLI do
     end
   end
 
+  defp main_impl([name, "&"]) do
+    ensure_node()
+    El.start(String.to_atom(name))
+    run_as_zombie(name)
+  end
+
   defp catch_exit(fun) do
     try do
       fun.()
