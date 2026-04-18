@@ -1,16 +1,39 @@
 require "rspec/expectations"
 
-When(/^> (.+)$/) do |command, table|
-  @output = `#{command} 2>&1`.strip
+def resolve_command(cmd)
+  # Use ./el if binary exists locally, otherwise trust PATH
+  if cmd.start_with?("el ") && File.exist?("./el")
+    "./#{cmd}"
+  else
+    cmd
+  end
+end
 
-  table.raw.each do |row|
-    row.each do |cell|
-      cell = cell.strip
-      if cell.start_with?("(") && cell.end_with?(")")
-        expect(@output).not_to include(cell[1..-2])
-      else
-        expect(@output).to include(cell)
+When(/^> (.+)$/) do |*args|
+  command = args[0]
+  table = args[1]
+  command = resolve_command(command)
+
+  if command.end_with?("&")
+    # Background the process
+    out_err = "/tmp/el_#{Time.now.to_i}.log"
+    cmd_without_amp = command.chomp("&").strip
+    # Use nohup to ensure process survives parent shell
+    @pid = spawn("nohup #{cmd_without_amp} >> #{out_err} 2>&1 & echo $!")
+    Process.detach(@pid) if @pid
+    sleep 3  # Give process time to initialize Erlang node
+  else
+    @output = `#{command} 2>&1`.strip
+
+    if table
+      table.raw.flatten.each do |cell|
+        cell = cell.strip
+        if cell.start_with?("(") && cell.end_with?(")")
+          expect(@output).not_to include(cell[1..-2])
+        else
+          expect(@output).to include(cell)
+        end
       end
     end
-  end if table
+  end
 end
