@@ -226,8 +226,9 @@ defmodule El.CLI do
   end
 
   defp nuke_epmd do
+    System.cmd("pkill", ["-9", "beam.smp"], stderr_to_stdout: true)
     System.cmd("pkill", ["-9", "epmd"], stderr_to_stdout: true)
-    :timer.sleep(200)
+    :timer.sleep(500)
     System.cmd("epmd", ["-daemon"], stderr_to_stdout: true)
     :timer.sleep(200)
   end
