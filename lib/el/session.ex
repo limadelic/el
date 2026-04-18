@@ -6,11 +6,11 @@ defmodule El.Session do
   end
 
   def tell(name, message) do
-    GenServer.call(via_tuple(name), {:tell, message})
+    GenServer.call(via_tuple(name), {:tell, message}, :infinity)
   end
 
   def ask(name, message) do
-    GenServer.call(via_tuple(name), {:ask, message})
+    GenServer.call(via_tuple(name), {:ask, message}, :infinity)
   end
 
   def log(name) do

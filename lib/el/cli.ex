@@ -8,45 +8,71 @@ defmodule El.CLI do
   end
 
   defp main_impl(["ls"]) do
-    daemon_node = ensure_node()
+    ensure_epmd()
 
-    sessions = if daemon_node && daemon_node != Node.self() do
-      # RPC to daemon node to get sessions
-      :rpc.call(daemon_node, El, :local_ls, [])
-    else
-      # Local query
-      El.ls()
+    case find_daemon_node() do
+      {:ok, daemon_node} ->
+        :rpc.call(daemon_node, El, :local_ls, [])
+        |> Enum.each(fn name ->
+          if session_alive?(name, daemon_node) do
+            IO.puts(Atom.to_string(name))
+          else
+            IO.puts("(#{name})")
+          end
+        end)
+      :not_found ->
+        IO.puts(:stderr, "Error: No daemon found. Start with: el <name> &")
+        System.halt(1)
     end
-
-    sessions
-    |> Enum.each(fn name ->
-      if session_alive?(name, daemon_node) do
-        IO.puts(Atom.to_string(name))
-      else
-        IO.puts("(#{name})")
-      end
-    end)
   end
 
   defp main_impl([name]) do
-    ensure_node()
-    El.start(String.to_atom(name))
-    # Check if stdin is a TTY (interactive) or not (backgrounded/headless)
-    if is_tty?() do
-      # Interactive: run PTY
-      case catch_exit(fn -> El.PTY.run(String.to_atom(name)) end) do
-        :ok -> :ok
-        _ -> run_as_zombie(name)
+    daemon_node = ensure_daemon_node()
+    name_atom = String.to_atom(name)
+
+    if daemon_node && daemon_node != Node.self() do
+      # We're a client connecting to daemon
+      :rpc.call(daemon_node, El, :start, [name_atom])
+      # Check if stdin is a TTY (interactive) or not (backgrounded/headless)
+      if is_tty?() do
+        # Interactive: run PTY
+        case catch_exit(fn -> El.PTY.run(name_atom) end) do
+          :ok -> :ok
+          _ -> run_as_zombie(name)
+        end
+      else
+        # Backgrounded/headless: run as zombie daemon
+        run_as_zombie(name)
       end
     else
-      # Backgrounded/headless: run as zombie daemon
-      run_as_zombie(name)
+      # We are the daemon
+      El.start(name_atom)
+      # Check if stdin is a TTY (interactive) or not (backgrounded/headless)
+      if is_tty?() do
+        # Interactive: run PTY
+        case catch_exit(fn -> El.PTY.run(name_atom) end) do
+          :ok -> :ok
+          _ -> run_as_zombie(name)
+        end
+      else
+        # Backgrounded/headless: run as zombie daemon
+        run_as_zombie(name)
+      end
     end
   end
 
   defp main_impl([name, "&"]) do
-    ensure_node()
-    El.start(String.to_atom(name))
+    daemon_node = ensure_daemon_node()
+    name_atom = String.to_atom(name)
+
+    if daemon_node && daemon_node != Node.self() do
+      # We're a client connecting to daemon
+      :rpc.call(daemon_node, El, :start, [name_atom])
+    else
+      # We are the daemon
+      El.start(name_atom)
+    end
+
     run_as_zombie(name)
   end
 
@@ -61,36 +87,73 @@ defmodule El.CLI do
 
 
   defp main_impl([name, "tell" | words]) do
-    ensure_node()
+    ensure_epmd()
     msg = Enum.join(words, " ")
-    response = El.tell(String.to_atom(name), msg)
-    IO.write(response)
+    name_atom = String.to_atom(name)
+
+    case find_daemon_node() do
+      {:ok, daemon_node} ->
+        case :rpc.call(daemon_node, El, :tell, [name_atom, msg]) do
+          {:badrpc, reason} ->
+            IO.puts(:stderr, "Error: #{inspect(reason)}")
+            System.halt(1)
+          response ->
+            IO.write(response)
+        end
+      :not_found ->
+        IO.puts(:stderr, "Error: No daemon found. Start with: el #{name} &")
+        System.halt(1)
+    end
   end
 
   defp main_impl([name, "ask" | words]) do
-    ensure_node()
+    ensure_epmd()
     msg = Enum.join(words, " ")
-    response = El.ask(String.to_atom(name), msg)
-    IO.write(response)
+    name_atom = String.to_atom(name)
+
+    case find_daemon_node() do
+      {:ok, daemon_node} ->
+        case :rpc.call(daemon_node, El, :ask, [name_atom, msg]) do
+          {:badrpc, reason} ->
+            IO.puts(:stderr, "Error: #{inspect(reason)}")
+            System.halt(1)
+          response ->
+            IO.write(response)
+        end
+      :not_found ->
+        IO.puts(:stderr, "Error: No daemon found. Start with: el #{name} &")
+        System.halt(1)
+    end
   end
 
   defp main_impl([name, "log"]) do
-    ensure_node()
-    El.log(String.to_atom(name))
-    |> Enum.each(fn {type, message, response} ->
-      IO.puts("[#{type}] #{message}")
-      IO.puts(response)
-    end)
+    ensure_epmd()
+    name_atom = String.to_atom(name)
+
+    case find_daemon_node() do
+      {:ok, daemon_node} ->
+        log = :rpc.call(daemon_node, El, :log, [name_atom])
+        log
+        |> Enum.each(fn {type, message, response} ->
+          IO.puts("[#{type}] #{message}")
+          IO.puts(response)
+        end)
+      :not_found ->
+        IO.puts(:stderr, "Error: No daemon found. Start with: el #{name} &")
+        System.halt(1)
+    end
   end
 
   defp main_impl([name, "kill"]) do
-    daemon_node = ensure_node()
+    ensure_epmd()
     name_atom = String.to_atom(name)
 
-    if daemon_node && daemon_node != Node.self() do
-      :rpc.call(daemon_node, El, :kill, [name_atom])
-    else
-      El.kill(name_atom)
+    case find_daemon_node() do
+      {:ok, daemon_node} ->
+        :rpc.call(daemon_node, El, :kill, [name_atom])
+      :not_found ->
+        IO.puts(:stderr, "Error: No daemon found. Start with: el #{name} &")
+        System.halt(1)
     end
   end
 
@@ -98,32 +161,29 @@ defmodule El.CLI do
     main_impl([])
   end
 
-  defp ensure_node do
-    if Node.alive?() do
-      case read_daemon_node() do
-        {:ok, node} -> node
-        :not_found -> Node.self()
-      end
-    else
-      # Not alive yet — try to connect to existing daemon or start new one
-      case try_connect_daemon() do
-        {:ok, daemon_node} ->
-          # Successfully connected to existing daemon
-          {:ok, _} = Application.ensure_all_started(:el)
-          daemon_node
+  defp ensure_daemon_node do
+    ensure_epmd()
 
-        :not_found ->
-          # No daemon found — try to start one
+    if Node.alive?() do
+      Node.self()
+    else
+      case Node.start(:"el@127.0.0.1") do
+        {:ok, _} ->
+          Node.set_cookie(:el)
+          {:ok, _} = Application.ensure_all_started(:el)
+          write_daemon_node()
+          Node.self()
+
+        {:error, {:already_started, _}} ->
+          Node.set_cookie(:el)
+          {:ok, _} = Application.ensure_all_started(:el)
+          write_daemon_node()
+          Node.self()
+
+        {:error, _reason} ->
+          nuke_epmd()
           case Node.start(:"el@127.0.0.1") do
             {:ok, _} ->
-              # New node started successfully
-              Node.set_cookie(:el)
-              {:ok, _} = Application.ensure_all_started(:el)
-              write_daemon_node()
-              Node.self()
-
-            {:error, {:already_started, _}} ->
-              # Node is already started in this VM (we are the daemon)
               Node.set_cookie(:el)
               {:ok, _} = Application.ensure_all_started(:el)
               write_daemon_node()
@@ -131,25 +191,45 @@ defmodule El.CLI do
 
             {:error, reason} ->
               IO.puts(:stderr, "FATAL: Cannot start daemon node el@127.0.0.1: #{inspect(reason)}")
-              IO.puts(:stderr, "This usually means the port 4369 (epmd) is in use or another Erlang VM is running.")
-              IO.puts(:stderr, "Attempting cleanup and retry...")
-              # Try to clean up stale epmd processes
-              System.cmd("pkill", ["-f", "epmd"], [])
-              # Give epmd a moment to die
-              Process.sleep(500)
-              # Retry starting the node
-              case Node.start(:"el@127.0.0.1") do
-                {:ok, _} ->
-                  Node.set_cookie(:el)
-                  {:ok, _} = Application.ensure_all_started(:el)
-                  write_daemon_node()
-                  Node.self()
-                {:error, _} ->
-                  System.halt(1)
-              end
+              System.halt(1)
           end
       end
     end
+  end
+
+  defp find_daemon_node do
+    # Try to find an existing daemon node (for client invocations)
+    ensure_epmd()
+
+    case read_daemon_node() do
+      {:ok, daemon_node} ->
+        # Daemon node file exists, try to connect to it
+        if Node.alive?() do
+          # We're already a node, can RPC directly
+          {:ok, daemon_node}
+        else
+          # Not yet a node, start a client node and connect
+          case try_connect_daemon() do
+            {:ok, node} -> {:ok, node}
+            :not_found -> :not_found
+          end
+        end
+
+      :not_found ->
+        :not_found
+    end
+  end
+
+  defp ensure_epmd do
+    System.cmd("epmd", ["-daemon"], stderr_to_stdout: true)
+    :timer.sleep(100)
+  end
+
+  defp nuke_epmd do
+    System.cmd("pkill", ["-9", "epmd"], stderr_to_stdout: true)
+    :timer.sleep(200)
+    System.cmd("epmd", ["-daemon"], stderr_to_stdout: true)
+    :timer.sleep(200)
   end
 
   defp read_daemon_node do
