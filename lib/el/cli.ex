@@ -147,9 +147,9 @@ defmodule El.CLI do
                   Node.self()
 
                 {:error, reason} ->
-                  IO.puts(:stderr, "ERROR: Cannot start daemon node: #{inspect(reason)}")
-                  {:ok, _} = Application.ensure_all_started(:el)
-                  Node.self()
+                  IO.puts(:stderr, "FATAL: Cannot start daemon node el@127.0.0.1: #{inspect(reason)}")
+                  IO.puts(:stderr, "This usually means the port 4369 (epmd) is in use or another Erlang VM is running.")
+                  System.halt(1)
               end
           end
       end
