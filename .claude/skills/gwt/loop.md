@@ -20,7 +20,7 @@
 - Feed lisa the DSL and input scenarios
 - Lisa writes ALL scenarios into one `.feature` file
 - Maximize DSL reuse
-- Step definitions are Elixir modules using Cabbage
+- Step definitions are Ruby, one file: features/step_definitions/el_steps.rb
 - No new step definition files unless necessary
 
 ## Review Loop
@@ -33,4 +33,3 @@
 
 - Present `.feature` to user
 - User approves or back to review loop
-

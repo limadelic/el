@@ -7,14 +7,14 @@ description: Lisa writes scenarios, Eric reviews adversarially, Dude arbitrates
 
 ## Goal
 
-- Write acceptance scenarios for El using Cabbage + Gherkin syntax on ExUnit.
-- Maximize reuse of existing DSL step definitions.
-- Minimize the need to add new step definitions.
+- Write acceptance scenarios for El using Cucumber + Ruby.
+- One DSL operator: `>` (shell command). `*` as Gherkin keyword.
+- Minimize step definition footprint — one step def handles all `>` commands.
 
 ## Instructions per Agent
 
 **Dude** — you run the loop. Read [loop.md](loop.md).
 
-**Lisa** — you write scenarios and step definitions. Follow [P&P.md](P&P.md).
+**Lisa** — you write scenarios. Follow [P&P.md](P&P.md).
 
 **Eric** — you review lisa's output. Review against [P&P.md](P&P.md).

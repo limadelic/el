@@ -1,66 +1,85 @@
-# Patterns & Practices
+# GWT — Patterns & Practices
+
+Lisa writes `.feature` files. Eric reviews them.
 
 ## Goal
 
 - Maximize reuse of existing DSL
-- Minimize new step definitions
-- Cabbage compiles `.feature` files to ExUnit tests
+- Minimize step definitions — one step def for `>`
+- Cucumber (Ruby) compiles `.feature` files to tests
 
 ## The DSL
 
-### Start a named session
+One operator: `>` — everything is a shell command.
+Gherkin keyword `*` keeps it neutral.
+
+### Start a session (zombie)
 ```gherkin
-Given I start session "dude"
+* > el dude &
 ```
 
-### Tell a session (fire and wait)
+### Tell (fire-and-forget)
 ```gherkin
-When I tell "dude" "hey man"
-Then the response contains "hey"
+* > el dude tell hey man
 ```
 
-### Ask a session (query and verify)
+### Ask (query-and-answer)
 ```gherkin
-When I ask "ita" "1 + 1"
-Then the response is "2"
+* > el dude ask 1 + 1
+  | 2 |
+```
+
+### Log (inspect received messages)
+```gherkin
+* > el dude log
+  | hey man |
 ```
 
 ### List sessions
 ```gherkin
-When I list sessions
-Then I see "dude" running
-And I see "ita" running
+* > el ls
+  | dude  |
+  | elita |
 ```
 
-### Session not found
+### Kill a session
 ```gherkin
-When I tell "nobody" "hello"
-Then I get error "session \"nobody\" not found"
+* > el dude kill
 ```
 
-### Execute a shell command
+### Absence assertion
 ```gherkin
-Given I run "el start alice"
+* > el ls
+  | (dude) |
 ```
 
-### Negative assertion
-```gherkin
-Then the response does not contain "error"
-```
+`(name)` in a table means name should NOT be present.
+
+## Tables
+
+- Tables verify command output
+- No column headers until needed
+- One step handles `>` with or without tables
+- Shell handles `&` natively — no separate step def
 
 ## Scenarios
 
 - Declarative — WHAT not HOW
 - One outcome per scenario
-- Use domain language (session, tell, ask, start)
+- Domain language: el, dude, elita, tell, ask, log, kill, ls
 - No incidental detail
+- Happy path first, edge cases later
 
 ## File Organization
 
 ```
-test/features/
-  <domain>/
-    <feature>.feature
+features/
+  <feature>.feature
+  step_definitions/
+    el_steps.rb
+  support/
+    env.rb
+    hooks.rb
 ```
 
 ## Scope
@@ -71,7 +90,7 @@ test/features/
 
 ## Anti-Patterns
 
-- Creating new step definitions when the DSL covers it
-- Imperative scenarios with implementation details
+- Creating new step definitions when `>` covers it
+- Imperative scenarios (implementation details)
 - Testing multiple outcomes in one scenario
 - Testing OTP internals — features test the CLI surface

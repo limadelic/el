@@ -10,13 +10,13 @@ This loop implements the acceptance layer of **ATDD (Acceptance Test-Driven Deve
 
 **ATDD** sits above both. Where TDD drives code design and BDD drives behavior, ATDD drives the whole feature from acceptance criteria down. The tests are written first, at the outermost layer, and development works **outside-in** — from the acceptance test inward through the code.
 
-We use **Cabbage** — an Elixir library that compiles Gherkin `.feature` files into ExUnit tests at compile time.
+We use **Cucumber (Ruby)** — a testing framework that compiles Gherkin `.feature` files into executable tests.
 
 ### Key references
 
 - [Dan North: Introducing BDD](https://dannorth.net/introducing-bdd/)
 - [Cucumber: Gherkin Reference](https://cucumber.io/docs/gherkin/)
-- [Cabbage: Gherkin for Elixir](https://github.com/cabbage-ex/cabbage)
+- [Cucumber (Ruby)](https://cucumber.io/docs/cucumber/)
 - [Agile Alliance: ATDD](https://agilealliance.org/glossary/atdd/)
 - [Outside-In TDD](https://outsidein.dev/concepts/outside-in-tdd/)
 
@@ -36,7 +36,7 @@ Three Amigos produces the plan. GWT turns it into executable scenarios. When a s
 
 - Named after [Lisa Crispin](https://lisacrispin.com) — Agile Testing, business-facing tests
 - Persistent team member (Sonnet) — keeps context across all scenarios in a feature
-- Owns the `.feature` files, Cabbage step definitions, `@wip` and `@pending` tags
+- Owns the `.feature` files, Ruby step definitions, `@wip` and `@pending` tags
 - Gets better each round because she remembers prior feedback
 
 ### eric (ephemeral)
