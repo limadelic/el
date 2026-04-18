@@ -3,6 +3,7 @@ defmodule El do
     case local_lookup(name) do
       [{_pid, _}] -> name
       [] -> DynamicSupervisor.start_child(El.SessionSupervisor, {El.Session, name})
+           El.SessionTracker.track(name)
            name
     end
   end
@@ -39,8 +40,7 @@ defmodule El do
   end
 
   def local_ls do
-    El.Registry
-    |> Registry.select([{{:"$1", :"$2", :_}, [], [:"$1"]}])
+    El.SessionTracker.all()
   end
 
   def local_lookup(name) do
