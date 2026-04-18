@@ -114,33 +114,43 @@ defmodule El.CLI do
 
         :not_found ->
           # No daemon found — try to start one
-          case Node.start(:"el@127.0.0.1") do
-            {:ok, _} ->
-              # New node started successfully
-              Node.set_cookie(:el)
+          # First, try to connect to el@127.0.0.1 in case it's running but file is missing
+          Node.set_cookie(:el)
+          case Node.connect(:"el@127.0.0.1") do
+            true ->
+              # Successfully connected to existing daemon
+              {:ok, _} = Application.ensure_all_started(:el)
+              write_daemon_node()
+              :"el@127.0.0.1"
+
+            :ignored ->
+              # Already connected (this is the daemon)
               {:ok, _} = Application.ensure_all_started(:el)
               write_daemon_node()
               Node.self()
 
-            {:error, {:already_started, _}} ->
-              # Node is running but not in daemon file — stale daemon
-              # Set cookie and try to connect directly
-              Node.set_cookie(:el)
-              if Node.connect(:"el@127.0.0.1") do
-                {:ok, _} = Application.ensure_all_started(:el)
-                write_daemon_node()
-                :"el@127.0.0.1"
-              else
-                # Can't connect to stale node — start as local-only
-                {:ok, _} = Application.ensure_all_started(:el)
-                Node.self()
-              end
+            false ->
+              # Not connected — try to start our own daemon node
+              case Node.start(:"el@127.0.0.1") do
+                {:ok, _} ->
+                  # New node started successfully
+                  Node.set_cookie(:el)
+                  {:ok, _} = Application.ensure_all_started(:el)
+                  write_daemon_node()
+                  Node.self()
 
-            {:error, reason} ->
-              # Some other error (unlikely)
-              IO.puts(:stderr, "DEBUG: Node.start failed: #{inspect(reason)}")
-              {:ok, _} = Application.ensure_all_started(:el)
-              Node.self()
+                {:error, {:already_started, _}} ->
+                  # Node is already started in this VM (we are the daemon)
+                  Node.set_cookie(:el)
+                  {:ok, _} = Application.ensure_all_started(:el)
+                  write_daemon_node()
+                  Node.self()
+
+                {:error, reason} ->
+                  IO.puts(:stderr, "ERROR: Cannot start daemon node: #{inspect(reason)}")
+                  {:ok, _} = Application.ensure_all_started(:el)
+                  Node.self()
+              end
           end
       end
     end

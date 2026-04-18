@@ -4,9 +4,12 @@ defmodule El.ClaudeCode do
     session_name = Keyword.get(opts, :name)
     session_id = if session_name, do: Atom.to_string(session_name), else: nil
 
+    # Use config-specified cli_path (should be :global from config.exs)
+    cli_path = Application.get_env(:claude_code, :cli_path, :bundled)
+
     # Start ClaudeCode with adapter and model config
     ClaudeCode.Session.start_link(
-      adapter: {ClaudeCode.Adapter.Port, cli_path: :bundled},
+      adapter: {ClaudeCode.Adapter.Port, cli_path: cli_path},
       model: "claude-opus-4-7",
       session_id: session_id
     )
