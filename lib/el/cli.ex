@@ -31,13 +31,16 @@ defmodule El.CLI do
   defp main_impl([name]) do
     ensure_node()
     El.start(String.to_atom(name))
-    # Try to run PTY if available, else fall back to daemon mode
-    case catch_exit(fn -> El.PTY.run(String.to_atom(name)) end) do
-      :ok -> :ok
-      _ ->
-        # PTY unavailable or failed, run as daemon
-        IO.puts("el: #{name} is up on #{Node.self()}")
-        Process.sleep(:infinity)
+    # Check if stdin is a TTY (interactive) or not (backgrounded/headless)
+    if is_tty?() do
+      # Interactive: run PTY
+      case catch_exit(fn -> El.PTY.run(String.to_atom(name)) end) do
+        :ok -> :ok
+        _ -> run_as_zombie(name)
+      end
+    else
+      # Backgrounded/headless: run as zombie daemon
+      run_as_zombie(name)
     end
   end
 
@@ -50,12 +53,6 @@ defmodule El.CLI do
     end
   end
 
-  defp main_impl([name, "&"]) do
-    ensure_node()
-    El.start(String.to_atom(name))
-    IO.puts("el: #{name} is up on #{Node.self()}")
-    Process.sleep(:infinity)
-  end
 
   defp main_impl([name, "tell" | words]) do
     ensure_node()
@@ -218,5 +215,18 @@ defmodule El.CLI do
     else
       El.Session.alive?(name)
     end
+  end
+
+  defp is_tty? do
+    case :io.columns() do
+      {:ok, _} -> true
+      {:error, :enoent} -> false
+      _ -> false
+    end
+  end
+
+  defp run_as_zombie(name) do
+    IO.puts("el: #{name} is up on #{Node.self()}")
+    Process.sleep(:infinity)
   end
 end
