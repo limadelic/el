@@ -23,7 +23,8 @@ defmodule El.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:claude_code, "~> 0.36"}
+      {:claude_code, "~> 0.36"},
+      {:cabbage, "~> 0.4", only: :test}
     ]
   end
 end

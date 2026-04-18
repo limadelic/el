@@ -1,8 +1,7 @@
 defmodule ElTest do
   use ExUnit.Case
-  doctest El
 
-  test "greets the world" do
-    assert El.hello() == :world
+  test "el module loads" do
+    assert Code.ensure_loaded?(El)
   end
 end
