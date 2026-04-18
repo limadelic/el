@@ -105,33 +105,39 @@ defmodule El.CLI do
         :not_found -> Node.self()
       end
     else
+      # Not alive yet — try to connect to existing daemon or start new one
       case try_connect_daemon() do
         {:ok, daemon_node} ->
-          # Connected to existing daemon
+          # Successfully connected to existing daemon
           {:ok, _} = Application.ensure_all_started(:el)
           daemon_node
 
         :not_found ->
-          # Start new daemon or connect to existing
+          # No daemon found — try to start one
           case Node.start(:"el@127.0.0.1") do
             {:ok, _} ->
-              # New node started
+              # New node started successfully
               Node.set_cookie(:el)
               {:ok, _} = Application.ensure_all_started(:el)
               write_daemon_node()
               Node.self()
+
             {:error, {:already_started, _}} ->
-              # Node already exists, connect to it
+              # Node is running but not in daemon file — stale daemon
+              # Set cookie and try to connect directly
               Node.set_cookie(:el)
               if Node.connect(:"el@127.0.0.1") do
+                {:ok, _} = Application.ensure_all_started(:el)
                 write_daemon_node()
                 :"el@127.0.0.1"
               else
-                # Failed to connect to existing node, bail out
+                # Can't connect to stale node — start as local-only
                 {:ok, _} = Application.ensure_all_started(:el)
                 Node.self()
               end
+
             {:error, reason} ->
+              # Some other error (unlikely)
               IO.puts(:stderr, "DEBUG: Node.start failed: #{inspect(reason)}")
               {:ok, _} = Application.ensure_all_started(:el)
               Node.self()
@@ -160,34 +166,33 @@ defmodule El.CLI do
       {:ok, content} ->
         node_name = content |> String.trim() |> String.to_atom()
 
-        # Use unique name for this client node
-        client_node = :"el_client_#{System.os_time()}@127.0.0.1"
-
         try do
-          case Node.start(client_node) do
-            {:ok, _} ->
-              Node.set_cookie(:el)
-              if Node.connect(node_name) do
-                {:ok, node_name}
-              else
+          # If we're not alive, start a client node
+          if not Node.alive?() do
+            client_node = :"el_client_#{System.os_time()}@127.0.0.1"
+            case Node.start(client_node) do
+              {:ok, _} -> :ok
+              {:error, {:already_started, _}} -> :ok
+              {:error, _reason} ->
                 cleanup_stale_node(node_file)
-                :not_found
-              end
-            {:error, {:already_started, _}} ->
-              # Node already exists, just try to connect
-              Node.set_cookie(:el)
-              if Node.connect(node_name) do
-                {:ok, node_name}
-              else
-                cleanup_stale_node(node_file)
-                :not_found
-              end
-            {:error, reason} ->
-              IO.puts(:stderr, "DEBUG: Node.start failed: #{inspect(reason)}")
+                throw :connection_failed
+            end
+          end
+
+          # Try to connect to daemon
+          Node.set_cookie(:el)
+          case Node.connect(node_name) do
+            true -> {:ok, node_name}
+            false ->
               cleanup_stale_node(node_file)
               :not_found
+            :ignored ->
+              # Already connected or is self
+              {:ok, node_name}
           end
         catch
+          :connection_failed ->
+            :not_found
           _, _ ->
             cleanup_stale_node(node_file)
             :not_found
