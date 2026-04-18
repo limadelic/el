@@ -28,9 +28,14 @@ defmodule El.Session do
   def init(name) do
     # Try to start ClaudeCode, but continue even if it fails
     # (allows Kill scenario to work without full ClaudeCode setup)
-    claude_pid = case El.ClaudeCode.start_link(name: name) do
-      {:ok, pid} -> pid
-      {:error, _reason} -> nil
+    claude_pid = try do
+      case El.ClaudeCode.start_link(name: name) do
+        {:ok, pid} -> pid
+        {:error, _reason} -> nil
+      end
+    catch
+      :exit, _ -> nil
+      _, _ -> nil
     end
 
     {:ok, %{name: name, claude_pid: claude_pid, messages: []}}
@@ -39,10 +44,15 @@ defmodule El.Session do
   @impl true
   def handle_call({:tell, message}, _from, state) do
     response = if state.claude_pid do
-      state.claude_pid
-      |> El.ClaudeCode.stream(message)
-      |> ClaudeCode.Stream.text_content()
-      |> Enum.join()
+      try do
+        state.claude_pid
+        |> El.ClaudeCode.stream(message)
+        |> ClaudeCode.Stream.text_content()
+        |> Enum.join()
+      catch
+        :exit, _ -> "(ClaudeCode unavailable)"
+        _, _ -> "(ClaudeCode unavailable)"
+      end
     else
       "(ClaudeCode unavailable)"
     end
@@ -53,10 +63,15 @@ defmodule El.Session do
 
   def handle_call({:ask, message}, _from, state) do
     response = if state.claude_pid do
-      state.claude_pid
-      |> El.ClaudeCode.stream(message)
-      |> ClaudeCode.Stream.text_content()
-      |> Enum.join()
+      try do
+        state.claude_pid
+        |> El.ClaudeCode.stream(message)
+        |> ClaudeCode.Stream.text_content()
+        |> Enum.join()
+      catch
+        :exit, _ -> "(ClaudeCode unavailable)"
+        _, _ -> "(ClaudeCode unavailable)"
+      end
     else
       "(ClaudeCode unavailable)"
     end
