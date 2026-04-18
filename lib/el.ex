@@ -1,6 +1,6 @@
 defmodule El do
   def start(name) when is_atom(name) do
-    case Registry.lookup(El.Registry, name) do
+    case local_lookup(name) do
       [{_pid, _}] -> name
       [] -> DynamicSupervisor.start_child(El.SessionSupervisor, {El.Session, name})
            name
@@ -20,15 +20,23 @@ defmodule El do
   end
 
   def kill(name) do
-    case Registry.lookup(El.Registry, name) do
+    case local_lookup(name) do
       [{pid, _}] -> GenServer.stop(pid)
       [] -> :not_found
     end
   end
 
   def ls do
+    local_ls()
+    |> Enum.sort()
+  end
+
+  def local_ls do
     El.Registry
     |> Registry.select([{{:"$1", :"$2", :_}, [], [:"$1"]}])
-    |> Enum.sort()
+  end
+
+  def local_lookup(name) do
+    Registry.lookup(El.Registry, name)
   end
 end

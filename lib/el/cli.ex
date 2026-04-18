@@ -4,10 +4,19 @@ defmodule El.CLI do
   end
 
   def main(["ls"]) do
-    ensure_node()
-    El.ls()
+    daemon_node = ensure_node()
+
+    sessions = if daemon_node && daemon_node != Node.self() do
+      # RPC to daemon node to get sessions
+      :rpc.call(daemon_node, El, :local_ls, [])
+    else
+      # Local query
+      El.ls()
+    end
+
+    sessions
     |> Enum.each(fn name ->
-      if El.Session.alive?(name) do
+      if session_alive?(name, daemon_node) do
         IO.puts(Atom.to_string(name))
       else
         IO.puts("(#{name})")
@@ -77,10 +86,95 @@ defmodule El.CLI do
   end
 
   defp ensure_node do
-    unless Node.alive?() do
-      {:ok, _} = Node.start(:"el@127.0.0.1")
-      Node.set_cookie(:el)
-      {:ok, _} = Application.ensure_all_started(:el)
+    if Node.alive?() do
+      case read_daemon_node() do
+        {:ok, node} -> node
+        :not_found -> Node.self()
+      end
+    else
+      case try_connect_daemon() do
+        {:ok, daemon_node} ->
+          # Connected to existing daemon
+          {:ok, _} = Application.ensure_all_started(:el)
+          daemon_node
+
+        :not_found ->
+          # Start new daemon
+          {:ok, _} = Node.start(:"el@127.0.0.1")
+          Node.set_cookie(:el)
+          {:ok, _} = Application.ensure_all_started(:el)
+          write_daemon_node()
+          Node.self()
+      end
+    end
+  end
+
+  defp read_daemon_node do
+    node_file = Path.expand("~/.el/daemon_node")
+
+    case File.read(node_file) do
+      {:ok, content} ->
+        node_name = content |> String.trim() |> String.to_atom()
+        {:ok, node_name}
+
+      {:error, :enoent} ->
+        :not_found
+    end
+  end
+
+  defp try_connect_daemon do
+    node_file = Path.expand("~/.el/daemon_node")
+
+    case File.read(node_file) do
+      {:ok, content} ->
+        node_name = content |> String.trim() |> String.to_atom()
+
+        # Use unique name for this client node
+        client_node = :"el_client_#{System.os_time()}@127.0.0.1"
+
+        try do
+          {:ok, _} = Node.start(client_node)
+          Node.set_cookie(:el)
+
+          if Node.connect(node_name) do
+            {:ok, node_name}
+          else
+            cleanup_stale_node(node_file)
+            :not_found
+          end
+        catch
+          :error, _ ->
+            cleanup_stale_node(node_file)
+            :not_found
+        end
+
+      {:error, :enoent} ->
+        :not_found
+    end
+  end
+
+  defp cleanup_stale_node(node_file) do
+    File.rm(node_file)
+  rescue
+    _ -> :ok
+  end
+
+  defp write_daemon_node do
+    node_file = Path.expand("~/.el/daemon_node")
+    File.mkdir_p!(Path.dirname(node_file))
+    File.write!(node_file, Atom.to_string(Node.self()))
+  end
+
+  defp session_alive?(name, daemon_node) do
+    if daemon_node && daemon_node != Node.self() do
+      # RPC to daemon node
+      try do
+        :rpc.call(daemon_node, El.Session, :alive?, [name]) == true
+      catch
+        :error, _ -> false
+      end
+    else
+      El.Session.alive?(name)
     end
   end
 end

@@ -8,12 +8,10 @@ defmodule El.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      # Starts a worker by calling: El.Worker.start_link(arg)
-      # {El.Worker, arg}
+      {Registry, keys: :unique, name: El.Registry},
+      {DynamicSupervisor, name: El.SessionSupervisor}
     ]
 
-    # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
     opts = [strategy: :one_for_one, name: El.Supervisor]
     Supervisor.start_link(children, opts)
   end
