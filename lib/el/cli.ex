@@ -81,8 +81,14 @@ defmodule El.CLI do
   end
 
   defp main_impl([name, "kill"]) do
-    ensure_node()
-    El.kill(String.to_atom(name))
+    daemon_node = ensure_node()
+    name_atom = String.to_atom(name)
+
+    if daemon_node && daemon_node != Node.self() do
+      :rpc.call(daemon_node, El, :kill, [name_atom])
+    else
+      El.kill(name_atom)
+    end
   end
 
   defp main_impl(_) do

@@ -21,9 +21,16 @@ defmodule El do
 
   def kill(name) do
     case local_lookup(name) do
-      [{pid, _}] -> GenServer.stop(pid)
-      [] -> :not_found
+      [{pid, _}] ->
+        # Terminate the child in the supervisor
+        # Use terminate instead of call, which will prevent restart
+        DynamicSupervisor.terminate_child(El.SessionSupervisor, pid)
+        :ok
+      [] ->
+        :not_found
     end
+  rescue
+    _ -> :ok  # Process already gone or errored
   end
 
   def ls do
