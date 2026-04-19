@@ -11,7 +11,7 @@ Use `el` to manage Claude Code sessions as your dev team. No Agent tool, no Team
 
 | Action | Old Way | El Way |
 |--------|---------|--------|
-| Spawn agent | `Agent(subagent_type: "kent")` | `el kent &` |
+| Spawn agent | `Agent(subagent_type: "kent")` | `el kent` |
 | Send work | `SendMessage(to: "kent")` | `el kent tell "fix the bug"` |
 | Ask question | `Agent(prompt: "...")` | `el kent ask "what model r u using"` |
 | Check history | _(no equivalent)_ | `el kent log` |
@@ -21,7 +21,7 @@ Use `el` to manage Claude Code sessions as your dev team. No Agent tool, no Team
 
 ## The Loop
 
-1. `el <name> &` — start a session (zombie mode)
+1. `el <name>` — start a headless session
 2. `el <name> tell <work>` — fire-and-forget task
 3. `el <name> ask <question>` — wait for answer
 4. `el <name> log` — review what happened
@@ -34,13 +34,13 @@ Use `el` to manage Claude Code sessions as your dev team. No Agent tool, no Team
 - `ask` = wait for response (questions, status checks)
 - Quote messages with special chars: `el kent ask "what's the status?"`
 - Avoid `?` unquoted — zsh treats it as glob
-- One session per name — `el kent &` twice reuses the existing one
-- `el ls` shows active sessions, `(name)` means dead process
+- One session per name — `el kent` twice reuses the existing one
+- `el ls` shows active sessions
 - `el log` is your audit trail — use it to verify work
 
 ## Anti-Patterns
 
-- DO NOT use Agent tool — use `el <name> &` + `el <name> tell`
+- DO NOT use Agent tool — use `el <name>` + `el <name> tell`
 - DO NOT use TeamCreate — sessions ARE the team
 - DO NOT use SendMessage — use `el <name> tell` or `el <name> ask`
 - DO NOT spawn throwaway agents — el sessions persist and remember
