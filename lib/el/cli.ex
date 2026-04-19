@@ -354,7 +354,6 @@ defmodule El.CLI do
         El.start(name_atom)
       end
       IO.puts("el: #{name} is up on #{Node.self()}")
-      Process.sleep(:infinity)
     end
   end
 

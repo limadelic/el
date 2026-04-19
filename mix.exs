@@ -4,7 +4,7 @@ defmodule El.MixProject do
   def project do
     [
       app: :el,
-      version: "0.1.9",
+      version: "0.1.10",
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -49,7 +49,6 @@ defmodule El.MixProject do
         steps: [:assemble, &Burrito.wrap/1],
         burrito: [
           targets: [
-            macos_x86_64: [os: :darwin, cpu: :x86_64],
             macos_arm64: [os: :darwin, cpu: :aarch64]
           ]
         ]
