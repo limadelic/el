@@ -29,8 +29,8 @@ You DONT CODE. You do only these commands.
   - `MIX_ENV=prod mix release` (Burrito build)
   - `shasum -a 256 burrito_out/el_macos_arm64` and `burrito_out/el_macos_x86_64`
   - `GITHUB_TOKEN=$GITHUB_LIMADELIC gh release create v<version> burrito_out/el_macos_arm64 burrito_out/el_macos_x86_64 --repo limadelic/el --title "v<version>" --notes "<version release>"`
-  - Update `/tmp/homebrew-el-update/Formula/el.rb` via `sed` — version, URLs, SHA256s (clone from `https://github.com/limadelic/homebrew-el.git` to `/tmp/homebrew-el-update` if not exists)
-  - `cd /tmp/homebrew-el-update && git add Formula/el.rb && git commit -m "bump to v<version>" && git push`
+  - Update `/tmp/homebrew-tap/Formula/el.rb` via `sed` — version, URLs, SHA256s (clone from `https://github.com/limadelic/homebrew-tap.git` to `/tmp/homebrew-tap` if not exists)
+  - `cd /tmp/homebrew-tap && git add Formula/el.rb && git commit -m "bump to v<version>" && git push`
   - Report: version, release URL, formula pushed
 - **install**: `brew reinstall limadelic/el/el`
 
