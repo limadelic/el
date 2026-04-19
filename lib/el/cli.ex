@@ -1,6 +1,7 @@
 defmodule El.CLI do
   def main(args) do
     main_impl(args)
+    System.halt(0)
   end
 
   defp main_impl([]) do
