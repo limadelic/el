@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(./el dude)",
+      "Bash(pkill*)",
+      "Bash(cat*)",
+      "Bash(sleep*)",
+      "Bash(ps*)",
+      "Bash(echo*)",
+      "Bash(mix escript.build)",
+      "Bash(mix deps.get)",
+      "Bash(mix test*)",
+      "Bash(mix format*)",
+      "Bash(mix release*)",
+      "Bash(epmd*)",
+      "Bash(rm*)"
+    ],
+    "defaultMode": "dontAsk"
+  }
+}

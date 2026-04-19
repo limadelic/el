@@ -1,20 +1,30 @@
 defmodule El.Application do
-  # See https://hexdocs.pm/elixir/Application.html
-  # for more information on OTP Applications
   @moduledoc false
-
   use Application
 
   @impl true
   def start(_type, _args) do
     children = [
-      # Starts a worker by calling: El.Worker.start_link(arg)
-      # {El.Worker, arg}
+      {Registry, keys: :unique, name: El.Registry},
+      {DynamicSupervisor, name: El.SessionSupervisor},
+      {El.SessionTracker, []}
     ]
 
-    # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
     opts = [strategy: :one_for_one, name: El.Supervisor]
-    Supervisor.start_link(children, opts)
+    result = Supervisor.start_link(children, opts)
+
+    if System.get_env("__BURRITO") do
+      spawn(fn ->
+        try do
+          args = Burrito.Util.Args.argv()
+          El.CLI.main(args)
+          System.halt(0)
+        catch
+          _kind, _reason -> :ok
+        end
+      end)
+    end
+
+    result
   end
 end
