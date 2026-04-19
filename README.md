@@ -1,38 +1,64 @@
 # El
 
-Spawn headless Claude Code sessions and chat with them from anywhere. Built on stdin/stdout pipes — no message loss, no latency.
+CLI for managing headless Claude Code sessions (zombies).
+
+Start a Claude session in the background, send it messages, get responses, view logs, kill when done.
 
 ## Install
 
+**Homebrew** (recommended):
 ```bash
-brew tap limadelic/el
-brew install el
+brew install limadelic/el/el
 ```
 
-## What are zombies?
-
-A "zombie" is a Claude Code process running in the background, owned by El. You can spawn it once and talk to it forever.
-
+**Elixir devs**:
 ```bash
-# Spawn a zombie named "dude"
+mix escript.install hex el
+```
+
+## Usage
+
+Start a zombie session:
+```bash
 el dude &
+```
 
-# Later, chat with it
-el dude tell "summarize this code"
-el dude ask "what's the best approach?"
+Send a message and wait for response:
+```bash
+el dude ask "What is 2+2?"
+```
 
-# List all zombies
+Send a message without waiting:
+```bash
+el dude tell "Background task: analyze this dataset"
+```
+
+View all messages:
+```bash
+el dude log
+```
+
+List all sessions:
+```bash
 el ls
+```
 
-# Kill a zombie
-el kill dude
+Kill a session:
+```bash
+el dude kill
+```
 
-# Kill all zombies
+Kill all sessions:
+```bash
 el kill all
 ```
 
-## How
+## How It Works
 
-El spawns Claude Code processes and owns their stdin/stdout pipes. Messages route through Erlang message passing, so they always get there.
+El spawns Claude Code as a background process and routes messages via stdin/stdout. Each session is owned and managed independently.
 
-Built on [`claude_code`](https://hex.pm/packages/claude_code), an Elixir SDK that wraps Claude CLI as GenServers.
+Built on the Erlang/OTP supervision model. Sessions crash, they restart. It just works.
+
+## Why
+
+Multi-agent Claude workflows need reliable inter-process messaging. El solves it with the simplest possible interface: one process, one CLI.
