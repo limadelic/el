@@ -27,8 +27,10 @@ defmodule TellScenarioTest do
 
     # Step 3: Log should show the message attempt was recorded
     log = El.log(name)
+
     assert Enum.any?(log, fn {type, msg, _} ->
-      type == "tell" && msg == message
-    end), "Message should appear in log: #{inspect(log)}"
+             type == "tell" && msg == message
+           end),
+           "Message should appear in log: #{inspect(log)}"
   end
 end

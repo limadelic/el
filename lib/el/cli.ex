@@ -16,11 +16,7 @@ defmodule El.CLI do
       {:ok, daemon_node} ->
         :rpc.call(daemon_node, El, :local_ls, [])
         |> Enum.each(fn name ->
-          if session_alive?(name, daemon_node) do
-            IO.puts(Atom.to_string(name))
-          else
-            IO.puts("(#{name})")
-          end
+          IO.puts(Atom.to_string(name))
         end)
 
       :not_found ->
@@ -325,19 +321,6 @@ defmodule El.CLI do
     node_file = Path.expand("~/.el/daemon_node")
     File.mkdir_p!(Path.dirname(node_file))
     File.write!(node_file, Atom.to_string(Node.self()))
-  end
-
-  defp session_alive?(name, daemon_node) do
-    if daemon_node && daemon_node != Node.self() do
-      # RPC to daemon node
-      try do
-        :rpc.call(daemon_node, El.Session, :alive?, [name]) == true
-      catch
-        :error, _ -> false
-      end
-    else
-      El.Session.alive?(name)
-    end
   end
 
   defp spawn_daemon(name) do

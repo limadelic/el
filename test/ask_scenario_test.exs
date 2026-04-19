@@ -16,19 +16,22 @@ defmodule AskScenarioTest do
     assert El.Session.alive?(name), "Session should be alive after start"
 
     # Step 2: Ask the session — may fail if Claude CLI unavailable
-    response = try do
-      El.ask(name, question)
-    catch
-      :exit, _ ->
-        # ClaudeCode initialization failed (expected in test env without CLI)
-        "(ClaudeCode unavailable)"
-    end
+    response =
+      try do
+        El.ask(name, question)
+      catch
+        :exit, _ ->
+          # ClaudeCode initialization failed (expected in test env without CLI)
+          "(ClaudeCode unavailable)"
+      end
 
     # Step 3: Log should show the ask and response
     log = El.log(name)
+
     assert Enum.any?(log, fn {type, msg, _resp} ->
-      type == "ask" && msg == question
-    end), "Question should appear in log: #{inspect(log)}"
+             type == "ask" && msg == question
+           end),
+           "Question should appear in log: #{inspect(log)}"
 
     # Step 4: If Claude is available, response should contain answer (2)
     # If not available, response is "(ClaudeCode unavailable)" which is OK
