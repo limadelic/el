@@ -5,7 +5,7 @@ defmodule El.CLI do
 
   defp main_impl([]) do
     IO.puts(
-      "usage: el ls | el <name> [&] | el <name> tell <message> | el <name> ask <message> | el <name> log | el <name> kill | el kill all"
+      "usage: el ls | el <name> | el <name> tell <message> | el <name> ask <message> | el <name> log | el <name> kill | el kill all"
     )
   end
 
@@ -24,7 +24,7 @@ defmodule El.CLI do
         end)
 
       :not_found ->
-        IO.puts(:stderr, "No sessions running. Start one: el <name> &")
+        IO.puts(:stderr, "No sessions running. Start one: el <name>")
         System.halt(1)
     end
   end
@@ -71,7 +71,7 @@ defmodule El.CLI do
         end
 
       :not_found ->
-        IO.puts(:stderr, "No sessions running. Start one: el #{name} &")
+        IO.puts(:stderr, "No sessions running. Start one: el #{name}")
         System.halt(1)
     end
   end
@@ -93,7 +93,7 @@ defmodule El.CLI do
         end
 
       :not_found ->
-        IO.puts(:stderr, "No sessions running. Start one: el #{name} &")
+        IO.puts(:stderr, "No sessions running. Start one: el #{name}")
         System.halt(1)
     end
   end
@@ -113,7 +113,7 @@ defmodule El.CLI do
         end)
 
       :not_found ->
-        IO.puts(:stderr, "No sessions running. Start one: el #{name} &")
+        IO.puts(:stderr, "No sessions running. Start one: el #{name}")
         System.halt(1)
     end
   end
@@ -127,7 +127,7 @@ defmodule El.CLI do
         :rpc.call(daemon_node, El, :kill, [name_atom])
 
       :not_found ->
-        IO.puts(:stderr, "No sessions running. Start one: el #{name} &")
+        IO.puts(:stderr, "No sessions running. Start one: el #{name}")
         System.halt(1)
     end
   end
