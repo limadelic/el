@@ -13,11 +13,19 @@ defmodule El.Application do
     opts = [strategy: :one_for_one, name: El.Supervisor]
     result = Supervisor.start_link(children, opts)
 
-    spawn(fn ->
-      args = Burrito.Util.Args.argv()
-      El.CLI.main(args)
-      System.halt(0)
-    end)
+    if System.get_env("RELEASE_NAME") do
+      spawn(fn ->
+        try do
+          args = Burrito.Util.Args.argv()
+          El.CLI.main(args)
+          System.halt(0)
+        catch
+          _kind, reason ->
+            IO.puts(:stderr, "el: #{inspect(reason)}")
+            System.halt(1)
+        end
+      end)
+    end
 
     result
   end

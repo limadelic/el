@@ -24,7 +24,7 @@ defmodule El.CLI do
         end)
 
       :not_found ->
-        IO.puts(:stderr, "Error: No daemon found. Start with: el <name> &")
+        IO.puts(:stderr, "No sessions running. Start one: el <name> &")
         System.halt(1)
     end
   end
@@ -105,7 +105,7 @@ defmodule El.CLI do
         end
 
       :not_found ->
-        IO.puts(:stderr, "Error: No daemon found. Start with: el #{name} &")
+        IO.puts(:stderr, "No sessions running. Start one: el #{name} &")
         System.halt(1)
     end
   end
@@ -127,7 +127,7 @@ defmodule El.CLI do
         end
 
       :not_found ->
-        IO.puts(:stderr, "Error: No daemon found. Start with: el #{name} &")
+        IO.puts(:stderr, "No sessions running. Start one: el #{name} &")
         System.halt(1)
     end
   end
@@ -147,7 +147,7 @@ defmodule El.CLI do
         end)
 
       :not_found ->
-        IO.puts(:stderr, "Error: No daemon found. Start with: el #{name} &")
+        IO.puts(:stderr, "No sessions running. Start one: el #{name} &")
         System.halt(1)
     end
   end
@@ -161,7 +161,7 @@ defmodule El.CLI do
         :rpc.call(daemon_node, El, :kill, [name_atom])
 
       :not_found ->
-        IO.puts(:stderr, "Error: No daemon found. Start with: el #{name} &")
+        IO.puts(:stderr, "No sessions running. Start one: el #{name} &")
         System.halt(1)
     end
   end
@@ -184,7 +184,7 @@ defmodule El.CLI do
       _ -> :ok
     end
 
-    IO.puts("All sessions killed, daemon cleaned up")
+    IO.puts("All sessions killed")
   end
 
   defp main_impl(_) do
@@ -242,7 +242,11 @@ defmodule El.CLI do
   end
 
   defp ensure_epmd do
-    System.cmd("epmd", ["-daemon"], stderr_to_stdout: true)
+    try do
+      System.cmd("epmd", ["-daemon"], stderr_to_stdout: true)
+    catch
+      _, _ -> :ok
+    end
     :timer.sleep(100)
   end
 
@@ -308,14 +312,11 @@ defmodule El.CLI do
           if not Node.alive?() do
             client_node = :"el_client_#{System.os_time()}@127.0.0.1"
 
-            case Node.start(client_node) do
-              {:ok, _} ->
-                :ok
-
-              {:error, {:already_started, _}} ->
-                :ok
-
-              {:error, _reason} ->
+            start_task = Task.async(fn -> Node.start(client_node) end)
+            case Task.yield(start_task, 2000) || Task.shutdown(start_task) do
+              {:ok, {:ok, _}} -> :ok
+              {:ok, {:error, {:already_started, _}}} -> :ok
+              _ ->
                 cleanup_stale_node(node_file)
                 throw(:connection_failed)
             end
@@ -324,17 +325,15 @@ defmodule El.CLI do
           # Try to connect to daemon
           Node.set_cookie(:el)
 
-          case Node.connect(node_name) do
-            true ->
+          task = Task.async(fn -> Node.connect(node_name) end)
+          case Task.yield(task, 2000) || Task.shutdown(task) do
+            {:ok, true} ->
               {:ok, node_name}
-
-            false ->
+            {:ok, :ignored} ->
+              {:ok, node_name}
+            _ ->
               cleanup_stale_node(node_file)
               :not_found
-
-            :ignored ->
-              # Already connected or is self
-              {:ok, node_name}
           end
         catch
           :connection_failed ->
@@ -389,7 +388,7 @@ defmodule El.CLI do
   end
 
   defp retry_start_node(retries_left) when retries_left <= 0 do
-    IO.puts(:stderr, "FATAL: Cannot start daemon node el@127.0.0.1 after retries")
+    IO.puts(:stderr, "FATAL: Cannot start el@127.0.0.1 after retries")
     System.halt(1)
   end
 
