@@ -29,62 +29,28 @@ defmodule El.CLI do
     end
   end
 
+  defp main_impl(["--daemon", name]) do
+    daemon_node = ensure_daemon_node()
+    name_atom = String.to_atom(name)
+    if daemon_node && daemon_node != Node.self() do
+      :rpc.call(daemon_node, El, :start, [name_atom])
+    else
+      El.start(name_atom)
+    end
+    IO.puts("el: #{name} is up on #{Node.self()}")
+    Process.sleep(:infinity)
+  end
+
   defp main_impl([name]) do
-    daemon_node = ensure_daemon_node()
-    name_atom = String.to_atom(name)
+    ensure_epmd()
+    case find_daemon_node() do
+      {:ok, daemon_node} ->
+        name_atom = String.to_atom(name)
+        :rpc.call(daemon_node, El, :start, [name_atom])
+        IO.puts("el: #{name} is up")
 
-    if daemon_node && daemon_node != Node.self() do
-      # We're a client connecting to daemon
-      :rpc.call(daemon_node, El, :start, [name_atom])
-      # Check if stdin is a TTY (interactive) or not (backgrounded/headless)
-      if is_tty?() do
-        # Interactive: run PTY
-        case catch_exit(fn -> El.PTY.run(name_atom) end) do
-          :ok -> :ok
-          _ -> run_as_zombie(name)
-        end
-      else
-        # Backgrounded/headless: run as zombie daemon
-        run_as_zombie(name)
-      end
-    else
-      # We are the daemon
-      El.start(name_atom)
-      # Check if stdin is a TTY (interactive) or not (backgrounded/headless)
-      if is_tty?() do
-        # Interactive: run PTY
-        case catch_exit(fn -> El.PTY.run(name_atom) end) do
-          :ok -> :ok
-          _ -> run_as_zombie(name)
-        end
-      else
-        # Backgrounded/headless: run as zombie daemon
-        run_as_zombie(name)
-      end
-    end
-  end
-
-  defp main_impl([name, "&"]) do
-    daemon_node = ensure_daemon_node()
-    name_atom = String.to_atom(name)
-
-    if daemon_node && daemon_node != Node.self() do
-      # We're a client connecting to daemon
-      :rpc.call(daemon_node, El, :start, [name_atom])
-    else
-      # We are the daemon
-      El.start(name_atom)
-    end
-
-    run_as_zombie(name)
-  end
-
-  defp catch_exit(fun) do
-    try do
-      fun.()
-      :ok
-    catch
-      :exit, _ -> :error
+      :not_found ->
+        spawn_daemon(name)
     end
   end
 
@@ -374,17 +340,39 @@ defmodule El.CLI do
     end
   end
 
-  defp is_tty? do
-    case :io.columns() do
-      {:ok, _} -> true
-      {:error, :enoent} -> false
-      _ -> false
+  defp spawn_daemon(name) do
+    bin = System.get_env("__BURRITO_BIN_PATH")
+    if bin do
+      :os.cmd(String.to_charlist("nohup #{bin} --daemon #{name} > /dev/null 2>&1 &"))
+      wait_for_daemon(name, 50)
+    else
+      daemon_node = ensure_daemon_node()
+      name_atom = String.to_atom(name)
+      if daemon_node && daemon_node != Node.self() do
+        :rpc.call(daemon_node, El, :start, [name_atom])
+      else
+        El.start(name_atom)
+      end
+      IO.puts("el: #{name} is up on #{Node.self()}")
+      Process.sleep(:infinity)
     end
   end
 
-  defp run_as_zombie(name) do
-    IO.puts("el: #{name} is up on #{Node.self()}")
-    Process.sleep(:infinity)
+  defp wait_for_daemon(_name, 0) do
+    IO.puts(:stderr, "el: timeout waiting for daemon to start")
+    System.halt(1)
+  end
+
+  defp wait_for_daemon(name, retries) do
+    :timer.sleep(200)
+    case find_daemon_node() do
+      {:ok, daemon_node} ->
+        name_atom = String.to_atom(name)
+        :rpc.call(daemon_node, El, :start, [name_atom])
+        IO.puts("el: #{name} is up")
+      :not_found ->
+        wait_for_daemon(name, retries - 1)
+    end
   end
 
   defp retry_start_node(retries_left) when retries_left <= 0 do
