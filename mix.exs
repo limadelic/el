@@ -8,7 +8,20 @@ defmodule El.MixProject do
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      escript: [main_module: El.CLI]
+      escript: [main_module: El.CLI],
+      package: package()
+    ]
+  end
+
+  defp package do
+    [
+      name: "el",
+      description: "CLI for managing headless Claude Code sessions",
+      licenses: ["MIT"],
+      links: %{
+        "GitHub" => "https://github.com/limadelic/el"
+      },
+      source_url: "https://github.com/limadelic/el"
     ]
   end
 
