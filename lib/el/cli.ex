@@ -167,13 +167,22 @@ defmodule El.CLI do
   end
 
   defp main_impl(["kill", "all"]) do
-    # Duke Nukem style: kill everything using os:cmd which works from escript
     :os.cmd(~c"pkill -9 beam 2>/dev/null")
     :os.cmd(~c"pkill -9 epmd 2>/dev/null")
     :timer.sleep(500)
 
-    # Clean up daemon_node file
     cleanup_stale_node(Path.expand("~/.el/daemon_node"))
+
+    burrito_cache = Path.expand("~/Library/Application Support/.burrito")
+    case File.ls(burrito_cache) do
+      {:ok, entries} ->
+        entries
+        |> Enum.filter(&String.starts_with?(&1, "el_"))
+        |> Enum.each(fn dir ->
+          File.rm_rf!(Path.join(burrito_cache, dir))
+        end)
+      _ -> :ok
+    end
 
     IO.puts("All sessions killed, daemon cleaned up")
   end
