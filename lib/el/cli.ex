@@ -184,7 +184,6 @@ defmodule El.CLI do
 
   defp ensure_daemon_node do
     ensure_epmd()
-
     if Node.alive?() do
       write_daemon_node()
       Node.self()
@@ -192,23 +191,13 @@ defmodule El.CLI do
       case Node.start(:"el@127.0.0.1") do
         {:ok, _} ->
           Node.set_cookie(:el)
-
-          case Application.ensure_all_started(:el) do
-            {:ok, _} -> :ok
-            {:error, {:already_started, _}} -> :ok
-          end
-
+          Application.ensure_all_started(:el)
           write_daemon_node()
           Node.self()
 
         {:error, {:already_started, _}} ->
           Node.set_cookie(:el)
-
-          case Application.ensure_all_started(:el) do
-            {:ok, _} -> :ok
-            {:error, {:already_started, _}} -> :ok
-          end
-
+          Application.ensure_all_started(:el)
           write_daemon_node()
           Node.self()
 
