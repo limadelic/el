@@ -43,7 +43,7 @@ defmodule El.MixProject do
     ]
   end
 
-  defp releases do
+  def releases do
     [
       el: [
         steps: [:assemble, &Burrito.wrap/1],
