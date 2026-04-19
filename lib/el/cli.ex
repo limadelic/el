@@ -4,7 +4,7 @@ defmodule El.CLI do
   end
 
   defp main_impl([]) do
-    IO.puts("usage: el ls | el <name> [&] | el <name> tell <message> | el <name> ask <message> | el <name> log | el <name> kill")
+    IO.puts("usage: el ls | el <name> [&] | el <name> tell <message> | el <name> ask <message> | el <name> log | el <name> kill | el kill all")
   end
 
   defp main_impl(["ls"]) do
@@ -157,6 +157,18 @@ defmodule El.CLI do
     end
   end
 
+  defp main_impl(["kill", "all"]) do
+    # Duke Nukem style: kill everything using os:cmd which works from escript
+    :os.cmd(~c"pkill -9 beam 2>/dev/null")
+    :os.cmd(~c"pkill -9 epmd 2>/dev/null")
+    :timer.sleep(500)
+
+    # Clean up daemon_node file
+    cleanup_stale_node(Path.expand("~/.el/daemon_node"))
+
+    IO.puts("All sessions killed, daemon cleaned up")
+  end
+
   defp main_impl(_) do
     main_impl([])
   end
@@ -182,17 +194,8 @@ defmodule El.CLI do
 
         {:error, _reason} ->
           nuke_epmd()
-          case Node.start(:"el@127.0.0.1") do
-            {:ok, _} ->
-              Node.set_cookie(:el)
-              {:ok, _} = Application.ensure_all_started(:el)
-              write_daemon_node()
-              Node.self()
-
-            {:error, reason} ->
-              IO.puts(:stderr, "FATAL: Cannot start daemon node el@127.0.0.1: #{inspect(reason)}")
-              System.halt(1)
-          end
+          # After nuke, retry with exponential backoff in case kernel still holds the port
+          retry_start_node(5)
       end
     end
   end
@@ -226,7 +229,31 @@ defmodule El.CLI do
   end
 
   defp nuke_epmd do
-    System.cmd("pkill", ["-9", "beam.smp"], stderr_to_stdout: true)
+    # Query stale nodes BEFORE restarting epmd
+    stale_ports =
+      case :erl_epmd.names() do
+        {:ok, names} ->
+          names
+          |> Enum.filter(fn {node_name, _port} ->
+            String.starts_with?(to_string(node_name), "el")
+          end)
+          |> Enum.map(fn {_node_name, port} -> port end)
+        _ -> []
+      end
+
+    # Kill any processes listening on those ports
+    Enum.each(stale_ports, fn port ->
+      case :os.cmd(~c"lsof -ti :#{port} 2>/dev/null | head -1") do
+        [] -> :ok
+        pid_str ->
+          pid = pid_str |> List.to_string() |> String.trim()
+          if pid != "" do
+            :os.cmd(~c"kill -9 #{pid} 2>/dev/null")
+          end
+      end
+    end)
+
+    # Kill epmd itself to clear its registry
     System.cmd("pkill", ["-9", "epmd"], stderr_to_stdout: true)
     :timer.sleep(500)
     System.cmd("epmd", ["-daemon"], stderr_to_stdout: true)
@@ -326,5 +353,26 @@ defmodule El.CLI do
   defp run_as_zombie(name) do
     IO.puts("el: #{name} is up on #{Node.self()}")
     Process.sleep(:infinity)
+  end
+
+  defp retry_start_node(retries_left) when retries_left <= 0 do
+    IO.puts(:stderr, "FATAL: Cannot start daemon node el@127.0.0.1 after retries")
+    System.halt(1)
+  end
+
+  defp retry_start_node(retries_left) do
+    delay_ms = (6 - retries_left) * 100
+    :timer.sleep(delay_ms)
+
+    case Node.start(:"el@127.0.0.1") do
+      {:ok, _} ->
+        Node.set_cookie(:el)
+        {:ok, _} = Application.ensure_all_started(:el)
+        write_daemon_node()
+        Node.self()
+
+      {:error, _reason} ->
+        retry_start_node(retries_left - 1)
+    end
   end
 end
