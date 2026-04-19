@@ -10,7 +10,6 @@ defmodule El.CLI do
   end
 
   defp main_impl(["ls"]) do
-    IO.puts(:stderr, "[el:debug] main_impl ls")
     ensure_epmd()
 
     case find_daemon_node() do
@@ -220,7 +219,6 @@ defmodule El.CLI do
   end
 
   defp find_daemon_node do
-    IO.puts(:stderr, "[el:debug] find_daemon_node start")
     # Try to find an existing daemon node (for client invocations)
     ensure_epmd()
 
@@ -244,13 +242,11 @@ defmodule El.CLI do
   end
 
   defp ensure_epmd do
-    IO.puts(:stderr, "[el:debug] ensure_epmd start")
     try do
       System.cmd("epmd", ["-daemon"], stderr_to_stdout: true)
     catch
       _, _ -> :ok
     end
-    IO.puts(:stderr, "[el:debug] ensure_epmd done, sleeping 100ms")
     :timer.sleep(100)
   end
 

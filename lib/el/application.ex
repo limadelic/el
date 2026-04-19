@@ -15,11 +15,8 @@ defmodule El.Application do
 
     spawn(fn ->
       try do
-        IO.puts(:stderr, "[el:debug] spawn started")
         args = Burrito.Util.Args.argv()
-        IO.puts(:stderr, "[el:debug] args=#{inspect(args)}")
         El.CLI.main(args)
-        IO.puts(:stderr, "[el:debug] CLI done, halting")
         System.halt(0)
       catch
         _kind, _reason -> :ok
