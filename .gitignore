@@ -10,4 +10,5 @@ el-*.tar
 .idea/
 CLAUDE.local.md
 burrito_out/
-el
+/el
+status.json
