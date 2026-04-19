@@ -6,7 +6,6 @@ defmodule El.ClaudeCode do
 
     ClaudeCode.Session.start_link(
       adapter: {ClaudeCode.Adapter.Port, [cli_path: cli_path]},
-      model: "claude-opus",
       session_id: session_id
     )
   end
