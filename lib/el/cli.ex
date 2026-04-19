@@ -4,7 +4,9 @@ defmodule El.CLI do
   end
 
   defp main_impl([]) do
-    IO.puts("usage: el ls | el <name> [&] | el <name> tell <message> | el <name> ask <message> | el <name> log | el <name> kill | el kill all")
+    IO.puts(
+      "usage: el ls | el <name> [&] | el <name> tell <message> | el <name> ask <message> | el <name> log | el <name> kill | el kill all"
+    )
   end
 
   defp main_impl(["ls"]) do
@@ -20,6 +22,7 @@ defmodule El.CLI do
             IO.puts("(#{name})")
           end
         end)
+
       :not_found ->
         IO.puts(:stderr, "Error: No daemon found. Start with: el <name> &")
         System.halt(1)
@@ -85,7 +88,6 @@ defmodule El.CLI do
     end
   end
 
-
   defp main_impl([name, "tell" | words]) do
     ensure_epmd()
     msg = Enum.join(words, " ")
@@ -97,9 +99,11 @@ defmodule El.CLI do
           {:badrpc, reason} ->
             IO.puts(:stderr, "Error: #{inspect(reason)}")
             System.halt(1)
+
           response ->
             IO.write(response)
         end
+
       :not_found ->
         IO.puts(:stderr, "Error: No daemon found. Start with: el #{name} &")
         System.halt(1)
@@ -117,9 +121,11 @@ defmodule El.CLI do
           {:badrpc, reason} ->
             IO.puts(:stderr, "Error: #{inspect(reason)}")
             System.halt(1)
+
           response ->
             IO.write(response)
         end
+
       :not_found ->
         IO.puts(:stderr, "Error: No daemon found. Start with: el #{name} &")
         System.halt(1)
@@ -133,11 +139,13 @@ defmodule El.CLI do
     case find_daemon_node() do
       {:ok, daemon_node} ->
         log = :rpc.call(daemon_node, El, :log, [name_atom])
+
         log
         |> Enum.each(fn {type, message, response} ->
           IO.puts("[#{type}] #{message}")
           IO.puts(response)
         end)
+
       :not_found ->
         IO.puts(:stderr, "Error: No daemon found. Start with: el #{name} &")
         System.halt(1)
@@ -151,6 +159,7 @@ defmodule El.CLI do
     case find_daemon_node() do
       {:ok, daemon_node} ->
         :rpc.call(daemon_node, El, :kill, [name_atom])
+
       :not_found ->
         IO.puts(:stderr, "Error: No daemon found. Start with: el #{name} &")
         System.halt(1)
@@ -177,18 +186,29 @@ defmodule El.CLI do
     ensure_epmd()
 
     if Node.alive?() do
+      write_daemon_node()
       Node.self()
     else
       case Node.start(:"el@127.0.0.1") do
         {:ok, _} ->
           Node.set_cookie(:el)
-          {:ok, _} = Application.ensure_all_started(:el)
+
+          case Application.ensure_all_started(:el) do
+            {:ok, _} -> :ok
+            {:error, {:already_started, _}} -> :ok
+          end
+
           write_daemon_node()
           Node.self()
 
         {:error, {:already_started, _}} ->
           Node.set_cookie(:el)
-          {:ok, _} = Application.ensure_all_started(:el)
+
+          case Application.ensure_all_started(:el) do
+            {:ok, _} -> :ok
+            {:error, {:already_started, _}} -> :ok
+          end
+
           write_daemon_node()
           Node.self()
 
@@ -238,15 +258,20 @@ defmodule El.CLI do
             String.starts_with?(to_string(node_name), "el")
           end)
           |> Enum.map(fn {_node_name, port} -> port end)
-        _ -> []
+
+        _ ->
+          []
       end
 
     # Kill any processes listening on those ports
     Enum.each(stale_ports, fn port ->
       case :os.cmd(~c"lsof -ti :#{port} 2>/dev/null | head -1") do
-        [] -> :ok
+        [] ->
+          :ok
+
         pid_str ->
           pid = pid_str |> List.to_string() |> String.trim()
+
           if pid != "" do
             :os.cmd(~c"kill -9 #{pid} 2>/dev/null")
           end
@@ -284,22 +309,31 @@ defmodule El.CLI do
           # If we're not alive, start a client node
           if not Node.alive?() do
             client_node = :"el_client_#{System.os_time()}@127.0.0.1"
+
             case Node.start(client_node) do
-              {:ok, _} -> :ok
-              {:error, {:already_started, _}} -> :ok
+              {:ok, _} ->
+                :ok
+
+              {:error, {:already_started, _}} ->
+                :ok
+
               {:error, _reason} ->
                 cleanup_stale_node(node_file)
-                throw :connection_failed
+                throw(:connection_failed)
             end
           end
 
           # Try to connect to daemon
           Node.set_cookie(:el)
+
           case Node.connect(node_name) do
-            true -> {:ok, node_name}
+            true ->
+              {:ok, node_name}
+
             false ->
               cleanup_stale_node(node_file)
               :not_found
+
             :ignored ->
               # Already connected or is self
               {:ok, node_name}
@@ -307,6 +341,7 @@ defmodule El.CLI do
         catch
           :connection_failed ->
             :not_found
+
           _, _ ->
             cleanup_stale_node(node_file)
             :not_found
@@ -367,7 +402,12 @@ defmodule El.CLI do
     case Node.start(:"el@127.0.0.1") do
       {:ok, _} ->
         Node.set_cookie(:el)
-        {:ok, _} = Application.ensure_all_started(:el)
+
+        case Application.ensure_all_started(:el) do
+          {:ok, _} -> :ok
+          {:error, {:already_started, _}} -> :ok
+        end
+
         write_daemon_node()
         Node.self()
 

@@ -23,10 +23,12 @@ defmodule El.PTY do
     pty = Port.open({:spawn, "script -q /dev/null #{cmd}"}, [:binary, :stream, :exit_status])
     {:ok, tty_out} = :file.open(~c"/dev/tty", [:write, :binary, :raw])
     me = self()
+
     spawn_link(fn ->
       {:ok, tty_in} = :file.open(~c"/dev/tty", [:read, :binary, :raw])
       stdin_loop(tty_in, me)
     end)
+
     {:ok, %{pty: pty, tty_out: tty_out}}
   end
 
@@ -56,7 +58,9 @@ defmodule El.PTY do
       {:ok, data} ->
         send(parent, {:stdin, data})
         stdin_loop(tty_in, parent)
-      _ -> :ok
+
+      _ ->
+        :ok
     end
   end
 end

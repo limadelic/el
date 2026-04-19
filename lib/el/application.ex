@@ -14,6 +14,14 @@ defmodule El.Application do
     ]
 
     opts = [strategy: :one_for_one, name: El.Supervisor]
-    Supervisor.start_link(children, opts)
+    result = Supervisor.start_link(children, opts)
+
+    spawn(fn ->
+      args = Burrito.Util.Args.argv()
+      El.CLI.main(args)
+      System.halt(0)
+    end)
+
+    result
   end
 end

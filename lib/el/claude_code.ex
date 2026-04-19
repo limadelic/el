@@ -18,6 +18,7 @@ defmodule El.ClaudeCode do
   defp random_uuid do
     bytes = :crypto.strong_rand_bytes(16)
     hex = Base.encode16(bytes, case: :lower)
+
     "#{String.slice(hex, 0, 8)}-#{String.slice(hex, 8, 4)}-#{String.slice(hex, 12, 4)}-#{String.slice(hex, 16, 4)}-#{String.slice(hex, 20, 12)}"
   end
 end
