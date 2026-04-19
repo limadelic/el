@@ -1,32 +1,38 @@
 # El
 
-*The telepathic bridge between Claude processes. El Dude abides.*
+Spawn headless Claude Code sessions and chat with them from anywhere. Built on stdin/stdout pipes — no message loss, no latency.
 
-Claude Code agents can't talk to each other reliably. The inbox polling drops messages, the file-based messaging breaks across backends. Nobody in the wild has multi-agent Claude workflows working as a daily driver.
+## Install
 
-Turns out the problem is receiving, not sending. And the only reliable port is stdin — zero latency, always available, no feature flags. You just have to own the process.
+```bash
+brew tap limadelic/el
+brew install el
+```
 
-So that's what El does. It spawns Claude processes, owns their stdin/stdout pipes, and routes messages between them. Session A says something to Session B, and it actually gets there. Every time.
+## What are zombies?
+
+A "zombie" is a Claude Code process running in the background, owned by El. You can spawn it once and talk to it forever.
+
+```bash
+# Spawn a zombie named "dude"
+el dude &
+
+# Later, chat with it
+el dude tell "summarize this code"
+el dude ask "what's the best approach?"
+
+# List all zombies
+el ls
+
+# Kill a zombie
+el kill dude
+
+# Kill all zombies
+el kill all
+```
 
 ## How
 
-Built on top of [`claude_code`](https://hex.pm/packages/claude_code) — an Elixir SDK that already wraps Claude CLI as GenServers via Erlang Ports with bidirectional NDJSON streaming. All the hard plumbing is done. El just adds the horizontal layer: sessions talking to sessions.
+El spawns Claude Code processes and owns their stdin/stdout pipes. Messages route through Erlang message passing, so they always get there.
 
-```elixir
-# Start two named sessions
-{:ok, _} = El.start(:alice, system_prompt: "You are Alice")
-{:ok, _} = El.start(:bob, system_prompt: "You are Bob")
-
-# Alice talks to Bob
-El.tell(:alice, :bob, "knock knock")
-```
-
-That's it. Two BEAM processes, two Claude processes, one message.
-
-## Why Elixir
-
-GenServer wrapping a Port is the most classic Erlang pattern there is. The BEAM gives us process isolation, supervision (crash = restart), and free inter-process messaging. We don't need a message broker, a queue, or an API. Just processes talking to processes.
-
-## Lineage
-
-El is a seed of [Elita](https://github.com/limadelic/elita) — the full agentic platform. Patterns learned here feed into Elita later. El solves the immediate problem: make multi-agent Claude work today.
+Built on [`claude_code`](https://hex.pm/packages/claude_code), an Elixir SDK that wraps Claude CLI as GenServers.
