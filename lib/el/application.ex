@@ -13,22 +13,18 @@ defmodule El.Application do
     opts = [strategy: :one_for_one, name: El.Supervisor]
     result = Supervisor.start_link(children, opts)
 
-    if System.get_env("RELEASE_NAME") do
-      spawn(fn ->
-        try do
-          IO.puts(:stderr, "[el:debug] spawn started")
-          args = Burrito.Util.Args.argv()
-          IO.puts(:stderr, "[el:debug] args=#{inspect(args)}")
-          El.CLI.main(args)
-          IO.puts(:stderr, "[el:debug] CLI done, halting")
-          System.halt(0)
-        catch
-          _kind, reason ->
-            IO.puts(:stderr, "[el:debug] crash: #{inspect(reason)}")
-            System.halt(1)
-        end
-      end)
-    end
+    spawn(fn ->
+      try do
+        IO.puts(:stderr, "[el:debug] spawn started")
+        args = Burrito.Util.Args.argv()
+        IO.puts(:stderr, "[el:debug] args=#{inspect(args)}")
+        El.CLI.main(args)
+        IO.puts(:stderr, "[el:debug] CLI done, halting")
+        System.halt(0)
+      catch
+        _kind, _reason -> :ok
+      end
+    end)
 
     result
   end
