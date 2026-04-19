@@ -9,3 +9,5 @@ el-*.tar
 /tmp/
 .idea/
 CLAUDE.local.md
+burrito_out/
+el
