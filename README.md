@@ -8,7 +8,7 @@ Start a Claude session in the background, send it messages, get responses, view 
 
 **Homebrew** (recommended):
 ```bash
-brew install limadelic/el/el
+brew install limadelic/tap/el
 ```
 
 **Elixir devs**:
@@ -20,7 +20,7 @@ mix escript.install hex el
 
 Start a zombie session:
 ```bash
-el dude &
+el dude
 ```
 
 Send a message and wait for response:
