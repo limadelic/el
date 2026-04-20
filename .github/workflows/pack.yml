@@ -15,14 +15,11 @@ jobs:
         with:
           otp-version: '27'
           elixir-version: '1.19'
-      - name: Install Zig 0.15.2
-        run: |
-          brew install zig@0.15
-          brew link --overwrite zig@0.15
-          zig version
       - run: mix deps.get
       - run: MIX_ENV=prod mix release --overwrite
+      - name: Package
+        run: tar czf el-macos-arm64.tar.gz -C _build/prod/rel el
       - uses: actions/upload-artifact@v4
         with:
-          name: el_macos_arm64
-          path: burrito_out/el_macos_arm64
+          name: el-macos-arm64
+          path: el-macos-arm64.tar.gz

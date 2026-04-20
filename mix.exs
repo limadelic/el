@@ -9,8 +9,7 @@ defmodule El.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       escript: [main_module: El.CLI],
-      package: package(),
-      releases: releases()
+      package: package()
     ]
   end
 
@@ -38,21 +37,7 @@ defmodule El.MixProject do
   defp deps do
     [
       {:claude_code, "~> 0.36"},
-      {:burrito, "~> 1.0"},
       {:cabbage, "~> 0.4", only: :test}
-    ]
-  end
-
-  def releases do
-    [
-      el: [
-        steps: [:assemble, &Burrito.wrap/1],
-        burrito: [
-          targets: [
-            macos_arm64: [os: :darwin, cpu: :aarch64]
-          ]
-        ]
-      ]
     ]
   end
 end
