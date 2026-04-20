@@ -40,7 +40,7 @@ FORMULA
 
 git add Formula/el.rb
 git commit -m "bump to v${VERSION}"
-git push
+GITHUB_TOKEN=$GITHUB_LIMADELIC git push
 
 echo "v${VERSION} released"
 echo "arm64 sha: ${SHA_ARM}"
