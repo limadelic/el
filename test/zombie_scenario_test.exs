@@ -24,6 +24,8 @@ defmodule ZombieScenarioTest do
 
     # Step 4: List should still show it (as dead/tombstone)
     sessions_after = El.ls()
-    assert name in sessions_after, "Dead session should appear in tombstone ls: #{inspect(sessions_after)}"
+
+    assert name in sessions_after,
+           "Dead session should appear in tombstone ls: #{inspect(sessions_after)}"
   end
 end

@@ -29,17 +29,20 @@ defmodule El.CLI do
   defp main_impl(["--daemon", name]) do
     daemon_node = ensure_daemon_node()
     name_atom = String.to_atom(name)
+
     if daemon_node && daemon_node != Node.self() do
       :rpc.call(daemon_node, El, :start, [name_atom])
     else
       El.start(name_atom)
     end
+
     IO.puts("el: #{name} is up on #{Node.self()}")
     Process.sleep(:infinity)
   end
 
   defp main_impl([name]) do
     ensure_epmd()
+
     case find_daemon_node() do
       {:ok, daemon_node} ->
         name_atom = String.to_atom(name)
@@ -137,6 +140,7 @@ defmodule El.CLI do
     cleanup_stale_node(Path.expand("~/.el/daemon_node"))
 
     burrito_cache = Path.expand("~/Library/Application Support/.burrito")
+
     case File.ls(burrito_cache) do
       {:ok, entries} ->
         entries
@@ -144,7 +148,9 @@ defmodule El.CLI do
         |> Enum.each(fn dir ->
           File.rm_rf!(Path.join(burrito_cache, dir))
         end)
-      _ -> :ok
+
+      _ ->
+        :ok
     end
 
     IO.puts("All sessions killed")
@@ -156,6 +162,7 @@ defmodule El.CLI do
 
   defp ensure_daemon_node do
     ensure_epmd()
+
     if Node.alive?() do
       write_daemon_node()
       Node.self()
@@ -210,6 +217,7 @@ defmodule El.CLI do
     catch
       _, _ -> :ok
     end
+
     :timer.sleep(100)
   end
 
@@ -276,9 +284,14 @@ defmodule El.CLI do
             client_node = :"el_client_#{System.os_time()}@127.0.0.1"
 
             start_task = Task.async(fn -> Node.start(client_node) end)
+
             case Task.yield(start_task, 2000) || Task.shutdown(start_task) do
-              {:ok, {:ok, _}} -> :ok
-              {:ok, {:error, {:already_started, _}}} -> :ok
+              {:ok, {:ok, _}} ->
+                :ok
+
+              {:ok, {:error, {:already_started, _}}} ->
+                :ok
+
               _ ->
                 cleanup_stale_node(node_file)
                 throw(:connection_failed)
@@ -289,11 +302,14 @@ defmodule El.CLI do
           Node.set_cookie(:el)
 
           task = Task.async(fn -> Node.connect(node_name) end)
+
           case Task.yield(task, 2000) || Task.shutdown(task) do
             {:ok, true} ->
               {:ok, node_name}
+
             {:ok, :ignored} ->
               {:ok, node_name}
+
             _ ->
               cleanup_stale_node(node_file)
               :not_found
@@ -326,17 +342,20 @@ defmodule El.CLI do
 
   defp spawn_daemon(name) do
     bin = System.get_env("__BURRITO_BIN_PATH")
+
     if bin do
       :os.cmd(String.to_charlist("nohup #{bin} --daemon #{name} > /dev/null 2>&1 &"))
       wait_for_daemon(name, 50)
     else
       daemon_node = ensure_daemon_node()
       name_atom = String.to_atom(name)
+
       if daemon_node && daemon_node != Node.self() do
         :rpc.call(daemon_node, El, :start, [name_atom])
       else
         El.start(name_atom)
       end
+
       IO.puts("el: #{name} is up on #{Node.self()}")
     end
   end
@@ -348,11 +367,13 @@ defmodule El.CLI do
 
   defp wait_for_daemon(name, retries) do
     :timer.sleep(200)
+
     case find_daemon_node() do
       {:ok, daemon_node} ->
         name_atom = String.to_atom(name)
         :rpc.call(daemon_node, El, :start, [name_atom])
         IO.puts("el: #{name} is up")
+
       :not_found ->
         wait_for_daemon(name, retries - 1)
     end

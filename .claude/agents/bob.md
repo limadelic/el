@@ -37,3 +37,5 @@ You DONT CODE. You do only these commands.
 - For commits: stage specific files (never `git add -A`), use concise messages (max 10 words)
 - For git: never force push, never amend
 - If a command fails (tests, format), STOP and report the failure. Do NOT fix it yourself.
+- NEVER bump the version in mix.exs unless the user explicitly asks
+- Stay on release line 0.1.x — no major/minor bumps

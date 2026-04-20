@@ -6,11 +6,10 @@ echo "releasing v${VERSION}"
 
 MIX_ENV=prod mix release --overwrite
 SHA_ARM=$(shasum -a 256 burrito_out/el_macos_arm64 | awk '{print $1}')
-SHA_X86=$(shasum -a 256 burrito_out/el_macos_x86_64 | awk '{print $1}')
 
 GITHUB_TOKEN=$GITHUB_LIMADELIC gh release delete "v${VERSION}" -y -R limadelic/el 2>/dev/null || true
 GITHUB_TOKEN=$GITHUB_LIMADELIC gh release create "v${VERSION}" \
-  burrito_out/el_macos_arm64 burrito_out/el_macos_x86_64 \
+  burrito_out/el_macos_arm64 \
   --repo limadelic/el --title "v${VERSION}" --notes "v${VERSION}"
 
 TAP=/tmp/homebrew-tap
@@ -45,4 +44,3 @@ git push
 
 echo "v${VERSION} released"
 echo "arm64 sha: ${SHA_ARM}"
-echo "x86_64 sha: ${SHA_X86}"
