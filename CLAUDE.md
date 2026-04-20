@@ -9,7 +9,7 @@ Two modes — never mix them up.
 ### Installed (brew)
 - Binary: `/opt/homebrew/bin/el` (Burrito release)
 - This is the real `el` — what the el skill uses
-- Install: `brew reinstall limadelic/el/el`
+- Install: `brew reinstall limadelic/tap/el`
 - Publish: `./scripts/release.sh` (bob `release` command)
 
 ### Dev (local)
