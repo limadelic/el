@@ -6,7 +6,7 @@ defmodule El.Session do
   end
 
   def tell(name, message) do
-    GenServer.call(via_tuple(name), {:tell, message}, :infinity)
+    GenServer.cast(via_tuple(name), {:tell, message})
   end
 
   def ask(name, message) do
@@ -43,7 +43,7 @@ defmodule El.Session do
   end
 
   @impl true
-  def handle_call({:tell, message}, _from, state) do
+  def handle_cast({:tell, message}, state) do
     response =
       if state.claude_pid do
         try do
@@ -60,9 +60,10 @@ defmodule El.Session do
       end
 
     new_state = %{state | messages: state.messages ++ [{"tell", message, response}]}
-    {:reply, response, new_state}
+    {:noreply, new_state}
   end
 
+  @impl true
   def handle_call({:ask, message}, _from, state) do
     response =
       if state.claude_pid do
