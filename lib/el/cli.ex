@@ -341,17 +341,37 @@ defmodule El.CLI do
   end
 
   defp spawn_daemon(name) do
-    daemon_node = ensure_daemon_node()
-    name_atom = String.to_atom(name)
+    binary_path = get_binary_path()
 
-    if daemon_node && daemon_node != Node.self() do
-      :rpc.call(daemon_node, El, :start, [name_atom])
+    cmd = ~c"nohup #{binary_path} --daemon #{name} > /dev/null 2>&1 &"
+    :os.cmd(cmd)
+
+    poll_daemon_ready(100)
+    IO.puts("el: #{name} is up")
+  end
+
+  defp get_binary_path do
+    burrito_bin = System.get_env("__BURRITO_BIN_PATH")
+
+    if burrito_bin && burrito_bin != "" do
+      burrito_bin
     else
-      El.start(name_atom)
+      :escript.script_name() |> to_string()
     end
+  end
 
-    IO.puts("el: #{name} is up on #{Node.self()}")
-    Process.sleep(:infinity)
+  defp poll_daemon_ready(retries_left) when retries_left <= 0 do
+    :ok
+  end
+
+  defp poll_daemon_ready(retries_left) do
+    case find_daemon_node() do
+      {:ok, _daemon_node} ->
+        :ok
+      :not_found ->
+        :timer.sleep(100)
+        poll_daemon_ready(retries_left - 1)
+    end
   end
 
   defp retry_start_node(retries_left) when retries_left <= 0 do
