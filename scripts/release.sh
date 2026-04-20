@@ -2,21 +2,32 @@
 set -e
 
 VERSION=$(grep 'version:' mix.exs | head -1 | sed 's/.*"\(.*\)".*/\1/')
+REPO="limadelic/el"
 echo "releasing v${VERSION}"
 
-echo "downloading binary from GitHub Actions..."
-RUN_ID=$(GITHUB_TOKEN=$GITHUB_LIMADELIC gh run list --repo limadelic/el --workflow=pack.yml -L 1 --json databaseId --jq '.[0].databaseId')
+echo "triggering GHA pack workflow..."
+GITHUB_TOKEN=$GITHUB_LIMADELIC gh workflow run pack.yml --repo $REPO -f version=$VERSION
+
+echo "waiting for pack to complete..."
+sleep 10
+RUN_ID=$(GITHUB_TOKEN=$GITHUB_LIMADELIC gh run list --repo $REPO --workflow=pack.yml -L 1 --json databaseId --jq '.[0].databaseId')
+GITHUB_TOKEN=$GITHUB_LIMADELIC gh run watch "$RUN_ID" --repo $REPO --exit-status
+
+echo "downloading binary..."
+rm -rf burrito_out
 mkdir -p burrito_out
-GITHUB_TOKEN=$GITHUB_LIMADELIC gh run download "$RUN_ID" --repo limadelic/el --name el_macos_arm64 -D burrito_out/
+GITHUB_TOKEN=$GITHUB_LIMADELIC gh run download "$RUN_ID" --repo $REPO --name el_macos_arm64 -D burrito_out/
 
 chmod +x burrito_out/el_macos_arm64
 SHA_ARM=$(shasum -a 256 burrito_out/el_macos_arm64 | awk '{print $1}')
 
-GITHUB_TOKEN=$GITHUB_LIMADELIC gh release delete "v${VERSION}" -y -R limadelic/el 2>/dev/null || true
+echo "creating github release..."
+GITHUB_TOKEN=$GITHUB_LIMADELIC gh release delete "v${VERSION}" -y -R $REPO 2>/dev/null || true
 GITHUB_TOKEN=$GITHUB_LIMADELIC gh release create "v${VERSION}" \
   burrito_out/el_macos_arm64 \
-  --repo limadelic/el --title "v${VERSION}" --notes "v${VERSION}"
+  --repo $REPO --title "v${VERSION}" --notes "v${VERSION}"
 
+echo "updating homebrew tap..."
 TAP=/tmp/homebrew-tap
 if [ ! -d "$TAP" ]; then
   git clone "https://github.com/limadelic/homebrew-tap.git" "$TAP"
@@ -47,5 +58,7 @@ git add Formula/el.rb
 git commit -m "bump to v${VERSION}"
 GITHUB_TOKEN=$GITHUB_LIMADELIC git push
 
-echo "v${VERSION} released"
-echo "arm64 sha: ${SHA_ARM}"
+echo "upgrading brew..."
+brew upgrade limadelic/tap/el 2>/dev/null || brew install limadelic/tap/el
+
+echo "v${VERSION} released and installed"
