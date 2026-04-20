@@ -4,15 +4,17 @@ set -e
 VERSION=$(grep 'version:' mix.exs | head -1 | sed 's/.*"\(.*\)".*/\1/')
 echo "releasing v${VERSION}"
 
-echo "downloading tarball from GitHub Actions..."
+echo "downloading binary from GitHub Actions..."
 RUN_ID=$(GITHUB_TOKEN=$GITHUB_LIMADELIC gh run list --repo limadelic/el --workflow=pack.yml -L 1 --json databaseId --jq '.[0].databaseId')
-GITHUB_TOKEN=$GITHUB_LIMADELIC gh run download "$RUN_ID" --repo limadelic/el --name el-macos-arm64 -D /tmp/el-release/
+mkdir -p burrito_out
+GITHUB_TOKEN=$GITHUB_LIMADELIC gh run download "$RUN_ID" --repo limadelic/el --name el_macos_arm64 -D burrito_out/
 
-SHA=$(shasum -a 256 /tmp/el-release/el-macos-arm64.tar.gz | awk '{print $1}')
+chmod +x burrito_out/el_macos_arm64
+SHA_ARM=$(shasum -a 256 burrito_out/el_macos_arm64 | awk '{print $1}')
 
 GITHUB_TOKEN=$GITHUB_LIMADELIC gh release delete "v${VERSION}" -y -R limadelic/el 2>/dev/null || true
 GITHUB_TOKEN=$GITHUB_LIMADELIC gh release create "v${VERSION}" \
-  /tmp/el-release/el-macos-arm64.tar.gz \
+  burrito_out/el_macos_arm64 \
   --repo limadelic/el --title "v${VERSION}" --notes "v${VERSION}"
 
 TAP=/tmp/homebrew-tap
@@ -28,17 +30,11 @@ class El < Formula
   license "MIT"
   version "${VERSION}"
 
-  url "https://github.com/limadelic/el/releases/download/v${VERSION}/el-macos-arm64.tar.gz"
-  sha256 "${SHA}"
+  url "https://github.com/limadelic/el/releases/download/v${VERSION}/el_macos_arm64"
+  sha256 "${SHA_ARM}"
 
   def install
-    libexec.install Dir["*"]
-    (bin/"el").write <<~EOS
-      #!/bin/bash
-      export EL_BIN="$0"
-      exec "#{libexec}/bin/el" eval "El.CLI.main(System.argv())" -- "$@"
-    EOS
-    chmod 0755, bin/"el"
+    bin.install "el_macos_arm64" => "el"
   end
 
   test do
@@ -52,4 +48,4 @@ git commit -m "bump to v${VERSION}"
 GITHUB_TOKEN=$GITHUB_LIMADELIC git push
 
 echo "v${VERSION} released"
-echo "sha: ${SHA}"
+echo "arm64 sha: ${SHA_ARM}"
