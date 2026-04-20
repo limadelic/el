@@ -5,7 +5,9 @@ description: Use el CLI to manage agents instead of Agent/Team tools
 
 # El — Agent Control Plane
 
-Use `el` to manage Claude Code sessions as your dev team. No Agent tool, no TeamCreate, no SendMessage.
+Use `el` (brewed binary, `/opt/homebrew/bin/el`) to manage Claude Code sessions as your dev team. No Agent tool, no TeamCreate, no SendMessage.
+
+> **NEVER use `./el`** — that's the dev escript. Always use the installed `el`.
 
 ## Commands
 
