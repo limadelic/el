@@ -21,7 +21,6 @@ defmodule AskScenarioTest do
         El.ask(name, question)
       catch
         :exit, _ ->
-          # ClaudeCode initialization failed (expected in test env without CLI)
           "(ClaudeCode unavailable)"
       end
 
@@ -33,8 +32,7 @@ defmodule AskScenarioTest do
            end),
            "Question should appear in log: #{inspect(log)}"
 
-    # Step 4: If Claude is available, response should contain answer (2)
-    # If not available, response is "(ClaudeCode unavailable)" which is OK
+    # Step 4: If Claude is available, response should be a string
     assert is_binary(response), "Response should be a string: #{inspect(response)}"
   end
 end

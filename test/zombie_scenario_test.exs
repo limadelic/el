@@ -22,10 +22,9 @@ defmodule ZombieScenarioTest do
     Process.sleep(100)
     refute El.Session.alive?(name), "Session should be dead after kill"
 
-    # Step 4: List should still show it (as dead/tombstone)
+    # Step 4: List should not show dead session anymore
     sessions_after = El.ls()
-
-    assert name in sessions_after,
-           "Dead session should appear in tombstone ls: #{inspect(sessions_after)}"
+    refute name in sessions_after,
+           "Dead session should not appear in ls: #{inspect(sessions_after)}"
   end
 end

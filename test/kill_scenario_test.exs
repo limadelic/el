@@ -6,8 +6,7 @@ defmodule KillScenarioTest do
     :ok
   end
 
-  test "Kill scenario: start, list, kill, list shows tombstone" do
-    # Use unique name to avoid test isolation issues
+  test "Kill scenario: start, list, kill, list shows removed" do
     name = :"dude_#{System.os_time()}"
 
     # Step 1: Start session
@@ -20,14 +19,12 @@ defmodule KillScenarioTest do
 
     # Step 3: Kill the session
     :ok = El.kill(name)
-    # Give it a moment to clean up
     Process.sleep(10)
     refute El.Session.alive?(name), "Session should be dead after kill"
 
-    # Step 4: List should still show it (as dead/tombstone)
+    # Step 4: List should not show dead session (Registry auto-deregisters)
     sessions_after = El.ls()
-
-    assert name in sessions_after,
-           "Dead session should appear in tombstone ls: #{inspect(sessions_after)}"
+    refute name in sessions_after,
+           "Dead session should not appear in ls: #{inspect(sessions_after)}"
   end
 end

@@ -6,8 +6,7 @@ defmodule El.Application do
   def start(_type, _args) do
     children = [
       {Registry, keys: :unique, name: El.Registry},
-      {DynamicSupervisor, name: El.SessionSupervisor},
-      {El.SessionTracker, []}
+      {DynamicSupervisor, name: El.SessionSupervisor}
     ]
 
     opts = [strategy: :one_for_one, name: El.Supervisor]

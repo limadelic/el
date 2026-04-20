@@ -16,12 +16,10 @@ defmodule TellScenarioTest do
     assert El.Session.alive?(name), "Session should be alive after start"
 
     # Step 2: Tell the session — may fail if Claude CLI unavailable
-    # Just verify the call completes (successful or error)
     try do
       _response = El.tell(name, message)
     catch
       :exit, _ ->
-        # ClaudeCode initialization failed (expected in test env without CLI)
         :ok
     end
 
