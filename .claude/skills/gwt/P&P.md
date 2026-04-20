@@ -15,7 +15,7 @@ Gherkin keyword `*` keeps it neutral.
 
 ### Start a session (zombie)
 ```gherkin
-* > el dude &
+* > el dude
 ```
 
 ### Tell (fire-and-forget)
@@ -60,7 +60,7 @@ Gherkin keyword `*` keeps it neutral.
 - Tables verify command output
 - No column headers until needed
 - One step handles `>` with or without tables
-- Shell handles `&` natively — no separate step def
+- `el <name>` self-daemonizes — returns to shell immediately, no `&` needed
 
 ## Scenarios
 

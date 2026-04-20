@@ -55,7 +55,12 @@ el kill all
 
 ## How It Works
 
-El spawns Claude Code as a background process and routes messages via stdin/stdout. Each session is owned and managed independently.
+`el <name>` starts a Claude Code session that self-daemonizes:
+- Binary spawns El.Supervisor (if not running)
+- Creates El.Session for the named session
+- Exits immediately, returning control to shell (no blocking, no `&`, no backgrounding)
+- Session persists as an Erlang process
+- Subsequent commands discover and reuse the active session
 
 Built on the Erlang/OTP supervision model. Sessions crash, they restart. It just works.
 

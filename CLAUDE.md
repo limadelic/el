@@ -17,6 +17,7 @@ Two modes — never mix them up.
 - Build: `mix escript.build` (bob `build` command)
 - Used by: tests, bob, local development
 - Scoped to this project folder only
+- Note: Dev escript also self-daemonizes just like the brew binary
 
 ## Versioning
 

@@ -23,7 +23,7 @@ Use `el` (brewed binary, `/opt/homebrew/bin/el`) to manage Claude Code sessions 
 
 ## The Loop
 
-1. `el <name>` — start a headless session
+1. `el <name>` — start a headless session (self-daemonizes, returns to shell)
 2. `el <name> tell <work>` — fire-and-forget task
 3. `el <name> ask <question>` — wait for answer
 4. `el <name> log` — review what happened
