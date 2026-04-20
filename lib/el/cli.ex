@@ -61,14 +61,7 @@ defmodule El.CLI do
 
     case find_daemon_node() do
       {:ok, daemon_node} ->
-        case :rpc.call(daemon_node, El, :tell, [name_atom, msg]) do
-          {:badrpc, reason} ->
-            IO.puts(:stderr, "Error: #{inspect(reason)}")
-            System.halt(1)
-
-          response ->
-            IO.write(response)
-        end
+        :rpc.call(daemon_node, El, :tell, [name_atom, msg])
 
       :not_found ->
         IO.puts(:stderr, "No sessions running. Start one: el #{name}")
@@ -89,7 +82,7 @@ defmodule El.CLI do
             System.halt(1)
 
           response ->
-            IO.write(response)
+            IO.puts(response)
         end
 
       :not_found ->

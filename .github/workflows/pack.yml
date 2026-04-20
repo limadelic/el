@@ -1,0 +1,25 @@
+name: Pack
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g. 0.1.17)'
+        required: true
+
+jobs:
+  pack:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: '27'
+          elixir-version: '1.19'
+      - run: mix deps.get
+      - run: MIX_ENV=prod mix release --overwrite
+      - name: Package
+        run: tar czf el-macos-arm64.tar.gz -C _build/prod/rel el
+      - uses: actions/upload-artifact@v4
+        with:
+          name: el-macos-arm64
+          path: el-macos-arm64.tar.gz

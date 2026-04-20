@@ -23,12 +23,27 @@ defmodule TellScenarioTest do
         :ok
     end
 
-    # Step 3: Log should show the message attempt was recorded
-    log = El.log(name)
+    # Step 3: Poll log until tell entry appears (tell is async via Task)
+    log = poll_log_for_entry(name, "tell", message, 20, 250)
 
     assert Enum.any?(log, fn {type, msg, _} ->
              type == "tell" && msg == message
            end),
            "Message should appear in log: #{inspect(log)}"
+  end
+
+  defp poll_log_for_entry(name, type, message, retries, delay_ms) when retries > 0 do
+    log = El.log(name)
+
+    if Enum.any?(log, fn {t, msg, _} -> t == type && msg == message end) do
+      log
+    else
+      Process.sleep(delay_ms)
+      poll_log_for_entry(name, type, message, retries - 1, delay_ms)
+    end
+  end
+
+  defp poll_log_for_entry(name, _type, _message, 0, _delay_ms) do
+    El.log(name)
   end
 end

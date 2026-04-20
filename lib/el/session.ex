@@ -6,7 +6,7 @@ defmodule El.Session do
   end
 
   def tell(name, message) do
-    GenServer.call(via_tuple(name), {:tell, message}, :infinity)
+    GenServer.cast(via_tuple(name), {:tell, message})
   end
 
   def ask(name, message) do
@@ -43,26 +43,38 @@ defmodule El.Session do
   end
 
   @impl true
-  def handle_call({:tell, message}, _from, state) do
-    response =
-      if state.claude_pid do
-        try do
-          state.claude_pid
-          |> El.ClaudeCode.stream(message)
-          |> ClaudeCode.Stream.text_content()
-          |> Enum.join()
-        catch
-          :exit, _ -> "(ClaudeCode unavailable)"
-          _, _ -> "(ClaudeCode unavailable)"
-        end
-      else
-        "(ClaudeCode unavailable)"
-      end
+  def handle_cast({:tell, message}, state) do
+    pid = self()
+    claude_pid = state.claude_pid
 
-    new_state = %{state | messages: state.messages ++ [{"tell", message, response}]}
-    {:reply, response, new_state}
+    Task.start(fn ->
+      response =
+        if claude_pid do
+          try do
+            claude_pid
+            |> El.ClaudeCode.stream(message)
+            |> ClaudeCode.Stream.text_content()
+            |> Enum.join()
+          catch
+            :exit, _ -> "(ClaudeCode unavailable)"
+            _, _ -> "(ClaudeCode unavailable)"
+          end
+        else
+          "(ClaudeCode unavailable)"
+        end
+
+      GenServer.cast(pid, {:store_tell, message, response})
+    end)
+
+    {:noreply, state}
   end
 
+  @impl true
+  def handle_cast({:store_tell, message, response}, state) do
+    {:noreply, %{state | messages: state.messages ++ [{"tell", message, response}]}}
+  end
+
+  @impl true
   def handle_call({:ask, message}, _from, state) do
     response =
       if state.claude_pid do
