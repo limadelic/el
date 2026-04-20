@@ -1,4 +1,4 @@
-name: Build
+name: Pack
 on:
   workflow_dispatch:
     inputs:
@@ -7,7 +7,7 @@ on:
         required: true
 
 jobs:
-  build:
+  pack:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4

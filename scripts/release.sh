@@ -5,7 +5,7 @@ VERSION=$(grep 'version:' mix.exs | head -1 | sed 's/.*"\(.*\)".*/\1/')
 echo "releasing v${VERSION}"
 
 echo "downloading binary from GitHub Actions..."
-RUN_ID=$(GITHUB_TOKEN=$GITHUB_LIMADELIC gh run list --repo limadelic/el --workflow=build.yml -L 1 --json databaseId --jq '.[0].databaseId')
+RUN_ID=$(GITHUB_TOKEN=$GITHUB_LIMADELIC gh run list --repo limadelic/el --workflow=pack.yml -L 1 --json databaseId --jq '.[0].databaseId')
 mkdir -p burrito_out
 GITHUB_TOKEN=$GITHUB_LIMADELIC gh run download "$RUN_ID" --repo limadelic/el --name el_macos_arm64 -D burrito_out/
 
