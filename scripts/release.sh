@@ -33,7 +33,12 @@ class El < Formula
 
   def install
     libexec.install Dir["*"]
-    bin.install_symlink libexec/"bin/el"
+    (bin/"el").write <<~EOS
+      #!/bin/bash
+      export EL_BIN="$0"
+      exec "#{libexec}/bin/el" eval "El.CLI.main(System.argv())" -- "$@"
+    EOS
+    chmod 0755, bin/"el"
   end
 
   test do
