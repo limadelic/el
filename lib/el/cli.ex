@@ -346,8 +346,14 @@ defmodule El.CLI do
     cmd = ~c"nohup #{binary_path} --daemon #{name} > /dev/null 2>&1 &"
     :os.cmd(cmd)
 
-    poll_daemon_ready(100)
-    IO.puts("el: #{name} is up")
+    case poll_daemon_ready(300) do
+      :ok ->
+        IO.puts("el: #{name} is up")
+
+      :timeout ->
+        IO.puts(:stderr, "el: daemon startup timeout")
+        System.halt(1)
+    end
   end
 
   defp get_binary_path do
@@ -361,13 +367,21 @@ defmodule El.CLI do
   end
 
   defp poll_daemon_ready(retries_left) when retries_left <= 0 do
-    :ok
+    :timeout
   end
 
   defp poll_daemon_ready(retries_left) do
     case find_daemon_node() do
-      {:ok, _daemon_node} ->
-        :ok
+      {:ok, daemon_node} ->
+        case :rpc.call(daemon_node, El, :local_ls, []) do
+          {:badrpc, _reason} ->
+            :timer.sleep(100)
+            poll_daemon_ready(retries_left - 1)
+
+          _result ->
+            :ok
+        end
+
       :not_found ->
         :timer.sleep(100)
         poll_daemon_ready(retries_left - 1)

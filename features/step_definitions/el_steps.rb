@@ -21,14 +21,14 @@ When(/^I run el (\S+) in background$/) do |name|
 
   daemon_file = File.expand_path("~/.el/daemon_node")
   tries = 0
-  max_tries = 30
+  max_tries = 60
 
   until File.exist?(daemon_file) || tries >= max_tries
     sleep 0.5
     tries += 1
   end
 
-  sleep 1
+  sleep 2
 end
 
 When(/^I run el (\S+) (\w+)$/) do |name, action|
