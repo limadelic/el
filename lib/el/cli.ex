@@ -357,6 +357,7 @@ defmodule El.CLI do
       end
 
       IO.puts("el: #{name} is up on #{Node.self()}")
+      Process.sleep(:infinity)
     end
   end
 

@@ -1,0 +1,1 @@
+default: test/features --require features/step_definitions --require features/support

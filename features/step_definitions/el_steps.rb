@@ -1,7 +1,6 @@
 require "rspec/expectations"
 
 def resolve_command(cmd)
-  # Use ./el if binary exists locally, otherwise trust PATH
   if cmd.start_with?("el ") && File.exist?("./el")
     "./#{cmd}"
   else
@@ -9,45 +8,57 @@ def resolve_command(cmd)
   end
 end
 
-When(/^> (.+)$/) do |*args|
-  command = args[0]
-  table = args[1]
-  command = resolve_command(command)
+def run_el_command(cmd)
+  resolved = resolve_command(cmd)
+  `#{resolved} 2>&1`.strip
+end
 
-  if command.end_with?("&")
-    # Background the process by forking — & needs to be passed as argument
-    out_err = "/tmp/el_#{Time.now.to_i}.log"
-    cmd_without_amp = command.chomp("&").strip
+When(/^I run el (\S+) in background$/) do |name|
+  cmd = "el #{name}"
+  resolved = resolve_command(cmd)
 
-    # Parse command into parts
-    parts = cmd_without_amp.split(" ")
-    parts << "&"  # Add & as literal argument
+  system("#{resolved} > /dev/null 2>&1 &")
 
-    # Fork and exec with & as argument
-    @pid = Process.fork do
-      # Redirect stdout/stderr to log file
-      File.open(out_err, "a") do |log|
-        $stdout.reopen(log)
-        $stderr.reopen(log)
-      end
-      # Exec with & as argument
-      exec(*parts)
+  daemon_file = File.expand_path("~/.el/daemon_node")
+  tries = 0
+  max_tries = 30
+
+  until File.exist?(daemon_file) || tries >= max_tries
+    sleep 0.5
+    tries += 1
+  end
+
+  sleep 1
+end
+
+When(/^I run el (\S+) (\w+)$/) do |name, action|
+  cmd = "el #{name} #{action}"
+  @output = run_el_command(cmd)
+end
+
+Then(/^el ls should show (.+)$/) do |text|
+  tries = 0
+  max_tries = 10
+
+  loop do
+    @output = run_el_command("el ls")
+
+    if text.start_with?("(") && text.end_with?(")")
+      name = text[1..-2]
+      break if !@output.include?(name)
+    else
+      break if @output.include?(text)
     end
 
-    # Parent: wait a bit for child to start, then return (don't wait for child)
-    sleep 3
+    tries += 1
+    break if tries >= max_tries
+    sleep 0.5
+  end
+
+  if text.start_with?("(") && text.end_with?(")")
+    name = text[1..-2]
+    expect(@output).not_to include(name)
   else
-    @output = `#{command} 2>&1`.strip
-
-    if table
-      table.raw.flatten.each do |cell|
-        cell = cell.strip
-        if cell.start_with?("(") && cell.end_with?(")")
-          expect(@output).not_to include(cell[1..-2])
-        else
-          expect(@output).to include(cell)
-        end
-      end
-    end
+    expect(@output).to include(text)
   end
 end
