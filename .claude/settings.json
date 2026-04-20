@@ -14,7 +14,7 @@
       "Bash(mix format*)",
       "Bash(mix release*)",
       "Bash(epmd*)",
-      "Bash(rm*)"
+      "Bash(chmod +x*)"
     ],
     "defaultMode": "dontAsk"
   }
