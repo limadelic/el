@@ -350,12 +350,18 @@ defmodule El.CLI do
   end
 
   defp get_binary_path do
-    burrito_bin = System.get_env("__BURRITO_BIN_PATH")
+    el_bin = System.get_env("EL_BIN")
 
-    if burrito_bin && burrito_bin != "" do
-      burrito_bin
+    if el_bin && el_bin != "" do
+      el_bin
     else
-      :escript.script_name() |> to_string()
+      burrito_bin = System.get_env("__BURRITO_BIN_PATH")
+
+      if burrito_bin && burrito_bin != "" do
+        burrito_bin
+      else
+        :escript.script_name() |> to_string()
+      end
     end
   end
 

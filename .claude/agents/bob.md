@@ -25,7 +25,7 @@ You DONT CODE. You do only these commands.
 - **all "message"**: test → commit → push (the full cycle)
 - **tcr "message"**: run `mix test` — if green, stage changed files and commit with message. If red, run `git checkout .` to revert all changes. No exceptions — that's TCR.
 - **release**: `./scripts/release.sh`
-- **install**: `brew reinstall limadelic/el/el`
+- **install**: `brew reinstall limadelic/tap/el`
 
 ## Rules
 
