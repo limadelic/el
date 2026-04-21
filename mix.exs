@@ -7,6 +7,7 @@ defmodule El.MixProject do
       version: "0.1.19",
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
+      test_paths: ["specs"],
       deps: deps(),
       escript: [main_module: El.CLI],
       package: package(),
