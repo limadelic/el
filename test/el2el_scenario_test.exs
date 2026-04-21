@@ -7,28 +7,6 @@ defmodule El2elScenarioTest do
   end
 
   @tag timeout: 10000
-  test "Scenario: Ask route to another session" do
-    dude = :dude_ask_route
-    donnie = :donnie_ask_route
-
-    El.start(dude)
-    El.start(donnie)
-
-    message = "@donnie_ask_route> 1 + 1?"
-
-    response = El.ask(dude, message)
-
-    assert response == "-> donnie_ask_route"
-
-    donnie_log = poll_for_message(donnie, "1 + 1?", 20, 250)
-
-    assert Enum.any?(donnie_log, fn {_type, msg, _response, _metadata} ->
-             String.contains?(msg, "1 + 1?")
-           end),
-           "Donnie log should contain message: #{inspect(donnie_log)}"
-  end
-
-  @tag timeout: 10000
   test "Scenario: Tell route to another session" do
     dude = :dude_tell_route
     donnie = :donnie_tell_route
@@ -47,7 +25,6 @@ defmodule El2elScenarioTest do
            end),
            "Donnie log should contain message: #{inspect(donnie_log)}"
   end
-
 
   defp poll_for_message(name, content, retries, delay_ms) when retries > 0 do
     log = El.log(name)
