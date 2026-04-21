@@ -208,7 +208,9 @@ defmodule El.CLI do
 
   defp handle_log({:ok, daemon_node}, name_atom, _name) do
     log = :rpc.call(daemon_node, El, :log, [name_atom])
-    log |> Enum.each(fn {type, message, response, _metadata} ->
+
+    log
+    |> Enum.each(fn {type, message, response, _metadata} ->
       IO.puts("[#{type}] #{message}")
       IO.puts(response)
     end)

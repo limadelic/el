@@ -3,11 +3,11 @@ name: el
 description: Use el CLI to manage agents instead of Agent/Team tools
 ---
 
-# El — Agent Control Plane
+# El - Agent Control Plane
 
 Use `el` (brewed binary, `/opt/homebrew/bin/el`) to manage Claude Code sessions as your dev team. No Agent tool, no TeamCreate, no SendMessage.
 
-> **NEVER use `./el`** — that's the dev escript. Always use the installed `el`.
+> **NEVER use `./el`** - that's the dev escript. Always use the installed `el`.
 
 ## Commands
 
@@ -23,27 +23,27 @@ Use `el` (brewed binary, `/opt/homebrew/bin/el`) to manage Claude Code sessions 
 
 ## The Loop
 
-1. `el <name>` — start a headless session (self-daemonizes, returns to shell)
-2. `el <name> tell <work>` — fire-and-forget task
-3. `el <name> ask <question>` — wait for answer
-4. `el <name> log` — review what happened
-5. `el <name> kill` — done with this agent
+1. `el <name>` - start a headless session (self-daemonizes, returns to shell)
+2. `el <name> tell <work>` - fire-and-forget task
+3. `el <name> ask <question>` - wait for answer
+4. `el <name> log` - review what happened
+5. `el <name> kill` - done with this agent
 
 ## Rules
 
-- Use `el` via Bash tool — these are real shell commands
+- Use `el` via Bash tool - these are real shell commands
 - `tell` = fire-and-forget (long tasks, edits, builds)
 - `ask` = wait for response (questions, status checks)
 - Quote messages with special chars: `el kent ask "what's the status?"`
-- Avoid `?` unquoted — zsh treats it as glob
-- One session per name — `el kent` twice reuses the existing one
+- Avoid `?` unquoted - zsh treats it as glob
+- One session per name - `el kent` twice reuses the existing one
 - `el ls` shows active sessions
-- `el log` is your audit trail — use it to verify work
+- `el log` is your audit trail - use it to verify work
 
 ## Anti-Patterns
 
-- DO NOT use Agent tool — use `el <name>` + `el <name> tell`
-- DO NOT use TeamCreate — sessions ARE the team
-- DO NOT use SendMessage — use `el <name> tell` or `el <name> ask`
-- DO NOT spawn throwaway agents — el sessions persist and remember
-- DO NOT fire and forget — check `el <name> log` to verify work
+- DO NOT use Agent tool - use `el <name>` + `el <name> tell`
+- DO NOT use TeamCreate - sessions ARE the team
+- DO NOT use SendMessage - use `el <name> tell` or `el <name> ask`
+- DO NOT spawn throwaway agents - el sessions persist and remember
+- DO NOT fire and forget - check `el <name> log` to verify work
