@@ -109,4 +109,67 @@ defmodule El.SessionTest do
       end)
     end
   end
+
+  describe "crash isolation" do
+    test "session survives when claude_pid crashes" do
+      session = :test_crash_isolation
+      {:ok, session_pid} = El.Session.start_link(session)
+
+      Process.link(session_pid)
+
+      via = {:via, Registry, {El.Registry, session}}
+
+      state = :sys.get_state(via)
+      claude_pid = state.claude_pid
+
+      if claude_pid && Process.alive?(claude_pid) do
+        Process.exit(claude_pid, :kill)
+
+        Process.sleep(100)
+
+        assert El.Session.alive?(session)
+        assert Process.alive?(session_pid)
+      end
+    end
+
+    test "tell returns unavailable message after claude_pid crashes" do
+      session = :test_tell_after_crash
+      {:ok, _session_pid} = El.Session.start_link(session)
+
+      via = {:via, Registry, {El.Registry, session}}
+      state = :sys.get_state(via)
+      claude_pid = state.claude_pid
+
+      if claude_pid && Process.alive?(claude_pid) do
+        Process.exit(claude_pid, :kill)
+        Process.sleep(100)
+
+        GenServer.cast(via, {:tell, "test message"})
+        Process.sleep(200)
+
+        messages = El.Session.log(session)
+        assert length(messages) > 0
+
+        [{_type, _message, response, _metadata}] = messages
+        assert response == "(ClaudeCode unavailable)"
+      end
+    end
+
+    test "ask returns unavailable message after claude_pid crashes" do
+      session = :test_ask_after_crash
+      {:ok, _session_pid} = El.Session.start_link(session)
+
+      via = {:via, Registry, {El.Registry, session}}
+      state = :sys.get_state(via)
+      claude_pid = state.claude_pid
+
+      if claude_pid && Process.alive?(claude_pid) do
+        Process.exit(claude_pid, :kill)
+        Process.sleep(100)
+
+        response = El.Session.ask(session, "test question")
+        assert response == "(ClaudeCode unavailable)"
+      end
+    end
+  end
 end

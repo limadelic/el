@@ -41,8 +41,8 @@ defmodule El.Session do
 
   @impl true
   def init(name) do
-    # Try to start ClaudeCode, but continue even if it fails
-    # (allows Kill scenario to work without full ClaudeCode setup)
+    Process.flag(:trap_exit, true)
+
     claude_pid =
       try do
         case El.ClaudeCode.start_link([]) do
@@ -215,6 +215,16 @@ defmodule El.Session do
     }
 
     {:reply, response, new_state}
+  end
+
+  @impl true
+  def handle_info({:EXIT, pid, _reason}, %{claude_pid: pid} = state) do
+    {:noreply, %{state | claude_pid: nil}}
+  end
+
+  @impl true
+  def handle_info(_msg, state) do
+    {:noreply, state}
   end
 
   defp ask_claude(claude_pid, message) do
