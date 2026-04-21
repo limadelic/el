@@ -20,7 +20,7 @@ Review for:
 - Does it follow dev skill rules (clean Elixir, OTP patterns, no comments)?
 - Do specs follow the SPEC RULES in the dev skill? (mock next module, one spec per module, test what caller sees)
 - Max cyclomatic complexity 1, no if/case/cond/try in function bodies. Pattern match instead.
-- Is it DRY? Repeated state/setup across tests = move to setup block. Flag any copy-paste.
+- DRY
 - ONE assertion per test. Multiple asserts in one test = split into separate tests.
 - Does it read clean? A spec should look like a spec, not infrastructure.
 - Are tests duplicative? Two tests verifying the same behavior = delete one.

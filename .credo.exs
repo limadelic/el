@@ -72,7 +72,8 @@
           {Credo.Check.Readability.ModuleNames, []},
           {Credo.Check.Readability.VariableNames, []},
           {Credo.Check.Refactor.FunctionArity, [max_arity: 5]},
-          {Credo.Check.Refactor.CyclomaticComplexity, [max_complexity: 1]}
+          {Credo.Check.Refactor.CyclomaticComplexity, [max_complexity: 1]},
+          {Credo.Check.Design.DuplicatedCode, []}
         ],
         disabled: [
           {Credo.Check.Consistency.ExceptionNames, []},
@@ -84,7 +85,6 @@
           {Credo.Check.Consistency.MultiAliasImportRequireUse, []},
           {Credo.Check.Consistency.UnusedVariableNames, []},
           {Credo.Check.Design.AliasUsage, []},
-          {Credo.Check.Design.DuplicatedCode, []},
           {Credo.Check.Design.SkipTestWithoutComment, []},
           {Credo.Check.Design.TagFIXME, []},
           {Credo.Check.Design.TagTODO, []},
