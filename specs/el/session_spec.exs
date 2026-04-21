@@ -1,9 +1,16 @@
+defmodule MockSessionModule do
+  def start_link(_), do: {:ok, :mock_pid}
+end
+
+defmodule MockTaskModule do
+  def start(_fun), do: {:ok, :task_pid}
+end
+
 defmodule El.Session.Spec do
   use ExUnit.Case
 
   setup do
-    Mox.set_mox_global()
-    Mox.verify_on_exit!()
+    Mimic.copy(Task)
     :ok
   end
 
@@ -57,57 +64,60 @@ defmodule El.Session.Spec do
 
   describe "init/1" do
     test "stores session name in state" do
-      Mox.stub(MockSessionModule, :start_link, fn _ -> {:ok, :mock_pid} end)
-
       {:ok, state} = El.Session.init({:my_session, [claude_module: MockSessionModule]})
 
       assert state.name == :my_session
     end
 
     test "initializes messages as empty list" do
-      Mox.stub(MockSessionModule, :start_link, fn _ -> {:ok, :mock_pid} end)
-
       {:ok, state} = El.Session.init({:test_session, [claude_module: MockSessionModule]})
 
       assert state.messages == []
     end
 
     test "passes model to claude start_link" do
-      Mox.expect(MockSessionModule, :start_link, fn opts ->
-        assert opts[:model] == "test-model"
-        {:ok, :mock_pid}
-      end)
+      {:ok, capture_agent} = Agent.start_link(fn -> nil end)
+      Application.put_env(:el, :capture_agent, capture_agent)
 
-      El.Session.init({:test_session, [model: "test-model", claude_module: MockSessionModule]})
+      defmodule ModelCaptureModule do
+        def start_link(opts) do
+          capture_agent = Application.get_env(:el, :capture_agent)
+          Agent.update(capture_agent, fn _ -> opts end)
+          {:ok, :mock_pid}
+        end
+      end
+
+      El.Session.init({:test_session, [model: "test-model", claude_module: ModelCaptureModule]})
+
+      captured_opts = Agent.get(capture_agent, & &1)
+      assert captured_opts[:model] == "test-model"
+
+      Application.delete_env(:el, :capture_agent)
     end
 
     test "stores claude_pid from successful start" do
-      Mox.stub(MockSessionModule, :start_link, fn _ -> {:ok, :mock_pid} end)
-
       {:ok, state} = El.Session.init({:test_session, [claude_module: MockSessionModule]})
 
       assert state.claude_pid == :mock_pid
     end
 
     test "stores nil for claude_pid on start failure" do
-      Mox.stub(MockSessionModule, :start_link, fn _ -> {:error, :failed} end)
+      defmodule FailingModule do
+        def start_link(_), do: {:error, :failed}
+      end
 
-      {:ok, state} = El.Session.init({:test_session, [claude_module: MockSessionModule]})
+      {:ok, state} = El.Session.init({:test_session, [claude_module: FailingModule]})
 
       assert state.claude_pid == nil
     end
 
     test "stores default task_module" do
-      Mox.stub(MockSessionModule, :start_link, fn _ -> {:ok, :mock_pid} end)
-
       {:ok, state} = El.Session.init({:test_session, [claude_module: MockSessionModule]})
 
       assert state.task_module == Task
     end
 
     test "stores provided task_module" do
-      Mox.stub(MockSessionModule, :start_link, fn _ -> {:ok, :mock_pid} end)
-
       {:ok, state} =
         El.Session.init(
           {:test_session, [claude_module: MockSessionModule, task_module: MockSessionModule]}
@@ -118,16 +128,24 @@ defmodule El.Session.Spec do
   end
 
   describe "handle_cast/2 :tell" do
-    test "starts task to ask claude when no routes", %{state: state} do
-      Mox.expect(MockTaskModule, :start, fn _fun -> {:ok, :task_pid} end)
+    test "starts task to ask claude when no routes" do
+      Mimic.stub(Task, :start, fn _fun -> {:ok, :task_pid} end)
 
       {:noreply, returned_state} =
-        El.Session.handle_cast({:tell, "hello"}, %{state | task_module: MockTaskModule})
+        El.Session.handle_cast({:tell, "hello"}, %{
+          name: :test_session,
+          claude_pid: :mock_pid,
+          messages: [],
+          claude_module: MockSessionModule,
+          task_module: Task,
+          alive_fn: fn _ -> false end,
+          registry_module: MockSessionModule
+        })
 
-      assert returned_state.task_module == MockTaskModule
+      assert returned_state.task_module == Task
     end
 
-    test "processes routes when message contains @target", %{state: state} do
+    test "processes routes when message contains @target" do
       alive_fn = fn
         :target -> true
         _ -> false
@@ -136,7 +154,15 @@ defmodule El.Session.Spec do
       {:noreply, _returned_state} =
         El.Session.handle_cast(
           {:tell, "@target> message"},
-          %{state | alive_fn: alive_fn}
+          %{
+            name: :test_session,
+            claude_pid: :mock_pid,
+            messages: [],
+            claude_module: MockSessionModule,
+            task_module: MockSessionModule,
+            alive_fn: alive_fn,
+            registry_module: MockSessionModule
+          }
         )
 
       :ok
@@ -227,7 +253,6 @@ defmodule El.Session.Spec do
 
       assert length(returned_state.messages) == 1
     end
-
   end
 
   describe "handle_call/2 :ask" do
