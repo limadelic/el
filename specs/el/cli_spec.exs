@@ -1,60 +1,60 @@
 defmodule El.CLI.Spec do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
 
-  describe "parse_route/1 determines which command to execute" do
-    test "empty args identifies usage route" do
+  describe "parse_route/1" do
+    test "returns usage when no args" do
       assert El.CLI.parse_route([]) == :usage
     end
 
-    test "ls identifies list sessions route" do
+    test "returns ls for ls command" do
       assert El.CLI.parse_route(["ls"]) == :ls
     end
 
-    test "single name identifies start session route" do
+    test "returns start for single session name" do
       assert El.CLI.parse_route(["my_session"]) == :start
     end
 
-    test "name with --model flag identifies start with options route" do
+    test "returns start with --model flag" do
       assert El.CLI.parse_route(["my_session", "--model", "haiku"]) == :start
     end
 
-    test "name tell message identifies tell route" do
+    test "returns tell for name tell message" do
       assert El.CLI.parse_route(["session", "tell", "hello"]) == :tell
     end
 
-    test "name ask message identifies ask route" do
+    test "returns ask for name ask message" do
       assert El.CLI.parse_route(["session", "ask", "question"]) == :ask
     end
 
-    test "name log identifies log route" do
+    test "returns log for name log" do
       assert El.CLI.parse_route(["session", "log"]) == :log
     end
 
-    test "name kill identifies kill route" do
+    test "returns kill for name kill" do
       assert El.CLI.parse_route(["session", "kill"]) == :kill
     end
 
-    test "kill all identifies kill all route" do
+    test "returns kill_all for kill all" do
       assert El.CLI.parse_route(["kill", "all"]) == :kill_all
     end
 
-    test "invalid args defaults to usage" do
+    test "returns usage for invalid args" do
       assert El.CLI.parse_route(["bogus", "args", "that", "dont", "match"]) == :usage
     end
 
-    test "name tell ask @target message identifies tell_ask route" do
+    test "returns tell_ask for name tell ask @target message" do
       assert El.CLI.parse_route(["session", "tell", "ask", "@other", "hello"]) == :tell_ask
     end
 
-    test "name ask tell @target message identifies ask_tell route" do
+    test "returns ask_tell for name ask tell @target message" do
       assert El.CLI.parse_route(["session", "ask", "tell", "@other", "hello"]) == :ask_tell
     end
 
-    test "daemon flag identifies daemon route" do
+    test "returns daemon for --daemon flag" do
       assert El.CLI.parse_route(["--daemon", "my_session"]) == :daemon
     end
 
-    test "daemon flag with model identifies daemon route" do
+    test "returns daemon with --model flag" do
       assert El.CLI.parse_route(["--daemon", "my_session", "--model", "opus"]) == :daemon
     end
   end
