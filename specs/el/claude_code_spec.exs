@@ -7,18 +7,9 @@ defmodule El.ClaudeCode.Spec do
     :ok
   end
 
-  setup do
-    Mox.stub(MockSessionModule, :start_link, fn _opts ->
-      {:ok, self()}
-    end)
-
-    :ok
-  end
-
   describe "start_link/1" do
     test "delegates to session module" do
-      MockSessionModule
-      |> Mox.expect(:start_link, 1, fn _opts ->
+      Mox.expect(MockSessionModule, :start_link, 1, fn _opts ->
         {:ok, self()}
       end)
 
@@ -26,8 +17,7 @@ defmodule El.ClaudeCode.Spec do
     end
 
     test "passes session_id to session module" do
-      MockSessionModule
-      |> Mox.expect(:start_link, 1, fn opts ->
+      Mox.expect(MockSessionModule, :start_link, 1, fn opts ->
         assert Keyword.has_key?(opts, :session_id)
         assert is_binary(opts[:session_id])
         {:ok, self()}
@@ -37,8 +27,7 @@ defmodule El.ClaudeCode.Spec do
     end
 
     test "passes adapter configuration" do
-      MockSessionModule
-      |> Mox.expect(:start_link, 1, fn opts ->
+      Mox.expect(MockSessionModule, :start_link, 1, fn opts ->
         assert Keyword.has_key?(opts, :adapter)
         assert is_tuple(opts[:adapter])
         {:ok, self()}
@@ -48,8 +37,7 @@ defmodule El.ClaudeCode.Spec do
     end
 
     test "passes dangerously_skip_permissions flag" do
-      MockSessionModule
-      |> Mox.expect(:start_link, 1, fn opts ->
+      Mox.expect(MockSessionModule, :start_link, 1, fn opts ->
         assert opts[:dangerously_skip_permissions] == true
         {:ok, self()}
       end)
@@ -58,8 +46,7 @@ defmodule El.ClaudeCode.Spec do
     end
 
     test "includes model when provided" do
-      MockSessionModule
-      |> Mox.expect(:start_link, 1, fn opts ->
+      Mox.expect(MockSessionModule, :start_link, 1, fn opts ->
         assert opts[:model] == "claude-3-5-haiku"
         {:ok, self()}
       end)
@@ -71,8 +58,7 @@ defmodule El.ClaudeCode.Spec do
     end
 
     test "omits model when not provided" do
-      MockSessionModule
-      |> Mox.expect(:start_link, 1, fn opts ->
+      Mox.expect(MockSessionModule, :start_link, 1, fn opts ->
         refute Keyword.has_key?(opts, :model)
         {:ok, self()}
       end)
@@ -83,8 +69,7 @@ defmodule El.ClaudeCode.Spec do
     test "uses configured cli_path from application environment" do
       Application.put_env(:claude_code, :cli_path, "/custom/path")
 
-      MockSessionModule
-      |> Mox.expect(:start_link, 1, fn opts ->
+      Mox.expect(MockSessionModule, :start_link, 1, fn opts ->
         {ClaudeCode.Adapter.Port, adapter_opts} = opts[:adapter]
         assert adapter_opts[:cli_path] == "/custom/path"
         {:ok, self()}
@@ -96,8 +81,7 @@ defmodule El.ClaudeCode.Spec do
     test "defaults cli_path to :global when not configured" do
       Application.delete_env(:claude_code, :cli_path)
 
-      MockSessionModule
-      |> Mox.expect(:start_link, 1, fn opts ->
+      Mox.expect(MockSessionModule, :start_link, 1, fn opts ->
         {ClaudeCode.Adapter.Port, adapter_opts} = opts[:adapter]
         assert adapter_opts[:cli_path] == :global
         {:ok, self()}
