@@ -27,7 +27,7 @@ defmodule AskScenarioTest do
     # Step 3: Log should show the ask and response
     log = El.log(name)
 
-    assert Enum.any?(log, fn {type, msg, _resp} ->
+    assert Enum.any?(log, fn {type, msg, _resp, _meta} ->
              type == "ask" && msg == question
            end),
            "Question should appear in log: #{inspect(log)}"

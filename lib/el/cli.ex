@@ -54,6 +54,22 @@ defmodule El.CLI do
     end
   end
 
+  defp main_impl([name, "tell", "ask", "@" <> target | words]) do
+    ensure_epmd()
+    target_atom = String.to_atom(target)
+    msg = Enum.join(words, " ")
+    name_atom = String.to_atom(name)
+
+    case find_daemon_node() do
+      {:ok, daemon_node} ->
+        :rpc.call(daemon_node, El, :tell_ask, [name_atom, target_atom, msg])
+
+      :not_found ->
+        IO.puts(:stderr, "No sessions running. Start one: el #{name}")
+        System.halt(1)
+    end
+  end
+
   defp main_impl([name, "tell" | words]) do
     ensure_epmd()
     msg = Enum.join(words, " ")
@@ -62,6 +78,29 @@ defmodule El.CLI do
     case find_daemon_node() do
       {:ok, daemon_node} ->
         :rpc.call(daemon_node, El, :tell, [name_atom, msg])
+
+      :not_found ->
+        IO.puts(:stderr, "No sessions running. Start one: el #{name}")
+        System.halt(1)
+    end
+  end
+
+  defp main_impl([name, "ask", "tell", "@" <> target | words]) do
+    ensure_epmd()
+    target_atom = String.to_atom(target)
+    msg = Enum.join(words, " ")
+    name_atom = String.to_atom(name)
+
+    case find_daemon_node() do
+      {:ok, daemon_node} ->
+        case :rpc.call(daemon_node, El, :ask_tell, [name_atom, target_atom, msg]) do
+          {:badrpc, reason} ->
+            IO.puts(:stderr, "Error: #{inspect(reason)}")
+            System.halt(1)
+
+          response ->
+            IO.puts(response)
+        end
 
       :not_found ->
         IO.puts(:stderr, "No sessions running. Start one: el #{name}")
@@ -100,7 +139,7 @@ defmodule El.CLI do
         log = :rpc.call(daemon_node, El, :log, [name_atom])
 
         log
-        |> Enum.each(fn {type, message, response} ->
+        |> Enum.each(fn {type, message, response, _metadata} ->
           IO.puts("[#{type}] #{message}")
           IO.puts(response)
         end)

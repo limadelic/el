@@ -1,11 +1,11 @@
 defmodule El do
-  def start(name) when is_atom(name) do
+  def start(name, opts \\ []) when is_atom(name) do
     case local_lookup(name) do
       [{_pid, _}] ->
         name
 
       [] ->
-        DynamicSupervisor.start_child(El.SessionSupervisor, {El.Session, name})
+        DynamicSupervisor.start_child(El.SessionSupervisor, {El.Session, {name, opts}})
         name
     end
   end
@@ -20,6 +20,14 @@ defmodule El do
 
   def log(name) do
     El.Session.log(name)
+  end
+
+  def tell_ask(name, target, message) do
+    El.Session.tell_ask(name, target, message)
+  end
+
+  def ask_tell(name, target, message) do
+    El.Session.ask_tell(name, target, message)
   end
 
   def kill(name) do

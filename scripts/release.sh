@@ -1,7 +1,19 @@
 #!/bin/bash
 set -e
 
-VERSION=$(grep 'version:' mix.exs | head -1 | sed 's/.*"\(.*\)".*/\1/')
+CURRENT_VERSION=$(grep 'version:' mix.exs | head -1 | sed 's/.*"\(.*\)".*/\1/')
+MAJOR_MINOR=$(echo $CURRENT_VERSION | sed 's/\(.*\)\.\([0-9]*\)$/\1/')
+PATCH=$(echo $CURRENT_VERSION | sed 's/.*\.\([0-9]*\)$/\1/')
+NEW_PATCH=$((PATCH + 1))
+NEW_VERSION="${MAJOR_MINOR}.${NEW_PATCH}"
+
+sed -i '' "s/version: \"${CURRENT_VERSION}\"/version: \"${NEW_VERSION}\"/" mix.exs
+
+git add mix.exs
+git commit -m "v${NEW_VERSION}"
+git push
+
+VERSION=$NEW_VERSION
 REPO="limadelic/el"
 echo "releasing v${VERSION}"
 
