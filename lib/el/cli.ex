@@ -6,7 +6,7 @@ defmodule El.CLI do
 
   defp extract_model_flag(args) do
     case args do
-      ["--model", model | rest] -> {String.to_atom(model), rest}
+      ["--model", model | rest] -> {model, rest}
       _ -> {nil, args}
     end
   end
@@ -44,7 +44,7 @@ defmodule El.CLI do
   defp main_impl(["--daemon", name, "--model", model]) do
     daemon_node = ensure_daemon_node()
     name_atom = String.to_atom(name)
-    opts = start_opts(if model != "", do: String.to_atom(model), else: nil)
+    opts = start_opts(if model != "", do: model, else: nil)
 
     if daemon_node && daemon_node != Node.self() do
       :rpc.call(daemon_node, El, :start, [name_atom, opts])
@@ -74,7 +74,7 @@ defmodule El.CLI do
   end
 
   defp main_impl([name, "--model", model | rest]) do
-    opts = start_opts(String.to_atom(model))
+    opts = start_opts(model)
 
     ensure_epmd()
 
@@ -421,7 +421,7 @@ defmodule El.CLI do
 
     model_arg =
       if model = opts[:model] do
-        " --model #{Atom.to_string(model)}"
+        " --model #{model}"
       else
         ""
       end
