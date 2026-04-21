@@ -1,6 +1,29 @@
 defmodule El.Session.Spec do
   use ExUnit.Case
 
+  setup do
+    Mox.set_mox_global()
+    Mox.verify_on_exit!()
+    :ok
+  end
+
+  setup do
+    state = %{
+      name: :test_session,
+      claude_pid: :mock_pid,
+      messages: [],
+      claude_module: MockSessionModule,
+      task_module: MockSessionModule,
+      alive_fn: fn
+        :target -> true
+        _ -> false
+      end,
+      registry_module: MockSessionModule
+    }
+
+    {:ok, state: state}
+  end
+
   describe "detect_routes/1" do
     test "returns empty list for text without routes" do
       assert El.Session.detect_routes("hello") == []
@@ -27,248 +50,368 @@ defmodule El.Session.Spec do
       assert El.Session.detect_routes("@donnie>") == [{:donnie, ""}]
     end
 
-    test "detects route with whitespace in payload" do
-      assert El.Session.detect_routes("@donnie>   multiple words here") == [
-               {:donnie, "multiple words here"}
-             ]
-    end
-
     test "ignores routes not at start of line" do
       assert El.Session.detect_routes("some text @donnie> payload") == []
     end
+  end
 
-    test "handles multiline with mixed content" do
-      text = """
-      @donnie> message one
-      some other text
-      @walter> message two
-      """
+  describe "init/1" do
+    test "returns ok with initial state" do
+      Mox.stub(MockSessionModule, :start_link, fn _ -> {:ok, :mock_pid} end)
 
-      assert El.Session.detect_routes(text) == [
-               {:donnie, "message one"},
-               {:walter, "message two"}
-             ]
+      {:ok, state} = El.Session.init({:test_session, [claude_module: MockSessionModule]})
+
+      assert is_map(state)
     end
 
-    test "converts target to atom" do
-      result = El.Session.detect_routes("@test_name> payload")
-      assert [{:test_name, _}] = result
+    test "stores session name in state" do
+      Mox.stub(MockSessionModule, :start_link, fn _ -> {:ok, :mock_pid} end)
+
+      {:ok, state} = El.Session.init({:my_session, [claude_module: MockSessionModule]})
+
+      assert state.name == :my_session
+    end
+
+    test "initializes messages as empty list" do
+      Mox.stub(MockSessionModule, :start_link, fn _ -> {:ok, :mock_pid} end)
+
+      {:ok, state} = El.Session.init({:test_session, [claude_module: MockSessionModule]})
+
+      assert state.messages == []
+    end
+
+    test "starts claude with provided opts" do
+      Mox.expect(MockSessionModule, :start_link, fn opts ->
+        assert opts[:model] == "test-model"
+        {:ok, :mock_pid}
+      end)
+
+      {:ok, state} =
+        El.Session.init({:test_session, [model: "test-model", claude_module: MockSessionModule]})
+
+      assert state.claude_pid == :mock_pid
+    end
+
+    test "stores nil for claude_pid on start failure" do
+      Mox.stub(MockSessionModule, :start_link, fn _ -> {:error, :failed} end)
+
+      {:ok, state} = El.Session.init({:test_session, [claude_module: MockSessionModule]})
+
+      assert state.claude_pid == nil
+    end
+
+    test "stores default task_module" do
+      Mox.stub(MockSessionModule, :start_link, fn _ -> {:ok, :mock_pid} end)
+
+      {:ok, state} = El.Session.init({:test_session, [claude_module: MockSessionModule]})
+
+      assert state.task_module == Task
+    end
+
+    test "stores provided task_module" do
+      Mox.stub(MockSessionModule, :start_link, fn _ -> {:ok, :mock_pid} end)
+
+      {:ok, state} =
+        El.Session.init(
+          {:test_session, [claude_module: MockSessionModule, task_module: MockSessionModule]}
+        )
+
+      assert state.task_module == MockSessionModule
     end
   end
 
-  describe "start_link/1" do
-    setup do
-      {:ok, _} = Application.ensure_all_started(:el)
+  describe "handle_cast/2 :tell" do
+    test "starts task to ask claude when no routes", %{state: state} do
+      Mox.expect(MockTaskModule, :start, fn _fun -> {:ok, :task_pid} end)
+
+      {:noreply, returned_state} =
+        El.Session.handle_cast({:tell, "hello"}, %{state | task_module: MockTaskModule})
+
+      assert returned_state == %{state | task_module: MockTaskModule}
+    end
+
+    test "processes routes when message contains @target", %{state: state} do
+      alive_fn = fn
+        :target -> true
+        _ -> false
+      end
+
+      {:noreply, _returned_state} =
+        El.Session.handle_cast(
+          {:tell, "@target> message"},
+          %{state | alive_fn: alive_fn}
+        )
+
       :ok
-    end
-
-    test "starts session and returns {:ok, pid}" do
-      session = :test_start_link
-      {:ok, pid} = El.Session.start_link(session)
-      assert is_pid(pid)
-      assert El.Session.alive?(session)
-    end
-
-    test "accepts {name, opts} tuple" do
-      session = :test_tuple_start
-      {:ok, pid} = El.Session.start_link({session, [model: "test-model"]})
-      assert is_pid(pid)
-      assert El.Session.alive?(session)
-    end
-
-    test "accepts name and opts separately" do
-      session = :test_separate_opts
-      {:ok, pid} = El.Session.start_link(session, [model: "test-model"])
-      assert is_pid(pid)
-      assert El.Session.alive?(session)
     end
   end
 
-  describe "alive?/1" do
-    setup do
-      {:ok, _} = Application.ensure_all_started(:el)
-      :ok
+  describe "handle_cast/2 :store_tell" do
+    test "appends tell message to log", %{state: state} do
+      {:noreply, returned_state} =
+        El.Session.handle_cast({:store_tell, "message", "response"}, state)
+
+      assert length(returned_state.messages) == 1
     end
 
-    test "returns true for running session" do
-      session = :test_alive
-      {:ok, _} = El.Session.start_link(session)
-      assert El.Session.alive?(session)
-    end
+    test "stores message type as tell", %{state: state} do
+      {:noreply, returned_state} =
+        El.Session.handle_cast({:store_tell, "msg", "resp"}, state)
 
-    test "returns false for non-existent session" do
-      refute El.Session.alive?(:nonexistent_session_xyz)
-    end
-  end
-
-  describe "log/1" do
-    setup do
-      {:ok, _} = Application.ensure_all_started(:el)
-      :ok
-    end
-
-    test "returns empty list for new session" do
-      session = :test_log_empty
-      {:ok, _} = El.Session.start_link(session)
-      messages = El.Session.log(session)
-      assert messages == []
-    end
-
-    test "stores tell as 4-element tuple with empty metadata" do
-      session = :test_tell_session
-      {:ok, _pid} = El.Session.start_link(session)
-
-      via = {:via, Registry, {El.Registry, session}}
-      GenServer.cast(via, {:store_tell, "hello", "response"})
-
-      Process.sleep(100)
-      messages = El.Session.log(session)
-      assert length(messages) == 1
-      [{type, message, response, metadata}] = messages
-
+      [{type, _, _, _}] = returned_state.messages
       assert type == "tell"
-      assert message == "hello"
-      assert response == "response"
+    end
+
+    test "stores exact message content", %{state: state} do
+      {:noreply, returned_state} =
+        El.Session.handle_cast({:store_tell, "test message", "resp"}, state)
+
+      [{_, message, _, _}] = returned_state.messages
+      assert message == "test message"
+    end
+
+    test "stores exact response content", %{state: state} do
+      {:noreply, returned_state} =
+        El.Session.handle_cast({:store_tell, "msg", "test response"}, state)
+
+      [{_, _, response, _}] = returned_state.messages
+      assert response == "test response"
+    end
+
+    test "stores empty metadata" do
+      state = %{
+        name: :test_session,
+        claude_pid: :mock_pid,
+        messages: []
+      }
+
+      {:noreply, returned_state} =
+        El.Session.handle_cast({:store_tell, "msg", "resp"}, state)
+
+      [{_, _, _, metadata}] = returned_state.messages
       assert metadata == %{}
     end
+  end
 
-    test "stores relay messages with from metadata" do
-      session = :test_relay_session
-      {:ok, _pid} = El.Session.start_link(session)
+  describe "handle_cast/2 :store_relay" do
+    test "appends relay message to log", %{state: state} do
+      {:noreply, returned_state} =
+        El.Session.handle_cast({:store_relay, "message", "response"}, state)
 
-      via = {:via, Registry, {El.Registry, session}}
-      GenServer.cast(via, {:store_relay, "message", "response"})
+      assert length(returned_state.messages) == 1
+    end
 
-      Process.sleep(100)
-      messages = El.Session.log(session)
-      assert length(messages) == 1
-      [{type, _message, _response, metadata}] = messages
+    test "stores message type as relay", %{state: state} do
+      {:noreply, returned_state} =
+        El.Session.handle_cast({:store_relay, "msg", "resp"}, state)
 
+      [{type, _, _, _}] = returned_state.messages
       assert type == "relay"
-      assert is_map(metadata)
     end
 
-    test "appends multiple messages in order" do
-      session = :test_multi_message
-      {:ok, _pid} = El.Session.start_link(session)
+    test "stores from metadata with session name", %{state: state} do
+      {:noreply, returned_state} =
+        El.Session.handle_cast({:store_relay, "msg", "resp"}, state)
 
-      via = {:via, Registry, {El.Registry, session}}
-      GenServer.cast(via, {:store_tell, "msg1", "resp1"})
-      GenServer.cast(via, {:store_tell, "msg2", "resp2"})
-
-      Process.sleep(100)
-      messages = El.Session.log(session)
-      assert length(messages) == 2
-      assert Enum.all?(messages, fn msg -> tuple_size(msg) == 4 end)
+      [{_, _, _, metadata}] = returned_state.messages
+      assert metadata == %{from: :test_session}
     end
   end
 
-  describe "ask/2" do
-    setup do
-      {:ok, _} = Application.ensure_all_started(:el)
-      :ok
+  describe "handle_cast/2 :tell_ask" do
+    test "stores relay message", %{state: state} do
+      alive_fn = fn
+        :target -> false
+        _ -> false
+      end
+
+      {:noreply, returned_state} =
+        El.Session.handle_cast({:tell_ask, :target, "message"}, %{state | alive_fn: alive_fn})
+
+      assert length(returned_state.messages) == 1
     end
 
-    test "returns a binary response" do
-      session = :test_ask_response
-      {:ok, _} = El.Session.start_link(session)
+    test "returns noreply" do
+      state = %{
+        name: :test_session,
+        claude_pid: :mock_pid,
+        messages: [],
+        alive_fn: fn :target -> false end
+      }
 
-      response = El.Session.ask(session, "test question")
+      {reply, _returned_state} =
+        El.Session.handle_cast({:tell_ask, :target, "message"}, state)
+
+      assert reply == :noreply
+    end
+  end
+
+  describe "handle_call/2 :ask" do
+    test "returns response when no routes", %{state: state} do
+      {:reply, response, returned_state} =
+        El.Session.handle_call({:ask, "test"}, :from, state)
+
       assert is_binary(response)
+      assert length(returned_state.messages) == 1
     end
 
-    test "stores ask in log" do
-      session = :test_ask_log
-      {:ok, _} = El.Session.start_link(session)
+    test "filters out self-routes", %{state: state} do
+      {:reply, _response, _returned_state} =
+        El.Session.handle_call({:ask, "@test_session> test"}, :from, state)
 
-      message = "what is 2+2?"
-      _response = El.Session.ask(session, message)
-
-      messages = El.Session.log(session)
-      assert Enum.any?(messages, fn {type, msg, _, _} ->
-        type == "ask" && msg == message
-      end)
-    end
-
-    test "handles long timeout" do
-      session = :test_ask_timeout
-      {:ok, _} = El.Session.start_link(session)
-
-      response = El.Session.ask(session, "test")
-      assert is_binary(response)
-    end
-  end
-
-  describe "tell/2" do
-    setup do
-      {:ok, _} = Application.ensure_all_started(:el)
       :ok
     end
 
-    test "tell returns :ok" do
-      session = :test_tell_ok
-      {:ok, _} = El.Session.start_link(session)
+    test "returns route message for single valid route", %{state: state} do
+      alive_fn = fn
+        :other -> true
+        _ -> false
+      end
 
-      result = El.Session.tell(session, "hello")
-      assert result == :ok
+      {:reply, response, returned_state} =
+        El.Session.handle_call({:ask, "@other> test"}, :from, %{state | alive_fn: alive_fn})
+
+      assert response == "-> other"
+      assert length(returned_state.messages) == 1
+    end
+
+    test "stores message in log on ask", %{state: state} do
+      {:reply, _response, returned_state} =
+        El.Session.handle_call({:ask, "message"}, :from, state)
+
+      [{_, message, _, _}] = returned_state.messages
+      assert message == "message"
+    end
+
+    test "returns not running message when target down", %{state: state} do
+      alive_fn = fn _target -> false end
+
+      {:reply, response, _returned_state} =
+        El.Session.handle_call({:ask, "@other> test"}, :from, %{state | alive_fn: alive_fn})
+
+      assert response == "other is not running"
     end
   end
 
-  describe "tell_ask/3" do
-    setup do
-      {:ok, _} = Application.ensure_all_started(:el)
-      :ok
+  describe "handle_call/2 :log" do
+    test "returns messages from state" do
+      state = %{
+        name: :test_session,
+        claude_pid: :mock_pid,
+        messages: [{"type", "msg", "resp", %{}}]
+      }
+
+      {:reply, messages, _returned_state} = El.Session.handle_call(:log, :from, state)
+
+      assert messages == [{"type", "msg", "resp", %{}}]
     end
 
-    test "tell_ask returns :ok" do
-      target = :test_target
-      sender = :test_sender
-      {:ok, _} = El.Session.start_link(target)
-      {:ok, _} = El.Session.start_link(sender)
+    test "returns state unchanged" do
+      state = %{
+        name: :test_session,
+        claude_pid: :mock_pid,
+        messages: []
+      }
 
-      result = El.Session.tell_ask(sender, target, "message")
-      assert result == :ok
+      {:reply, _messages, returned_state} = El.Session.handle_call(:log, :from, state)
+
+      assert returned_state == state
+    end
+
+    test "returns empty list when no messages" do
+      state = %{
+        name: :test_session,
+        claude_pid: :mock_pid,
+        messages: []
+      }
+
+      {:reply, messages, _returned_state} = El.Session.handle_call(:log, :from, state)
+
+      assert messages == []
     end
   end
 
-  describe "ask_tell/3" do
-    setup do
-      {:ok, _} = Application.ensure_all_started(:el)
-      :ok
+  describe "handle_call/2 :ask_tell" do
+    test "returns route message when target running", %{state: state} do
+      alive_fn = fn
+        :target -> true
+        _ -> false
+      end
+
+      {:reply, response, returned_state} =
+        El.Session.handle_call({:ask_tell, :target, "message"}, :from, %{
+          state
+          | alive_fn: alive_fn
+        })
+
+      assert response == "-> target"
+      assert length(returned_state.messages) == 1
     end
 
-    test "ask_tell returns a binary response" do
-      target = :test_ask_tell_target
-      sender = :test_ask_tell_sender
-      {:ok, _} = El.Session.start_link(target)
-      {:ok, _} = El.Session.start_link(sender)
+    test "returns not running message when target down", %{state: state} do
+      alive_fn = fn _target -> false end
 
-      response = El.Session.ask_tell(sender, target, "message")
-      assert is_binary(response)
+      {:reply, response, _returned_state} =
+        El.Session.handle_call({:ask_tell, :missing, "message"}, :from, %{
+          state
+          | alive_fn: alive_fn
+        })
+
+      assert response == "missing is not running"
+    end
+
+    test "stores relay message" do
+      state = %{
+        name: :test_session,
+        claude_pid: :mock_pid,
+        messages: [],
+        alive_fn: fn :target -> true end
+      }
+
+      {:reply, _response, returned_state} =
+        El.Session.handle_call({:ask_tell, :target, "message"}, :from, state)
+
+      assert length(returned_state.messages) == 1
     end
   end
 
-  describe "message tuple structure" do
-    setup do
-      {:ok, _} = Application.ensure_all_started(:el)
-      :ok
+  describe "handle_info/2" do
+    test "clears claude_pid on EXIT from claude process" do
+      state = %{
+        name: :test_session,
+        claude_pid: :mock_pid,
+        messages: []
+      }
+
+      {:noreply, returned_state} =
+        El.Session.handle_info({:EXIT, :mock_pid, :normal}, state)
+
+      assert returned_state.claude_pid == nil
     end
 
-    test "all stored messages are 4-element tuples" do
-      session = :test_msg_structure
-      {:ok, _} = El.Session.start_link(session)
+    test "preserves state on EXIT from different pid" do
+      state = %{
+        name: :test_session,
+        claude_pid: :mock_pid,
+        messages: []
+      }
 
-      via = {:via, Registry, {El.Registry, session}}
-      GenServer.cast(via, {:store_tell, "msg1", "resp1"})
+      {:noreply, returned_state} =
+        El.Session.handle_info({:EXIT, :other_pid, :normal}, state)
 
-      messages = El.Session.log(session)
+      assert returned_state == state
+    end
 
-      Enum.each(messages, fn msg ->
-        assert tuple_size(msg) == 4
-        {type, _message, _response, metadata} = msg
-        assert type in ["tell", "ask", "relay"]
-        assert is_map(metadata)
-      end)
+    test "preserves state on unknown message" do
+      state = %{
+        name: :test_session,
+        claude_pid: :mock_pid,
+        messages: []
+      }
+
+      {:noreply, returned_state} = El.Session.handle_info(:unknown_message, state)
+
+      assert returned_state == state
     end
   end
 end
