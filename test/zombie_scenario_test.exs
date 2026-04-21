@@ -24,6 +24,7 @@ defmodule ZombieScenarioTest do
 
     # Step 4: List should not show dead session anymore
     sessions_after = El.ls()
+
     refute name in sessions_after,
            "Dead session should not appear in ls: #{inspect(sessions_after)}"
   end

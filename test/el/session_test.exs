@@ -12,15 +12,15 @@ defmodule El.SessionTest do
 
     test "detects single route" do
       assert El.Session.detect_routes("@donnie> you are out of your element") == [
-        {:donnie, "you are out of your element"}
-      ]
+               {:donnie, "you are out of your element"}
+             ]
     end
 
     test "detects multiple routes on different lines" do
       assert El.Session.detect_routes("@donnie> hey\n@walter> sup") == [
-        {:donnie, "hey"},
-        {:walter, "sup"}
-      ]
+               {:donnie, "hey"},
+               {:walter, "sup"}
+             ]
     end
 
     test "detects route with empty payload" do
@@ -29,8 +29,8 @@ defmodule El.SessionTest do
 
     test "detects route with whitespace in payload" do
       assert El.Session.detect_routes("@donnie>   multiple words here") == [
-        {:donnie, "multiple words here"}
-      ]
+               {:donnie, "multiple words here"}
+             ]
     end
 
     test "ignores routes not at start of line" do
@@ -43,10 +43,11 @@ defmodule El.SessionTest do
       some other text
       @walter> message two
       """
+
       assert El.Session.detect_routes(text) == [
-        {:donnie, "message one"},
-        {:walter, "message two"}
-      ]
+               {:donnie, "message one"},
+               {:walter, "message two"}
+             ]
     end
 
     test "converts target to atom" do
