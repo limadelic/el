@@ -8,12 +8,7 @@ defmodule El.ClaudeCode.Spec do
   end
 
   setup do
-    MockSessionModule
-    |> Mox.stub(:start_link, fn opts ->
-      assert Keyword.has_key?(opts, :session_id)
-      assert Keyword.has_key?(opts, :adapter)
-      assert Keyword.has_key?(opts, :dangerously_skip_permissions)
-      assert opts[:dangerously_skip_permissions] == true
+    Mox.stub(MockSessionModule, :start_link, fn _opts ->
       {:ok, self()}
     end)
 
@@ -21,13 +16,50 @@ defmodule El.ClaudeCode.Spec do
   end
 
   describe "start_link/1" do
-    test "passes correct opts to session start_link" do
+    test "delegates to session module" do
+      MockSessionModule
+      |> Mox.expect(:start_link, 1, fn _opts ->
+        {:ok, self()}
+      end)
+
       El.ClaudeCode.start_link(session_module: MockSessionModule)
     end
 
-    test "includes model in opts when provided" do
+    test "passes session_id to session module" do
       MockSessionModule
-      |> Mox.expect(:start_link, fn opts ->
+      |> Mox.expect(:start_link, 1, fn opts ->
+        assert Keyword.has_key?(opts, :session_id)
+        assert is_binary(opts[:session_id])
+        {:ok, self()}
+      end)
+
+      El.ClaudeCode.start_link(session_module: MockSessionModule)
+    end
+
+    test "passes adapter configuration" do
+      MockSessionModule
+      |> Mox.expect(:start_link, 1, fn opts ->
+        assert Keyword.has_key?(opts, :adapter)
+        assert is_tuple(opts[:adapter])
+        {:ok, self()}
+      end)
+
+      El.ClaudeCode.start_link(session_module: MockSessionModule)
+    end
+
+    test "passes dangerously_skip_permissions flag" do
+      MockSessionModule
+      |> Mox.expect(:start_link, 1, fn opts ->
+        assert opts[:dangerously_skip_permissions] == true
+        {:ok, self()}
+      end)
+
+      El.ClaudeCode.start_link(session_module: MockSessionModule)
+    end
+
+    test "includes model when provided" do
+      MockSessionModule
+      |> Mox.expect(:start_link, 1, fn opts ->
         assert opts[:model] == "claude-3-5-haiku"
         {:ok, self()}
       end)
@@ -38,9 +70,9 @@ defmodule El.ClaudeCode.Spec do
       )
     end
 
-    test "omits model from opts when not provided" do
+    test "omits model when not provided" do
       MockSessionModule
-      |> Mox.expect(:start_link, fn opts ->
+      |> Mox.expect(:start_link, 1, fn opts ->
         refute Keyword.has_key?(opts, :model)
         {:ok, self()}
       end)
@@ -48,11 +80,11 @@ defmodule El.ClaudeCode.Spec do
       El.ClaudeCode.start_link(session_module: MockSessionModule)
     end
 
-    test "reads cli_path from Application config" do
+    test "uses configured cli_path from application environment" do
       Application.put_env(:claude_code, :cli_path, "/custom/path")
 
       MockSessionModule
-      |> Mox.expect(:start_link, fn opts ->
+      |> Mox.expect(:start_link, 1, fn opts ->
         {ClaudeCode.Adapter.Port, adapter_opts} = opts[:adapter]
         assert adapter_opts[:cli_path] == "/custom/path"
         {:ok, self()}
@@ -61,11 +93,11 @@ defmodule El.ClaudeCode.Spec do
       El.ClaudeCode.start_link(session_module: MockSessionModule)
     end
 
-    test "defaults to :global when cli_path not configured" do
+    test "defaults cli_path to :global when not configured" do
       Application.delete_env(:claude_code, :cli_path)
 
       MockSessionModule
-      |> Mox.expect(:start_link, fn opts ->
+      |> Mox.expect(:start_link, 1, fn opts ->
         {ClaudeCode.Adapter.Port, adapter_opts} = opts[:adapter]
         assert adapter_opts[:cli_path] == :global
         {:ok, self()}
@@ -76,7 +108,7 @@ defmodule El.ClaudeCode.Spec do
   end
 
   describe "stream/2" do
-    test "function exists and delegates to session" do
+    test "function exists and accepts pid and prompt" do
       assert function_exported?(El.ClaudeCode, :stream, 2)
     end
   end
