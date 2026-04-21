@@ -166,13 +166,7 @@ defmodule El.Session.Spec do
       assert response == "test response"
     end
 
-    test "stores empty metadata" do
-      state = %{
-        name: :test_session,
-        claude_pid: :mock_pid,
-        messages: []
-      }
-
+    test "stores empty metadata", %{state: state} do
       {:noreply, returned_state} =
         El.Session.handle_cast({:store_tell, "msg", "resp"}, state)
 
@@ -285,37 +279,21 @@ defmodule El.Session.Spec do
   end
 
   describe "handle_call/2 :log" do
-    test "returns messages from state" do
-      state = %{
-        name: :test_session,
-        claude_pid: :mock_pid,
-        messages: [{"type", "msg", "resp", %{}}]
-      }
+    test "returns messages from state", %{state: state} do
+      state_with_messages = %{state | messages: [{"type", "msg", "resp", %{}}]}
 
-      {:reply, messages, _returned_state} = El.Session.handle_call(:log, :from, state)
+      {:reply, messages, _returned_state} = El.Session.handle_call(:log, :from, state_with_messages)
 
       assert messages == [{"type", "msg", "resp", %{}}]
     end
 
-    test "returns state unchanged" do
-      state = %{
-        name: :test_session,
-        claude_pid: :mock_pid,
-        messages: []
-      }
-
+    test "returns state unchanged", %{state: state} do
       {:reply, _messages, returned_state} = El.Session.handle_call(:log, :from, state)
 
       assert returned_state == state
     end
 
-    test "returns empty list when no messages" do
-      state = %{
-        name: :test_session,
-        claude_pid: :mock_pid,
-        messages: []
-      }
-
+    test "returns empty list when no messages", %{state: state} do
       {:reply, messages, _returned_state} = El.Session.handle_call(:log, :from, state)
 
       assert messages == []
@@ -365,55 +343,32 @@ defmodule El.Session.Spec do
       assert response == "missing is not running"
     end
 
-    test "stores relay message" do
-      state = %{
-        name: :test_session,
-        claude_pid: :mock_pid,
-        messages: [],
-        alive_fn: fn :target -> true end
-      }
+    test "stores relay message", %{state: state} do
+      alive_fn = fn :target -> true end
 
       {:reply, _response, returned_state} =
-        El.Session.handle_call({:ask_tell, :target, "message"}, :from, state)
+        El.Session.handle_call({:ask_tell, :target, "message"}, :from, %{state | alive_fn: alive_fn})
 
       assert length(returned_state.messages) == 1
     end
   end
 
   describe "handle_info/2" do
-    test "clears claude_pid on EXIT from claude process" do
-      state = %{
-        name: :test_session,
-        claude_pid: :mock_pid,
-        messages: []
-      }
-
+    test "clears claude_pid on EXIT from claude process", %{state: state} do
       {:noreply, returned_state} =
         El.Session.handle_info({:EXIT, :mock_pid, :normal}, state)
 
       assert returned_state.claude_pid == nil
     end
 
-    test "preserves state on EXIT from different pid" do
-      state = %{
-        name: :test_session,
-        claude_pid: :mock_pid,
-        messages: []
-      }
-
+    test "preserves state on EXIT from different pid", %{state: state} do
       {:noreply, returned_state} =
         El.Session.handle_info({:EXIT, :other_pid, :normal}, state)
 
       assert returned_state == state
     end
 
-    test "preserves state on unknown message" do
-      state = %{
-        name: :test_session,
-        claude_pid: :mock_pid,
-        messages: []
-      }
-
+    test "preserves state on unknown message", %{state: state} do
       {:noreply, returned_state} = El.Session.handle_info(:unknown_message, state)
 
       assert returned_state == state
