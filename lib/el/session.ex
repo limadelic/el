@@ -128,23 +128,43 @@ defmodule El.Session do
 
   @impl true
   def handle_call({:ask, message}, _from, state) do
-    response =
-      if state.claude_pid do
-        try do
-          state.claude_pid
-          |> El.ClaudeCode.stream(message)
-          |> ClaudeCode.Stream.text_content()
-          |> Enum.join()
-        catch
-          :exit, _ -> "(ClaudeCode unavailable)"
-          _, _ -> "(ClaudeCode unavailable)"
+    routes = detect_routes(message)
+
+    if Enum.empty?(routes) do
+      response =
+        if state.claude_pid do
+          try do
+            state.claude_pid
+            |> El.ClaudeCode.stream(message)
+            |> ClaudeCode.Stream.text_content()
+            |> Enum.join()
+          catch
+            :exit, _ -> "(ClaudeCode unavailable)"
+            _, _ -> "(ClaudeCode unavailable)"
+          end
+        else
+          "(ClaudeCode unavailable)"
         end
-      else
-        "(ClaudeCode unavailable)"
+
+      new_state = %{state | messages: state.messages ++ [{"ask", message, response, %{}}]}
+      {:reply, response, new_state}
+    else
+      for {target, payload} <- routes do
+        if target != state.name do
+          if El.Session.alive?(target) do
+            El.Session.tell(target, "[from #{state.name}] #{payload}")
+            store_relay(state.name, message, "-> #{target}")
+          else
+            store_relay(state.name, message, "#{target} is not running")
+          end
+        end
       end
 
-    new_state = %{state | messages: state.messages ++ [{"ask", message, response, %{}}]}
-    {:reply, response, new_state}
+      targets = routes |> Enum.map(fn {t, _} -> t end) |> Enum.join(", ")
+      response = "-> #{targets}"
+      new_state = %{state | messages: state.messages ++ [{"ask", message, response, %{}}]}
+      {:reply, response, new_state}
+    end
   end
 
   def handle_call(:log, _from, state) do
