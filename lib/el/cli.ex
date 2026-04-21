@@ -100,7 +100,7 @@ defmodule El.CLI do
         log = :rpc.call(daemon_node, El, :log, [name_atom])
 
         log
-        |> Enum.each(fn {type, message, response} ->
+        |> Enum.each(fn {type, message, response, _metadata} ->
           IO.puts("[#{type}] #{message}")
           IO.puts(response)
         end)
