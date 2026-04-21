@@ -17,6 +17,13 @@ defmodule El.Session do
     GenServer.call(via_tuple(name), :log)
   end
 
+  def detect_routes(text) do
+    Regex.scan(~r/^@(\w+)>\s*(.*)$/m, text, capture: :all_but_first)
+    |> Enum.map(fn [target, payload] ->
+      {String.to_atom(target), payload}
+    end)
+  end
+
   def alive?(name) do
     case Registry.lookup(El.Registry, name) do
       [{_pid, _}] -> true
