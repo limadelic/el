@@ -13,7 +13,7 @@ You receive:
 1. The original prompt (what behavior was requested)
 2. Lisa's output (the scenarios and step definitions she produced)
 
-**First check**: did lisa touch anything outside `specs/el/` or `features/`? If yes, flag it before reviewing anything else.
+**First check**: did lisa touch anything outside `features/`? If yes, flag it before reviewing anything else.
 
 Be specific. Point at the violation. No vague "could be improved" — say what's wrong and why.
 
