@@ -46,7 +46,8 @@ defmodule El.MixProject do
       {:claude_code, "~> 0.36"},
       {:burrito, "~> 1.0"},
       {:cabbage, "~> 0.4", only: :test},
-      {:mox, "~> 1.0", only: :test}
+      {:mox, "~> 1.0", only: :test},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
 
