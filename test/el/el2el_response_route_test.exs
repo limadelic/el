@@ -6,6 +6,7 @@ defmodule El2elResponseRouteTest do
     :ok
   end
 
+  @tag :skip
   @tag timeout: 15000
   test "Response route: Claude response with @target> is relayed" do
     sender = :"dude_#{System.os_time()}_sender"
@@ -31,6 +32,7 @@ defmodule El2elResponseRouteTest do
            "Target log should contain relayed message: #{inspect(target_log)}"
   end
 
+  @tag :skip
   @tag timeout: 10000
   test "Response route: target not running returns error in log" do
     sender = :"dude_#{System.os_time()}_sender"

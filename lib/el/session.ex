@@ -1,8 +1,14 @@
 defmodule El.Session do
   use GenServer
 
-  def start_link(name) do
-    GenServer.start_link(__MODULE__, name, name: via_tuple(name))
+  def start_link(name_or_config, opts \\ []) do
+    {name, session_opts} =
+      case name_or_config do
+        {n, o} -> {n, o}
+        n -> {n, opts}
+      end
+
+    GenServer.start_link(__MODULE__, {name, session_opts}, name: via_tuple(name))
   end
 
   def tell(name, message) do
@@ -40,12 +46,12 @@ defmodule El.Session do
   end
 
   @impl true
-  def init(name) do
+  def init({name, opts}) do
     Process.flag(:trap_exit, true)
 
     claude_pid =
       try do
-        case El.ClaudeCode.start_link([]) do
+        case El.ClaudeCode.start_link(opts) do
           {:ok, pid} -> pid
           {:error, _reason} -> nil
         end

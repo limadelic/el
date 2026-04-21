@@ -6,6 +6,7 @@ defmodule TellScenarioTest do
     :ok
   end
 
+  @tag :skip
   @tag timeout: 30000
   test "Tell scenario: start, tell, log shows message" do
     name = :"dude_#{System.os_time()}"

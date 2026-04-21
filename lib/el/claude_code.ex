@@ -1,14 +1,23 @@
 defmodule El.ClaudeCode do
-  def start_link(_opts) do
+  def start_link(opts) do
     session_id = random_uuid()
 
     cli_path = Application.get_env(:claude_code, :cli_path, :global)
 
-    ClaudeCode.Session.start_link(
+    session_opts = [
       adapter: {ClaudeCode.Adapter.Port, [cli_path: cli_path]},
       session_id: session_id,
       dangerously_skip_permissions: true
-    )
+    ]
+
+    session_opts =
+      if model = opts[:model] do
+        session_opts ++ [model: model]
+      else
+        session_opts
+      end
+
+    ClaudeCode.Session.start_link(session_opts)
   end
 
   def stream(pid, prompt) do

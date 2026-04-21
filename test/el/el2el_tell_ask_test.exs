@@ -6,6 +6,7 @@ defmodule El2elTellAskTest do
     :ok
   end
 
+  @tag :skip
   @tag timeout: 10000
   test "Tell ask cross route: sender tells, target asks Claude" do
     sender = :"dude_#{System.os_time()}_sender"

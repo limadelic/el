@@ -110,6 +110,32 @@ defmodule El.SessionTest do
     end
   end
 
+  describe "model parameter" do
+    test "passes model option to ClaudeCode session" do
+      session = :test_model_param
+      {:ok, _pid} = El.Session.start_link(session, model: "claude-3-5-haiku")
+
+      via = {:via, Registry, {El.Registry, session}}
+      state = :sys.get_state(via)
+
+      assert state.claude_pid != nil
+      assert Process.alive?(state.claude_pid)
+    end
+
+    test "start without model option still works" do
+      session = :test_model_default
+      {:ok, _pid} = El.Session.start_link(session)
+
+      assert El.Session.alive?(session)
+    end
+
+    test "El.start passes model option to session" do
+      El.start(:test_model_el_start, model: "claude-3-5-haiku")
+
+      assert El.Session.alive?(:test_model_el_start)
+    end
+  end
+
   describe "crash isolation" do
     test "session survives when claude_pid crashes" do
       session = :test_crash_isolation
