@@ -1,3 +1,5 @@
+Application.ensure_all_started(:mox)
+
 Mox.defmock(MockSessionModule, for: El.SessionAdapter)
 Mox.defmock(MockPortAdapter, for: El.PortAdapter)
 Mox.defmock(MockFileAdapter, for: El.FileAdapter)

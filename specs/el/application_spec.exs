@@ -1,27 +1,30 @@
 defmodule El.Application.Spec do
   use ExUnit.Case
 
-  describe "children/0" do
-    test "includes Registry with unique keys" do
-      assert {Registry, [keys: :unique, name: El.Registry]} in El.Application.children()
-    end
-
-    test "includes DynamicSupervisor for sessions" do
-      assert {DynamicSupervisor, [name: El.SessionSupervisor]} in El.Application.children()
-    end
-
-    test "has exactly two children" do
-      assert length(El.Application.children()) == 2
-    end
+  setup do
+    [
+      children: El.Application.children(),
+      supervisor_opts: El.Application.supervisor_opts()
+    ]
   end
 
-  describe "supervisor_opts/0" do
-    test "sets strategy to one_for_one" do
-      assert El.Application.supervisor_opts()[:strategy] == :one_for_one
-    end
+  test "children includes Registry", %{children: children} do
+    assert {Registry, [keys: :unique, name: El.Registry]} in children
+  end
 
-    test "names the supervisor El.Supervisor" do
-      assert El.Application.supervisor_opts()[:name] == El.Supervisor
-    end
+  test "children includes DynamicSupervisor", %{children: children} do
+    assert {DynamicSupervisor, [name: El.SessionSupervisor]} in children
+  end
+
+  test "children has exactly two entries", %{children: children} do
+    assert length(children) == 2
+  end
+
+  test "supervisor opts strategy is one_for_one", %{supervisor_opts: opts} do
+    assert opts[:strategy] == :one_for_one
+  end
+
+  test "supervisor opts names El.Supervisor", %{supervisor_opts: opts} do
+    assert opts[:name] == El.Supervisor
   end
 end
