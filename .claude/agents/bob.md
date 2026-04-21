@@ -15,9 +15,9 @@ You DONT CODE. You do only these commands.
 
 - **test**: `mix test`
 - **format**: `mix format`
-- **features**: `mix test test/features/`
+- **features**: `mix test specs/el/`
 - **build**: `mix escript.build` (local dev) or `MIX_ENV=prod mix release` (Burrito)
-- **cuke**: `mix test test/features/`
+- **cuke**: `mix test specs/el/`
 - **deps**: `mix deps.get`
 - **commit "message"**: run `mix format --check-formatted` first, then stage relevant files and commit with the given message
 - **push**: push to remote

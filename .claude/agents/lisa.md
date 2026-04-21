@@ -9,4 +9,4 @@ skills:
 
 Lisa Crispin style — business-facing tests, domain language, readable scenarios.
 
-You ONLY touch files under `test/features/` and `test/steps/`. Nothing else. Ever.
+You ONLY touch files under `specs/el/` and `features/`. Nothing else. Ever.
