@@ -51,19 +51,10 @@ defmodule El.Session do
       response =
         if claude_pid do
           try do
-            task = Task.async(fn ->
-              claude_pid
-              |> El.ClaudeCode.stream(message)
-              |> ClaudeCode.Stream.text_content()
-              |> Enum.join()
-            end)
-
-            case Task.yield(task, 30_000) do
-              {:ok, result} -> result
-              nil ->
-                Task.shutdown(task)
-                "(ClaudeCode timeout)"
-            end
+            claude_pid
+            |> El.ClaudeCode.stream(message)
+            |> ClaudeCode.Stream.text_content()
+            |> Enum.join()
           catch
             :exit, _ -> "(ClaudeCode unavailable)"
             _, _ -> "(ClaudeCode unavailable)"
@@ -88,19 +79,10 @@ defmodule El.Session do
     response =
       if state.claude_pid do
         try do
-          task = Task.async(fn ->
-            state.claude_pid
-            |> El.ClaudeCode.stream(message)
-            |> ClaudeCode.Stream.text_content()
-            |> Enum.join()
-          end)
-
-          case Task.yield(task, 30_000) do
-            {:ok, result} -> result
-            nil ->
-              Task.shutdown(task)
-              "(ClaudeCode timeout)"
-          end
+          state.claude_pid
+          |> El.ClaudeCode.stream(message)
+          |> ClaudeCode.Stream.text_content()
+          |> Enum.join()
         catch
           :exit, _ -> "(ClaudeCode unavailable)"
           _, _ -> "(ClaudeCode unavailable)"

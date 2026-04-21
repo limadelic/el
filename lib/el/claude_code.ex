@@ -6,7 +6,8 @@ defmodule El.ClaudeCode do
 
     ClaudeCode.Session.start_link(
       adapter: {ClaudeCode.Adapter.Port, [cli_path: cli_path]},
-      session_id: session_id
+      session_id: session_id,
+      dangerously_skip_permissions: true
     )
   end
 
