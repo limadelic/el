@@ -22,6 +22,14 @@ defmodule El do
     El.Session.log(name)
   end
 
+  def tell_ask(name, target, message) do
+    El.Session.tell_ask(name, target, message)
+  end
+
+  def ask_tell(name, target, message) do
+    El.Session.ask_tell(name, target, message)
+  end
+
   def kill(name) do
     case local_lookup(name) do
       [{pid, _}] ->

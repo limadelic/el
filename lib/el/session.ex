@@ -17,6 +17,14 @@ defmodule El.Session do
     GenServer.call(via_tuple(name), :log)
   end
 
+  def tell_ask(name, target, message) do
+    GenServer.cast(via_tuple(name), {:tell_ask, target, message})
+  end
+
+  def ask_tell(name, target, message) do
+    GenServer.call(via_tuple(name), {:ask_tell, target, message}, :infinity)
+  end
+
   def detect_routes(text) do
     Regex.scan(~r/^@(\w+)>\s*(.*)$/m, text, capture: :all_but_first)
     |> Enum.map(fn [target, payload] ->
@@ -121,6 +129,27 @@ defmodule El.Session do
      %{state | messages: state.messages ++ [{"relay", message, response, %{from: state.name}}]}}
   end
 
+  @impl true
+  def handle_cast({:tell_ask, target, message}, state) do
+    response =
+      if El.Session.alive?(target) do
+        Task.start(fn ->
+          El.ask(target, "[from #{state.name}] #{message}")
+        end)
+
+        "-> #{target}"
+      else
+        "#{target} is not running"
+      end
+
+    new_state = %{
+      state
+      | messages: state.messages ++ [{"relay", message, response, %{from: state.name}}]
+    }
+
+    {:noreply, new_state}
+  end
+
   defp store_relay(sender_name, message, response) do
     pid = via_tuple(sender_name)
     GenServer.cast(pid, {:store_relay, message, response})
@@ -142,9 +171,15 @@ defmodule El.Session do
         case valid_routes do
           [{target, payload}] ->
             if El.Session.alive?(target) do
-              target_response = El.ask(target, "[from #{state.name}] #{payload}")
+              relay_msg = "[from #{state.name}] #{payload}"
+
+              GenServer.cast(
+                via_tuple(target),
+                {:store_relay, relay_msg, ""}
+              )
+
               store_relay(state.name, message, "-> #{target}")
-              target_response
+              "-> #{target}"
             else
               store_relay(state.name, message, "#{target} is not running")
               "#{target} is not running"
@@ -162,6 +197,24 @@ defmodule El.Session do
   @impl true
   def handle_call(:log, _from, state) do
     {:reply, state.messages, state}
+  end
+
+  @impl true
+  def handle_call({:ask_tell, target, message}, _from, state) do
+    response =
+      if El.Session.alive?(target) do
+        El.tell(target, "[from #{state.name}] #{message}")
+        "-> #{target}"
+      else
+        "#{target} is not running"
+      end
+
+    new_state = %{
+      state
+      | messages: state.messages ++ [{"relay", message, response, %{from: state.name}}]
+    }
+
+    {:reply, response, new_state}
   end
 
   defp ask_claude(claude_pid, message) do
