@@ -16,11 +16,6 @@ end
 defmodule El.Session.Spec do
   use ExUnit.Case
 
-  setup_all do
-    Mimic.copy(MockSessionModule)
-    :ok
-  end
-
   setup do
     state = %{
       name: :test_session,
@@ -118,7 +113,6 @@ defmodule El.Session.Spec do
 
   describe "handle_cast/2 :tell" do
     test "starts task to ask claude when no routes", %{state: state} do
-      Mimic.copy(Task)
       Mimic.stub(Task, :start, fn _fun -> {:ok, :task_pid} end)
 
       {:noreply, returned_state} =

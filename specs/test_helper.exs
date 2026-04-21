@@ -1,25 +1,20 @@
-Application.ensure_all_started(:mox)
+Application.ensure_all_started(:mimic)
 
-Mox.defmock(MockSessionModule, for: El.SessionAdapter)
-Mox.defmock(MockPortAdapter, for: El.PortAdapter)
-Mox.defmock(MockFileAdapter, for: El.FileAdapter)
-Mox.defmock(MockPortModule, for: El.PortAdapter)
-Mox.defmock(MockFileModule, for: El.FileAdapter)
-
-defmodule MockClaudeModuleBehaviour do
-  @callback start_link(opts :: list()) :: {:ok, pid()} | {:error, any()}
-  @callback stream(pid :: pid(), message :: String.t()) :: list()
-  @callback text_content(list :: list()) :: list()
-end
-
-defmodule MockTaskModuleBehaviour do
-  @callback start(fun :: (() -> any())) :: {:ok, pid()}
-end
-
-Mox.defmock(MockClaudeModule, for: MockClaudeModuleBehaviour)
-Mox.defmock(MockTaskModule, for: MockTaskModuleBehaviour)
+Mimic.copy(El.SessionAdapter)
+Mimic.copy(El.PortAdapter)
+Mimic.copy(El.FileAdapter)
+Mimic.copy(Task)
 
 ExUnit.start()
+
+defmodule MockSessionModule do
+  def start_link(_), do: {:ok, :mock_pid}
+  def start(_fun), do: {:ok, :task_pid}
+end
+
+defmodule MockTaskModule do
+  def start(_fun), do: {:ok, :task_pid}
+end
 
 defmodule TestCLI do
   def run(args) do

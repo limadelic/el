@@ -47,7 +47,6 @@ defmodule El.MixProject do
       {:burrito, "~> 1.0"},
       {:cabbage, "~> 0.4", only: :test},
       {:mimic, "~> 1.7", only: :test},
-      {:mox, "~> 1.0", only: :test},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
