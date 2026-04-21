@@ -28,20 +28,31 @@ description: Elixir/OTP development rules for El
 # SPEC RULES
 
 ## Philosophy
-- mock the next module — each spec tests ONE module
-- mock stdlib (File, System, Port) for I/O modules
+- mock the next module: each spec tests ONE module
+- mock EVERYTHING that's not in this module
+- whatever is external gets mocked, whatever is internal gets tested
+- GenServer callbacks (init, handle_cast, handle_call, handle_info) are functions, test them directly
 - no end-to-end through the whole stack
 
 ## Mock Style
 - relaxed mocks: use Mox or simple stubs
-- shared defaults in setup — set up the happy path
+- shared defaults in setup, set up the happy path
 - each test overrides ONLY the one thing that makes that scenario different
 
+## DRY
+- shared state in setup, returned via context
+- never repeat the same setup across tests
+- if two tests have identical setup, extract to setup block
+
+## Assertions
+- ONE assertion per test
+- if you need multiple asserts, split into multiple tests
+- the test name describes the one thing being asserted
+
 ## Structure
-- specs/ mirrors lib/ — one spec file per module
+- specs/ mirrors lib/ -- one spec file per module
 - files named `_spec.exs` not `_test.exs`
 
-## What to test (BDD)
-- test what the caller sees, not how the code works inside
-- if you can't observe it from outside the module, don't spec it
+## What to test
+- test observable behavior: what the function returns, what side effects it produces (via mock verification)
 - never test: caching, memoization, property assignment, language mechanics
