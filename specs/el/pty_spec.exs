@@ -1,64 +1,67 @@
-defmodule MockFile do
-  def open(_, _), do: {:ok, :mock_file}
-  def write(_, _), do: :ok
-  def read(_, _), do: {:error, :eof}
-end
-
-defmodule MockPort do
-  def open(_, _), do: :mock_port
-  def command(_, _), do: true
-end
-
 defmodule El.PTYSpec do
   use ExUnit.Case
 
   describe "start_link/2" do
-    test "starts a GenServer and returns pid" do
-      opts = [file: MockFile, port: MockPort]
-      {:ok, pid} = El.PTY.start_link(:test_pty, "true", opts)
-
+    test "returns ok tuple with pid" do
+      {:ok, pid} = El.PTY.start_link(:test_pty, "true", opts())
       assert is_pid(pid)
-      assert Process.alive?(pid)
+      GenServer.stop(pid)
     end
 
-    test "registers the GenServer by name" do
-      opts = [file: MockFile, port: MockPort]
-      {:ok, pid} = El.PTY.start_link(:named_pty, "true", opts)
-
-      assert GenServer.whereis(:named_pty) == pid
-    end
-
-    test "initializes with port and file handles" do
-      opts = [file: MockFile, port: MockPort]
-      {:ok, _pid} = El.PTY.start_link(:init_pty, "true", opts)
-
-      assert GenServer.whereis(:init_pty)
+    test "registers GenServer by provided name" do
+      {:ok, pid} = El.PTY.start_link(:named_test, "true", opts())
+      assert GenServer.whereis(:named_test) == pid
+      GenServer.stop(pid)
     end
   end
 
   describe "inject/2" do
-    test "sends data cast to the GenServer" do
-      opts = [file: MockFile, port: MockPort]
-      {:ok, pid} = El.PTY.start_link(:inject_pty, "cat", opts)
+    test "sends message to port via command" do
+      Mox.verify_on_exit!(MockPortAdapter)
 
-      El.PTY.inject(:inject_pty, "hello")
+      {:ok, pid} = El.PTY.start_link(:inject_test, "cat", opts())
 
-      assert Process.alive?(pid)
+      Mox.allow(MockPortAdapter, self(), pid)
+
+      Mox.expect(MockPortAdapter, :command, fn port, data ->
+        assert port == :mock_port
+        assert data == "hello"
+        true
+      end)
+
+      El.PTY.inject(:inject_test, "hello")
+      Process.sleep(50)
+    end
+
+    test "verifies command called exactly once" do
+      Mox.verify_on_exit!(MockPortAdapter)
+
+      {:ok, pid} = El.PTY.start_link(:count_test, "cat", opts())
+
+      Mox.allow(MockPortAdapter, self(), pid)
+
+      Mox.expect(MockPortAdapter, :command, 1, fn port, data ->
+        assert port == :mock_port
+        assert data == "once"
+        true
+      end)
+
+      El.PTY.inject(:count_test, "once")
+      Process.sleep(50)
     end
   end
 
   describe "run/1" do
     test "starts a PTY GenServer" do
-      opts = [file: MockFile, port: MockPort]
+      opts_val = opts()
 
       task =
         Task.async(fn ->
-          El.PTY.run(:run_pty, opts)
+          El.PTY.run(:run_test, opts_val)
         end)
 
       Process.sleep(100)
-      pid = GenServer.whereis(:run_pty)
-
+      pid = GenServer.whereis(:run_test)
       assert is_pid(pid)
 
       GenServer.stop(pid)
@@ -68,7 +71,7 @@ defmodule El.PTYSpec do
 
   setup do
     on_exit(fn ->
-      for name <- [:test_pty, :named_pty, :init_pty, :inject_pty, :run_pty] do
+      for name <- [:test_pty, :named_test, :inject_test, :count_test, :run_test] do
         case GenServer.whereis(name) do
           pid when is_pid(pid) ->
             try do
@@ -82,7 +85,24 @@ defmodule El.PTYSpec do
         end
       end
     end)
-
     :ok
   end
+
+  defp opts do
+    [file: SimpleFile, port: SimplePort]
+  end
+end
+
+defmodule SimplePort do
+  def open(_,_), do: :mock_port
+
+  def command(port, data) do
+    # Allow Mox to intercept command calls
+    MockPortAdapter.command(port, data)
+  end
+end
+
+defmodule SimpleFile do
+  def open(_, _), do: {:ok, :mock_file}
+  def read(_, _), do: {:error, :eof}
 end

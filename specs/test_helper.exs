@@ -1,4 +1,6 @@
 Mox.defmock(MockSessionModule, for: El.SessionAdapter)
+Mox.defmock(MockPortAdapter, for: El.PortAdapter)
+Mox.defmock(MockFileAdapter, for: El.FileAdapter)
 
 ExUnit.start()
 

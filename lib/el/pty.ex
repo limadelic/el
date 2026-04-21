@@ -20,7 +20,7 @@ defmodule El.PTY do
 
   @impl true
   def init({cmd, opts}) do
-    file_module = Keyword.get(opts, :file, :file)
+    file_module = Keyword.get(opts, :file, File)
     port_module = Keyword.get(opts, :port, Port)
 
     pty =
