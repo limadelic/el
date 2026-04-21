@@ -4,9 +4,20 @@ defmodule El.CLI do
     System.halt(0)
   end
 
+  defp extract_model_flag(args) do
+    case args do
+      ["--model", model | rest] -> {String.to_atom(model), rest}
+      _ -> {nil, args}
+    end
+  end
+
+  defp start_opts(model) do
+    if model, do: [model: model], else: []
+  end
+
   defp main_impl([]) do
     IO.puts(
-      "usage: el ls | el <name> | el <name> tell <message> | el <name> ask <message> | el <name> log | el <name> kill | el kill all"
+      "usage: el ls | el <name> [--model <model>] | el <name> [--model <model>] tell <message> | el <name> [--model <model>] ask <message> | el <name> log | el <name> kill | el kill all"
     )
   end
 
@@ -27,13 +38,18 @@ defmodule El.CLI do
   end
 
   defp main_impl(["--daemon", name]) do
+    main_impl(["--daemon", name, "--model", ""])
+  end
+
+  defp main_impl(["--daemon", name, "--model", model]) do
     daemon_node = ensure_daemon_node()
     name_atom = String.to_atom(name)
+    opts = start_opts(if model != "", do: String.to_atom(model), else: nil)
 
     if daemon_node && daemon_node != Node.self() do
-      :rpc.call(daemon_node, El, :start, [name_atom])
+      :rpc.call(daemon_node, El, :start, [name_atom, opts])
     else
-      El.start(name_atom)
+      El.start(name_atom, opts)
     end
 
     IO.puts("el: #{name} is up on #{Node.self()}")
@@ -41,16 +57,44 @@ defmodule El.CLI do
   end
 
   defp main_impl([name]) do
+    {model, []} = extract_model_flag([])
+    opts = start_opts(model)
+
     ensure_epmd()
 
     case find_daemon_node() do
       {:ok, daemon_node} ->
         name_atom = String.to_atom(name)
-        :rpc.call(daemon_node, El, :start, [name_atom])
+        :rpc.call(daemon_node, El, :start, [name_atom, opts])
         IO.puts("el: #{name} is up")
 
       :not_found ->
-        spawn_daemon(name)
+        spawn_daemon(name, opts)
+    end
+  end
+
+  defp main_impl([name, "--model", model | rest]) do
+    opts = start_opts(String.to_atom(model))
+
+    ensure_epmd()
+
+    case find_daemon_node() do
+      {:ok, daemon_node} ->
+        name_atom = String.to_atom(name)
+        :rpc.call(daemon_node, El, :start, [name_atom, opts])
+
+        if Enum.empty?(rest) do
+          IO.puts("el: #{name} is up")
+        else
+          main_impl([name | rest])
+        end
+
+      :not_found ->
+        spawn_daemon(name, opts)
+
+        if not Enum.empty?(rest) do
+          main_impl([name | rest])
+        end
     end
   end
 
@@ -372,10 +416,17 @@ defmodule El.CLI do
     File.write!(node_file, Atom.to_string(Node.self()))
   end
 
-  defp spawn_daemon(name) do
+  defp spawn_daemon(name, opts) do
     binary_path = get_binary_path()
 
-    cmd = ~c"nohup #{binary_path} --daemon #{name} > /dev/null 2>&1 &"
+    model_arg =
+      if model = opts[:model] do
+        " --model #{Atom.to_string(model)}"
+      else
+        ""
+      end
+
+    cmd = ~c"nohup #{binary_path} --daemon #{name}#{model_arg} > /dev/null 2>&1 &"
     :os.cmd(cmd)
 
     case poll_daemon_ready(300) do
