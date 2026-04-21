@@ -51,27 +51,42 @@ defmodule El.Session do
 
   @impl true
   def handle_cast({:tell, message}, state) do
-    pid = self()
-    claude_pid = state.claude_pid
+    routes = detect_routes(message)
 
-    Task.start(fn ->
-      response =
-        if claude_pid do
-          try do
-            claude_pid
-            |> El.ClaudeCode.stream(message)
-            |> ClaudeCode.Stream.text_content()
-            |> Enum.join()
-          catch
-            :exit, _ -> "(ClaudeCode unavailable)"
-            _, _ -> "(ClaudeCode unavailable)"
+    if Enum.empty?(routes) do
+      pid = self()
+      claude_pid = state.claude_pid
+
+      Task.start(fn ->
+        response =
+          if claude_pid do
+            try do
+              claude_pid
+              |> El.ClaudeCode.stream(message)
+              |> ClaudeCode.Stream.text_content()
+              |> Enum.join()
+            catch
+              :exit, _ -> "(ClaudeCode unavailable)"
+              _, _ -> "(ClaudeCode unavailable)"
+            end
+          else
+            "(ClaudeCode unavailable)"
           end
-        else
-          "(ClaudeCode unavailable)"
-        end
 
-      GenServer.cast(pid, {:store_tell, message, response})
-    end)
+        GenServer.cast(pid, {:store_tell, message, response})
+      end)
+    else
+      for {target, payload} <- routes do
+        if target != state.name do
+          if El.Session.alive?(target) do
+            El.Session.tell(target, "[from #{state.name}] #{payload}")
+            store_relay(state.name, message, "-> #{target}")
+          else
+            store_relay(state.name, message, "#{target} is not running")
+          end
+        end
+      end
+    end
 
     {:noreply, state}
   end
@@ -79,6 +94,17 @@ defmodule El.Session do
   @impl true
   def handle_cast({:store_tell, message, response}, state) do
     {:noreply, %{state | messages: state.messages ++ [{"tell", message, response, %{}}]}}
+  end
+
+  @impl true
+  def handle_cast({:store_relay, message, response}, state) do
+    {:noreply,
+     %{state | messages: state.messages ++ [{"relay", message, response, %{from: state.name}}]}}
+  end
+
+  defp store_relay(sender_name, message, response) do
+    pid = via_tuple(sender_name)
+    GenServer.cast(pid, {:store_relay, message, response})
   end
 
   @impl true
