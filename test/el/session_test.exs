@@ -120,6 +120,8 @@ defmodule El.SessionTest do
 
       assert state.claude_pid != nil
       assert Process.alive?(state.claude_pid)
+
+      assert state.name == session
     end
 
     test "start without model option still works" do
@@ -127,12 +129,32 @@ defmodule El.SessionTest do
       {:ok, _pid} = El.Session.start_link(session)
 
       assert El.Session.alive?(session)
+
+      via = {:via, Registry, {El.Registry, session}}
+      state = :sys.get_state(via)
+      assert state.name == session
     end
 
     test "El.start passes model option to session" do
       El.start(:test_model_el_start, model: "claude-3-5-haiku")
 
       assert El.Session.alive?(:test_model_el_start)
+
+      via = {:via, Registry, {El.Registry, :test_model_el_start}}
+      state = :sys.get_state(via)
+      assert state.claude_pid != nil
+    end
+
+    test "model option is passed through El.ClaudeCode to ClaudeCode.Session" do
+      session = :test_model_verification
+      model_name = "claude-3-5-haiku"
+      {:ok, _pid} = El.Session.start_link(session, model: model_name)
+
+      via = {:via, Registry, {El.Registry, session}}
+      state = :sys.get_state(via)
+
+      assert state.claude_pid != nil
+      assert Process.alive?(state.claude_pid)
     end
   end
 
