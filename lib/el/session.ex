@@ -37,7 +37,7 @@ defmodule El.Session do
     # (allows Kill scenario to work without full ClaudeCode setup)
     claude_pid =
       try do
-        case El.ClaudeCode.start_link(name: name) do
+        case El.ClaudeCode.start_link([]) do
           {:ok, pid} -> pid
           {:error, _reason} -> nil
         end
@@ -128,27 +128,56 @@ defmodule El.Session do
 
   @impl true
   def handle_call({:ask, message}, _from, state) do
-    response =
-      if state.claude_pid do
-        try do
-          state.claude_pid
-          |> El.ClaudeCode.stream(message)
-          |> ClaudeCode.Stream.text_content()
-          |> Enum.join()
-        catch
-          :exit, _ -> "(ClaudeCode unavailable)"
-          _, _ -> "(ClaudeCode unavailable)"
-        end
-      else
-        "(ClaudeCode unavailable)"
-      end
+    routes = detect_routes(message)
 
-    new_state = %{state | messages: state.messages ++ [{"ask", message, response, %{}}]}
-    {:reply, response, new_state}
+    valid_routes =
+      Enum.filter(routes, fn {target, _payload} -> target != state.name end)
+
+    if Enum.empty?(valid_routes) do
+      response = ask_claude(state.claude_pid, message)
+      new_state = %{state | messages: state.messages ++ [{"ask", message, response, %{}}]}
+      {:reply, response, new_state}
+    else
+      response =
+        case valid_routes do
+          [{target, payload}] ->
+            if El.Session.alive?(target) do
+              target_response = El.ask(target, "[from #{state.name}] #{payload}")
+              store_relay(state.name, message, "-> #{target}")
+              target_response
+            else
+              store_relay(state.name, message, "#{target} is not running")
+              "#{target} is not running"
+            end
+
+          _ ->
+            ask_claude(state.claude_pid, message)
+        end
+
+      new_state = %{state | messages: state.messages ++ [{"ask", message, response, %{}}]}
+      {:reply, response, new_state}
+    end
   end
 
+  @impl true
   def handle_call(:log, _from, state) do
     {:reply, state.messages, state}
+  end
+
+  defp ask_claude(claude_pid, message) do
+    if claude_pid do
+      try do
+        claude_pid
+        |> El.ClaudeCode.stream(message)
+        |> ClaudeCode.Stream.text_content()
+        |> Enum.join()
+      catch
+        :exit, _ -> "(ClaudeCode unavailable)"
+        _, _ -> "(ClaudeCode unavailable)"
+      end
+    else
+      "(ClaudeCode unavailable)"
+    end
   end
 
   defp via_tuple(name) do
