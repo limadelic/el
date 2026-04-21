@@ -8,11 +8,6 @@ defmodule El.ClaudeCode.Spec do
   end
 
   describe "start_link/1" do
-    test "calls session module with generated session_id" do
-      Mimic.expect(ClaudeCode.Session, :start_link, fn _opts -> {:ok, self()} end)
-      El.ClaudeCode.start_link(session_module: ClaudeCode.Session)
-    end
-
     test "passes session_id that is a UUID string" do
       Mimic.expect(ClaudeCode.Session, :start_link, fn opts ->
         assert Keyword.has_key?(opts, :session_id)
@@ -89,7 +84,6 @@ defmodule El.ClaudeCode.Spec do
 
   describe "stream/2" do
     test "delegates to session module" do
-      Mimic.copy(ClaudeCode.Session)
       Mimic.expect(ClaudeCode.Session, :stream, fn _pid, _prompt -> :ok end)
       El.ClaudeCode.stream(:pid, "prompt")
     end
