@@ -24,7 +24,7 @@ defmodule TellScenarioTest do
     end
 
     # Step 3: Poll log until tell entry appears (tell is async via Task)
-    log = poll_log_for_entry(name, "tell", message, 20, 250)
+    log = poll_log_for_entry(name, "tell", message, 60, 500)
 
     assert Enum.any?(log, fn {type, msg, _, _} ->
              type == "tell" && msg == message

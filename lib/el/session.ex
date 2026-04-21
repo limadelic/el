@@ -20,7 +20,7 @@ defmodule El.Session do
   end
 
   def log(name) do
-    GenServer.call(via_tuple(name), :log)
+    GenServer.call(via_tuple(name), :log, :infinity)
   end
 
   def tell_ask(name, target, message) do
