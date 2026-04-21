@@ -79,7 +79,11 @@ defmodule El.Session do
       for {target, payload} <- routes do
         if target != state.name do
           if El.Session.alive?(target) do
-            El.Session.tell(target, "[from #{state.name}] #{payload}")
+            GenServer.cast(
+              via_tuple(target),
+              {:store_relay, "[from #{state.name}] #{payload}", ""}
+            )
+
             store_relay(state.name, message, "-> #{target}")
           else
             store_relay(state.name, message, "#{target} is not running")
@@ -93,7 +97,22 @@ defmodule El.Session do
 
   @impl true
   def handle_cast({:store_tell, message, response}, state) do
-    {:noreply, %{state | messages: state.messages ++ [{"tell", message, response, %{}}]}}
+    new_state = %{state | messages: state.messages ++ [{"tell", message, response, %{}}]}
+
+    routes = detect_routes(response)
+
+    Enum.each(routes, fn {target, payload} ->
+      if target != state.name do
+        if El.Session.alive?(target) do
+          El.Session.tell(target, "[from #{state.name}] #{payload}")
+          store_relay(state.name, response, "-> #{target}")
+        else
+          store_relay(state.name, response, "#{target} is not running")
+        end
+      end
+    end)
+
+    {:noreply, new_state}
   end
 
   @impl true
