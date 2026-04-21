@@ -1,13 +1,15 @@
 defmodule El do
   def start(name, opts \\ []) when is_atom(name) do
-    case local_lookup(name) do
-      [{_pid, _}] ->
-        name
+    start_if_needed(name, opts, local_lookup(name))
+  end
 
-      [] ->
-        DynamicSupervisor.start_child(El.SessionSupervisor, {El.Session, {name, opts}})
-        name
-    end
+  defp start_if_needed(name, _opts, [{_pid, _}]) do
+    name
+  end
+
+  defp start_if_needed(name, opts, []) do
+    DynamicSupervisor.start_child(El.SessionSupervisor, {El.Session, {name, opts}})
+    name
   end
 
   def tell(name, message) do
@@ -31,19 +33,18 @@ defmodule El do
   end
 
   def kill(name) do
-    case local_lookup(name) do
-      [{pid, _}] ->
-        # Terminate the child in the supervisor
-        # Use terminate instead of call, which will prevent restart
-        DynamicSupervisor.terminate_child(El.SessionSupervisor, pid)
-        :ok
-
-      [] ->
-        :not_found
-    end
+    kill_if_found(local_lookup(name))
   rescue
-    # Process already gone or errored
     _ -> :ok
+  end
+
+  defp kill_if_found([{pid, _}]) do
+    DynamicSupervisor.terminate_child(El.SessionSupervisor, pid)
+    :ok
+  end
+
+  defp kill_if_found([]) do
+    :not_found
   end
 
   def ls do

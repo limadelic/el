@@ -59,13 +59,15 @@ defmodule El.PTY do
   end
 
   defp stdin_loop(tty_in, parent, file_module) do
-    case file_module.read(tty_in, 1) do
-      {:ok, data} ->
-        send(parent, {:stdin, data})
-        stdin_loop(tty_in, parent, file_module)
+    process_stdin_read(file_module.read(tty_in, 1), tty_in, parent, file_module)
+  end
 
-      _ ->
-        :ok
-    end
+  defp process_stdin_read({:ok, data}, tty_in, parent, file_module) do
+    send(parent, {:stdin, data})
+    stdin_loop(tty_in, parent, file_module)
+  end
+
+  defp process_stdin_read(_, _tty_in, _parent, _file_module) do
+    :ok
   end
 end

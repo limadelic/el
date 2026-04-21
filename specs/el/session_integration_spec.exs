@@ -371,48 +371,82 @@ defmodule El.Session.Integration.Spec do
     end
   end
 
-  defp poll_log_for_entry(name, type, message, retries, delay_ms) when retries > 0 do
+  defp poll_log_for_entry(name, type, message, retries, delay_ms) do
     log = El.log(name)
-
-    if Enum.any?(log, fn {t, msg, _, _} -> t == type && msg == message end) do
-      log
-    else
-      Process.sleep(delay_ms)
-      poll_log_for_entry(name, type, message, retries - 1, delay_ms)
-    end
+    ctx = %{name: name, type: type, message: message, retries: retries, delay_ms: delay_ms}
+    poll_log_with_result(log, ctx, has_entry(log, type, message))
   end
 
-  defp poll_log_for_entry(name, _type, _message, 0, _delay_ms) do
-    El.log(name)
+  defp poll_log_with_result(log, _ctx, true) do
+    log
   end
 
-  defp poll_for_relay(name, retries, delay_ms) when retries > 0 do
+  defp poll_log_with_result(_log, ctx, false) when ctx.retries > 0 do
+    Process.sleep(ctx.delay_ms)
+    poll_log_for_entry(ctx.name, ctx.type, ctx.message, ctx.retries - 1, ctx.delay_ms)
+  end
+
+  defp poll_log_with_result(log, _ctx, false) do
+    log
+  end
+
+  defp has_entry(log, type, message) do
+    Enum.any?(log, &matches_entry?(&1, type, message))
+  end
+
+  defp matches_entry?({type, message, _, _}, type, message), do: true
+  defp matches_entry?(_, _, _), do: false
+
+  defp poll_for_relay(name, retries, delay_ms) do
     log = El.log(name)
-
-    if Enum.any?(log, fn {type, _msg, _resp, _meta} -> type == "relay" end) do
-      log
-    else
-      Process.sleep(delay_ms)
-      poll_for_relay(name, retries - 1, delay_ms)
-    end
+    ctx = %{name: name, retries: retries, delay_ms: delay_ms}
+    poll_relay_with_result(log, ctx, has_relay(log))
   end
 
-  defp poll_for_relay(name, 0, _delay_ms) do
-    El.log(name)
+  defp poll_relay_with_result(log, _ctx, true) do
+    log
   end
 
-  defp poll_for_message(name, content, retries, delay_ms) when retries > 0 do
+  defp poll_relay_with_result(_log, ctx, false) when ctx.retries > 0 do
+    Process.sleep(ctx.delay_ms)
+    poll_for_relay(ctx.name, ctx.retries - 1, ctx.delay_ms)
+  end
+
+  defp poll_relay_with_result(log, _ctx, false) do
+    log
+  end
+
+  defp has_relay(log) do
+    Enum.any?(log, &is_relay?/1)
+  end
+
+  defp is_relay?({"relay", _msg, _resp, _meta}), do: true
+  defp is_relay?(_), do: false
+
+  defp poll_for_message(name, content, retries, delay_ms) do
     log = El.log(name)
-
-    if Enum.any?(log, fn {_type, msg, _resp, _meta} -> String.contains?(msg, content) end) do
-      log
-    else
-      Process.sleep(delay_ms)
-      poll_for_message(name, content, retries - 1, delay_ms)
-    end
+    ctx = %{name: name, content: content, retries: retries, delay_ms: delay_ms}
+    poll_message_with_result(log, ctx, has_content(log, content))
   end
 
-  defp poll_for_message(name, _content, 0, _delay_ms) do
-    El.log(name)
+  defp poll_message_with_result(log, _ctx, true) do
+    log
+  end
+
+  defp poll_message_with_result(_log, ctx, false) when ctx.retries > 0 do
+    Process.sleep(ctx.delay_ms)
+    poll_for_message(ctx.name, ctx.content, ctx.retries - 1, ctx.delay_ms)
+  end
+
+  defp poll_message_with_result(log, _ctx, false) do
+    log
+  end
+
+  defp has_content(log, content) do
+    Enum.any?(log, &contains_message?(&1, content))
+  end
+
+  defp contains_message?({_type, msg, _resp, _meta}, content) do
+    String.contains?(msg, content)
   end
 end
