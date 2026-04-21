@@ -4,12 +4,15 @@ defmodule El.Session do
   def start_link({name, session_opts}, _opts) do
     GenServer.start_link(__MODULE__, {name, session_opts}, name: via_tuple(name))
   end
+
   def start_link(name, opts) do
     GenServer.start_link(__MODULE__, {name, opts}, name: via_tuple(name))
   end
+
   def start_link({name, session_opts}) do
     GenServer.start_link(__MODULE__, {name, session_opts}, name: via_tuple(name))
   end
+
   def start_link(name) do
     GenServer.start_link(__MODULE__, {name, []}, name: via_tuple(name))
   end
@@ -48,12 +51,26 @@ defmodule El.Session do
   @impl true
   def init({name, opts}) do
     Process.flag(:trap_exit, true)
-    claude_pid = start_claude(opts)
-    {:ok, %{name: name, claude_pid: claude_pid, messages: []}}
+    claude_module = Keyword.get(opts, :claude_module, El.ClaudeCode)
+    task_module = Keyword.get(opts, :task_module, Task)
+    alive_fn = Keyword.get(opts, :alive_fn, &El.Session.alive?/1)
+    registry_module = Keyword.get(opts, :registry_module, Registry)
+    claude_pid = start_claude(opts, claude_module)
+
+    {:ok,
+     %{
+       name: name,
+       claude_pid: claude_pid,
+       messages: [],
+       claude_module: claude_module,
+       task_module: task_module,
+       alive_fn: alive_fn,
+       registry_module: registry_module
+     }}
   end
 
-  defp start_claude(opts) do
-    safe_start_code(opts)
+  defp start_claude(opts, claude_module) do
+    safe_start_code(opts, claude_module)
   rescue
     _ -> nil
   catch
@@ -61,9 +78,9 @@ defmodule El.Session do
     _, _ -> nil
   end
 
-  defp safe_start_code(opts) do
+  defp safe_start_code(opts, claude_module) do
     opts
-    |> El.ClaudeCode.start_link()
+    |> claude_module.start_link()
     |> handle_start_result()
   end
 
@@ -94,16 +111,20 @@ defmodule El.Session do
   @impl true
   def handle_cast({:tell_ask, target, message}, state) do
     response = process_tell_ask(state, target, message)
+
     new_state = %{
       state
       | messages: state.messages ++ [{"relay", message, response, %{from: state.name}}]
     }
+
     {:noreply, new_state}
   end
 
   defp process_tell(state, message, []) do
     server_pid = self()
-    Task.start(fn ->
+    task_module = Map.get(state, :task_module, Task)
+
+    task_module.start(fn ->
       response = ask_claude(state.claude_pid, message)
       GenServer.cast(server_pid, {:store_tell, message, response})
     end)
@@ -120,7 +141,8 @@ defmodule El.Session do
   end
 
   defp process_tell_route(state, message, target, payload) do
-    process_tell_route_alive(state, message, target, payload, El.Session.alive?(target))
+    alive_fn = Map.get(state, :alive_fn, &El.Session.alive?/1)
+    process_tell_route_alive(state, message, target, payload, alive_fn.(target))
   end
 
   defp process_tell_route_alive(state, message, target, payload, true) do
@@ -128,6 +150,7 @@ defmodule El.Session do
       via_tuple(target),
       {:store_relay, "[from #{state.name}] #{payload}", ""}
     )
+
     store_relay(state.name, message, "-> #{target}")
   end
 
@@ -141,12 +164,14 @@ defmodule El.Session do
     end)
   end
 
-  defp process_tell_response_route(state, _response, target, _payload) when target == state.name do
+  defp process_tell_response_route(state, _response, target, _payload)
+       when target == state.name do
     :ok
   end
 
   defp process_tell_response_route(state, response, target, payload) do
-    process_tell_response_route_alive(state, response, target, payload, El.Session.alive?(target))
+    alive_fn = Map.get(state, :alive_fn, &El.Session.alive?/1)
+    process_tell_response_route_alive(state, response, target, payload, alive_fn.(target))
   end
 
   defp process_tell_response_route_alive(state, response, target, payload, true) do
@@ -159,13 +184,17 @@ defmodule El.Session do
   end
 
   defp process_tell_ask(state, target, message) do
-    process_tell_ask_alive(state, target, message, El.Session.alive?(target))
+    alive_fn = Map.get(state, :alive_fn, &El.Session.alive?/1)
+    process_tell_ask_alive(state, target, message, alive_fn.(target))
   end
 
   defp process_tell_ask_alive(state, target, message, true) do
-    Task.start(fn ->
+    task_module = Map.get(state, :task_module, Task)
+
+    task_module.start(fn ->
       El.ask(target, "[from #{state.name}] #{message}")
     end)
+
     "-> #{target}"
   end
 
@@ -194,10 +223,12 @@ defmodule El.Session do
   @impl true
   def handle_call({:ask_tell, target, message}, _from, state) do
     response = process_ask_tell(state, target, message)
+
     new_state = %{
       state
       | messages: state.messages ++ [{"relay", message, response, %{from: state.name}}]
     }
+
     {:reply, response, new_state}
   end
 
@@ -220,7 +251,8 @@ defmodule El.Session do
   end
 
   defp process_ask_single_route(state, message, target, payload) do
-    process_ask_single_route_alive(state, message, target, payload, El.Session.alive?(target))
+    alive_fn = Map.get(state, :alive_fn, &El.Session.alive?/1)
+    process_ask_single_route_alive(state, message, target, payload, alive_fn.(target))
   end
 
   defp process_ask_single_route_alive(state, message, target, payload, true) do
@@ -236,7 +268,8 @@ defmodule El.Session do
   end
 
   defp process_ask_tell(state, target, message) do
-    process_ask_tell_alive(state, target, message, El.Session.alive?(target))
+    alive_fn = Map.get(state, :alive_fn, &El.Session.alive?/1)
+    process_ask_tell_alive(state, target, message, alive_fn.(target))
   end
 
   defp process_ask_tell_alive(state, target, message, true) do

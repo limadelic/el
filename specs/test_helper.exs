@@ -4,6 +4,19 @@ Mox.defmock(MockFileAdapter, for: El.FileAdapter)
 Mox.defmock(MockPortModule, for: El.PortAdapter)
 Mox.defmock(MockFileModule, for: El.FileAdapter)
 
+defmodule MockClaudeModuleBehaviour do
+  @callback start_link(opts :: list()) :: {:ok, pid()} | {:error, any()}
+  @callback stream(pid :: pid(), message :: String.t()) :: list()
+  @callback text_content(list :: list()) :: list()
+end
+
+defmodule MockTaskModuleBehaviour do
+  @callback start(fun :: (() -> any())) :: {:ok, pid()}
+end
+
+Mox.defmock(MockClaudeModule, for: MockClaudeModuleBehaviour)
+Mox.defmock(MockTaskModule, for: MockTaskModuleBehaviour)
+
 ExUnit.start()
 
 defmodule TestCLI do
