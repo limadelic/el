@@ -1,4 +1,4 @@
-defmodule ElTest do
+defmodule El.Spec do
   use ExUnit.Case
 
   test "el module loads" do

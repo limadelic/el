@@ -4,6 +4,21 @@ defmodule El.CLI do
     System.halt(0)
   end
 
+  def parse_route([]), do: :usage
+  def parse_route(["ls"]), do: :ls
+  def parse_route(["--daemon", _name]), do: :daemon
+  def parse_route(["--daemon", _name, "--model", _model]), do: :daemon
+  def parse_route(["kill", "all"]), do: :kill_all
+  def parse_route([_name, "log"]), do: :log
+  def parse_route([_name, "kill"]), do: :kill
+  def parse_route([_name, "tell", "ask", "@" <> _target | _words]), do: :tell_ask
+  def parse_route([_name, "tell" | _words]), do: :tell
+  def parse_route([_name, "ask", "tell", "@" <> _target | _words]), do: :ask_tell
+  def parse_route([_name, "ask" | _words]), do: :ask
+  def parse_route([_name]), do: :start
+  def parse_route([_name, "--model", _model | _rest]), do: :start
+  def parse_route(_), do: :usage
+
   defp extract_model_flag(args) do
     case args do
       ["--model", model | rest] -> {model, rest}

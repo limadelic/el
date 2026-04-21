@@ -1,5 +1,8 @@
 defmodule El.ClaudeCode do
+  @default_session_module ClaudeCode.Session
+
   def start_link(opts) do
+    session_module = opts[:session_module] || @default_session_module
     session_id = random_uuid()
 
     cli_path = Application.get_env(:claude_code, :cli_path, :global)
@@ -17,7 +20,7 @@ defmodule El.ClaudeCode do
         session_opts
       end
 
-    ClaudeCode.Session.start_link(session_opts)
+    session_module.start_link(session_opts)
   end
 
   def stream(pid, prompt) do

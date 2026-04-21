@@ -8,6 +8,11 @@ defmodule El.MixProject do
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
       test_paths: ["specs"],
+      test_pattern: "**/*.exs",
+      test_load_filters: [
+        &String.ends_with?(&1, "_test.exs"),
+        &String.ends_with?(&1, "_spec.exs")
+      ],
       deps: deps(),
       escript: [main_module: El.CLI],
       package: package(),
@@ -40,7 +45,8 @@ defmodule El.MixProject do
     [
       {:claude_code, "~> 0.36"},
       {:burrito, "~> 1.0"},
-      {:cabbage, "~> 0.4", only: :test}
+      {:cabbage, "~> 0.4", only: :test},
+      {:mox, "~> 1.0", only: :test}
     ]
   end
 

@@ -4,13 +4,7 @@ defmodule El.Application do
 
   @impl true
   def start(_type, _args) do
-    children = [
-      {Registry, keys: :unique, name: El.Registry},
-      {DynamicSupervisor, name: El.SessionSupervisor}
-    ]
-
-    opts = [strategy: :one_for_one, name: El.Supervisor]
-    result = Supervisor.start_link(children, opts)
+    result = Supervisor.start_link(children(), supervisor_opts())
 
     if System.get_env("__BURRITO") do
       spawn(fn ->
@@ -25,5 +19,16 @@ defmodule El.Application do
     end
 
     result
+  end
+
+  def children do
+    [
+      {Registry, keys: :unique, name: El.Registry},
+      {DynamicSupervisor, name: El.SessionSupervisor}
+    ]
+  end
+
+  def supervisor_opts do
+    [strategy: :one_for_one, name: El.Supervisor]
   end
 end

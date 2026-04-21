@@ -1,3 +1,5 @@
+Mox.defmock(MockSessionModule, for: El.SessionAdapter)
+
 ExUnit.start()
 
 defmodule TestCLI do
