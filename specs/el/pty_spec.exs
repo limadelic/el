@@ -1,157 +1,146 @@
 defmodule El.PTY.Spec do
   use ExUnit.Case
 
-  setup do
-    Mox.set_mox_global()
-    Mox.verify_on_exit!()
-    :ok
-  end
-
-  setup do
-    state = %{
-      pty: :mock_port,
-      tty_out: :mock_file,
-      file: MockFileAdapter,
-      port: MockPortAdapter
-    }
-
-    {:ok, state: state}
-  end
-
   describe "init/1" do
     test "opens port with cmd" do
-      Mox.expect(MockPortAdapter, :open, fn {_, cmd}, _ ->
+      Mimic.copy(Port)
+      Mimic.copy(File)
+
+      Mimic.expect(Port, :open, fn {_, cmd}, _ ->
         assert String.ends_with?(cmd, "test_cmd")
         :mock_port
       end)
 
-      Mox.expect(MockFileAdapter, :open, fn _, _ ->
-        {:ok, :mock_file}
-      end)
+      Mimic.expect(File, :open, fn _, _ -> {:ok, :mock_file} end)
 
-      {:ok, state} =
-        El.PTY.init({"test_cmd", [port: MockPortAdapter, file: MockFileAdapter]})
+      {:ok, state} = El.PTY.init({"test_cmd", [port: Port, file: File]})
 
       assert state.pty == :mock_port
     end
 
     test "opens tty with write mode" do
-      Mox.stub(MockPortAdapter, :open, fn _, _ -> :mock_port end)
+      Mimic.copy(Port)
+      Mimic.copy(File)
 
-      Mox.expect(MockFileAdapter, :open, fn path, opts ->
+      Mimic.stub(Port, :open, fn _, _ -> :mock_port end)
+
+      Mimic.expect(File, :open, fn path, opts ->
         assert path == ~c"/dev/tty" and :write in opts and :binary in opts and :raw in opts
         {:ok, :mock_file}
       end)
 
-      El.PTY.init({"cmd", [port: MockPortAdapter, file: MockFileAdapter]})
+      El.PTY.init({"cmd", [port: Port, file: File]})
     end
 
     test "initializes tty_out" do
-      Mox.stub(MockPortAdapter, :open, fn _, _ -> :mock_port end)
-      Mox.stub(MockFileAdapter, :open, fn _, _ -> {:ok, :mock_file} end)
+      Mimic.copy(Port)
+      Mimic.copy(File)
 
-      {:ok, state} =
-        El.PTY.init({"cmd", [port: MockPortAdapter, file: MockFileAdapter]})
+      Mimic.stub(Port, :open, fn _, _ -> :mock_port end)
+      Mimic.stub(File, :open, fn _, _ -> {:ok, :mock_file} end)
+
+      {:ok, state} = El.PTY.init({"cmd", [port: Port, file: File]})
 
       assert state.tty_out == :mock_file
     end
 
     test "stores file adapter" do
-      Mox.stub(MockPortAdapter, :open, fn _, _ -> :mock_port end)
-      Mox.stub(MockFileAdapter, :open, fn _, _ -> {:ok, :mock_file} end)
+      Mimic.copy(Port)
+      Mimic.copy(File)
 
-      {:ok, state} =
-        El.PTY.init({"cmd", [port: MockPortAdapter, file: MockFileAdapter]})
+      Mimic.stub(Port, :open, fn _, _ -> :mock_port end)
+      Mimic.stub(File, :open, fn _, _ -> {:ok, :mock_file} end)
 
-      assert state.file == MockFileAdapter
+      {:ok, state} = El.PTY.init({"cmd", [port: Port, file: File]})
+
+      assert state.file == File
     end
 
     test "stores port adapter" do
-      Mox.stub(MockPortAdapter, :open, fn _, _ -> :mock_port end)
-      Mox.stub(MockFileAdapter, :open, fn _, _ -> {:ok, :mock_file} end)
+      Mimic.copy(Port)
+      Mimic.copy(File)
 
-      {:ok, state} =
-        El.PTY.init({"cmd", [port: MockPortAdapter, file: MockFileAdapter]})
+      Mimic.stub(Port, :open, fn _, _ -> :mock_port end)
+      Mimic.stub(File, :open, fn _, _ -> {:ok, :mock_file} end)
 
-      assert state.port == MockPortAdapter
+      {:ok, state} = El.PTY.init({"cmd", [port: Port, file: File]})
+
+      assert state.port == Port
     end
   end
 
   describe "handle_cast/2" do
-    test "injects message to port via command", %{state: state} do
-      Mox.expect(MockPortAdapter, :command, fn :mock_port, "hello" ->
-        true
-      end)
+    setup do
+      {:ok, state: %{pty: :mock_port, tty_out: :mock_file, file: File, port: Port}}
+    end
 
-      {:noreply, _returned_state} =
-        El.PTY.handle_cast({:inject, "hello"}, state)
+    test "injects message to port via command", %{state: state} do
+      Mimic.copy(Port)
+      Mimic.expect(Port, :command, fn :mock_port, "hello" -> true end)
+
+      {:noreply, _} = El.PTY.handle_cast({:inject, "hello"}, state)
     end
 
     test "passes exact message bytes to port", %{state: state} do
-      message = "test\n"
+      Mimic.copy(Port)
 
-      Mox.expect(MockPortAdapter, :command, fn :mock_port, msg ->
-        assert msg == message
-        true
-      end)
+      message = "test\n"
+      Mimic.expect(Port, :command, fn :mock_port, ^message -> true end)
 
       El.PTY.handle_cast({:inject, message}, state)
     end
 
     test "returns noreply with unchanged state", %{state: state} do
-      Mox.stub(MockPortAdapter, :command, fn _, _ -> true end)
+      Mimic.copy(Port)
+      Mimic.stub(Port, :command, fn _, _ -> true end)
 
-      {:noreply, returned_state} =
-        El.PTY.handle_cast({:inject, "data"}, state)
+      {:noreply, returned} = El.PTY.handle_cast({:inject, "data"}, state)
 
-      assert returned_state == state
+      assert returned == state
     end
   end
 
   describe "handle_info/2" do
-    test "writes port data to tty_out", %{state: state} do
-      Mox.expect(MockFileAdapter, :write, fn :mock_file, "output" ->
-        :ok
-      end)
+    setup do
+      {:ok, state: %{pty: :mock_port, tty_out: :mock_file, file: File, port: Port}}
+    end
 
-      {:noreply, _returned_state} =
-        El.PTY.handle_info({:mock_port, {:data, "output"}}, state)
+    test "writes port data to tty_out", %{state: state} do
+      Mimic.copy(File)
+      Mimic.expect(File, :write, fn :mock_file, "output" -> :ok end)
+
+      {:noreply, _} = El.PTY.handle_info({:mock_port, {:data, "output"}}, state)
     end
 
     test "writes exact data received from port", %{state: state} do
-      data = "line1\nline2\n"
+      Mimic.copy(File)
 
-      Mox.expect(MockFileAdapter, :write, fn :mock_file, written_data ->
-        assert written_data == data
-        :ok
-      end)
+      data = "line1\nline2\n"
+      Mimic.expect(File, :write, fn :mock_file, ^data -> :ok end)
 
       El.PTY.handle_info({:mock_port, {:data, data}}, state)
     end
 
     test "returns noreply on data message", %{state: state} do
-      Mox.stub(MockFileAdapter, :write, fn _, _ -> :ok end)
+      Mimic.copy(File)
+      Mimic.stub(File, :write, fn _, _ -> :ok end)
 
-      {:noreply, returned_state} =
-        El.PTY.handle_info({:mock_port, {:data, "x"}}, state)
+      {:noreply, returned} = El.PTY.handle_info({:mock_port, {:data, "x"}}, state)
 
-      assert returned_state == state
+      assert returned == state
     end
 
     test "stops on exit_status message", %{state: state} do
-      {:stop, :normal, returned_state} =
-        El.PTY.handle_info({:mock_port, {:exit_status, 0}}, state)
+      {:stop, :normal, returned} = El.PTY.handle_info({:mock_port, {:exit_status, 0}}, state)
 
-      assert returned_state == state
+      assert returned == state
     end
 
     test "handles stdin message by sending to port", %{state: state} do
-      Mox.expect(MockPortAdapter, :command, fn :mock_port, "user input" ->
-        true
-      end)
+      Mimic.copy(Port)
+      Mimic.expect(Port, :command, fn :mock_port, "user input" -> true end)
 
-      {:noreply, _returned_state} =
-        El.PTY.handle_info({:stdin, "user input"}, state)
+      {:noreply, _} = El.PTY.handle_info({:stdin, "user input"}, state)
     end
   end
 end
