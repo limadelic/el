@@ -78,7 +78,7 @@ defmodule El.Session do
 
   @impl true
   def handle_cast({:store_tell, message, response}, state) do
-    {:noreply, %{state | messages: state.messages ++ [{"tell", message, response}]}}
+    {:noreply, %{state | messages: state.messages ++ [{"tell", message, response, %{}}]}}
   end
 
   @impl true
@@ -98,7 +98,7 @@ defmodule El.Session do
         "(ClaudeCode unavailable)"
       end
 
-    new_state = %{state | messages: state.messages ++ [{"ask", message, response}]}
+    new_state = %{state | messages: state.messages ++ [{"ask", message, response, %{}}]}
     {:reply, response, new_state}
   end
 

@@ -55,4 +55,58 @@ defmodule El.SessionTest do
       assert [{:test_name, _}] = result
     end
   end
+
+  describe "message storage" do
+    test "stores tell as 4-element tuple with empty metadata" do
+      session = :test_tell_session
+      {:ok, _pid} = El.Session.start_link(session)
+
+      via = {:via, Registry, {El.Registry, session}}
+      GenServer.cast(via, {:store_tell, "hello", "response"})
+
+      Process.sleep(100)
+      messages = El.Session.log(session)
+      assert length(messages) == 1
+      [{type, message, response, metadata}] = messages
+
+      assert type == "tell"
+      assert message == "hello"
+      assert response == "response"
+      assert metadata == %{}
+    end
+
+    test "message tuple structure for ask" do
+      session = :test_ask_structure
+      {:ok, _pid} = El.Session.start_link(session)
+
+      via = {:via, Registry, {El.Registry, session}}
+      GenServer.call(via, {:ask, "test question"}, :infinity)
+
+      messages = El.Session.log(session)
+      assert length(messages) == 1
+      [{type, message, response, metadata}] = messages
+
+      assert type == "ask"
+      assert message == "test question"
+      assert is_binary(response)
+      assert metadata == %{}
+    end
+
+    test "message tuples are 4-element" do
+      session = :test_tuple_session
+      {:ok, _pid} = El.Session.start_link(session)
+
+      via = {:via, Registry, {El.Registry, session}}
+      GenServer.cast(via, {:store_tell, "msg1", "resp1"})
+
+      messages = El.Session.log(session)
+
+      Enum.each(messages, fn msg ->
+        assert tuple_size(msg) == 4
+        {type, _message, _response, metadata} = msg
+        assert type in ["tell", "ask"]
+        assert is_map(metadata)
+      end)
+    end
+  end
 end
