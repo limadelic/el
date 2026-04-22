@@ -3,47 +3,58 @@ name: el
 description: Use el CLI to manage agents instead of Agent/Team tools
 ---
 
-# El — Agent Control Plane
+# El - Agent Control Plane
 
-Use `el` (brewed binary, `/opt/homebrew/bin/el`) to manage Claude Code sessions as your dev team. No Agent tool, no TeamCreate, no SendMessage.
+Use `el` (brewed binary, `/opt/homebrew/bin/el`) to manage persistent Claude Code sessions. Use Agent tool for short-lived haiku workers.
 
-> **NEVER use `./el`** — that's the dev escript. Always use the installed `el`.
+> **NEVER use `./el`** - that's the dev escript. Always use the installed `el`.
 
 ## Commands
 
-| Action | Old Way | El Way |
-|--------|---------|--------|
-| Spawn agent | `Agent(subagent_type: "kent")` | `el kent` |
-| Send work | `SendMessage(to: "kent")` | `el kent tell "fix the bug"` |
-| Ask question | `Agent(prompt: "...")` | `el kent ask "what model r u using"` |
-| Check history | _(no equivalent)_ | `el kent log` |
-| Kill agent | `SendMessage(shutdown_request)` | `el kent kill` |
-| List agents | _(read team config)_ | `el ls` |
-| Kill all | _(loop shutdown requests)_ | `el kill all` |
+| Action | El Way |
+|--------|--------|
+| Spawn session | `el kent` |
+| Send work | `el kent tell "fix the bug"` |
+| Ask question | `el kent ask "what model?"` |
+| Check history | `el kent log` |
+| Kill session | `el kent kill` |
+| List sessions | `el ls` |
+| Kill all | `el kill all` |
 
 ## The Loop
 
-1. `el <name>` — start a headless session (self-daemonizes, returns to shell)
-2. `el <name> tell <work>` — fire-and-forget task
-3. `el <name> ask <question>` — wait for answer
-4. `el <name> log` — review what happened
-5. `el <name> kill` — done with this agent
+1. `el <name>` - start a headless session (self-daemonizes, returns to shell)
+2. `el <name> tell <work>` - fire-and-forget task
+3. `el <name> ask <question>` - wait for answer
+4. `el <name> log` - review what happened
+5. `el <name> kill` - done with this agent
 
 ## Rules
 
-- Use `el` via Bash tool — these are real shell commands
+- Use `el` via Bash tool - these are real shell commands
 - `tell` = fire-and-forget (long tasks, edits, builds)
 - `ask` = wait for response (questions, status checks)
 - Quote messages with special chars: `el kent ask "what's the status?"`
-- Avoid `?` unquoted — zsh treats it as glob
-- One session per name — `el kent` twice reuses the existing one
+- Avoid `?` unquoted - zsh treats it as glob
+- One session per name - `el kent` twice reuses the existing one
 - `el ls` shows active sessions
-- `el log` is your audit trail — use it to verify work
+- `el log` is your audit trail - use it to verify work
+
+## Who Gets an El Session
+
+Persistent agents that need memory and long-running context:
+- **kent**, **lisa**, **dude**, **liz**, **eric** — use `el <name>`
+
+## Who Stays a Subagent
+
+Short-lived haiku workers for quick tasks — use `Agent(subagent_type, model: "haiku")`:
+- **kenny** — TDD coder
+- **cartman** — code reviewer
+- **bob** — build/test/git
+- **arana** — web browser
 
 ## Anti-Patterns
 
-- DO NOT use Agent tool — use `el <name>` + `el <name> tell`
-- DO NOT use TeamCreate — sessions ARE the team
-- DO NOT use SendMessage — use `el <name> tell` or `el <name> ask`
-- DO NOT spawn throwaway agents — el sessions persist and remember
+- DO NOT use Agent tool for persistent agents — use `el`
+- DO NOT use `el` for throwaway tasks — use Agent with haiku
 - DO NOT fire and forget — check `el <name> log` to verify work

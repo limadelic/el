@@ -12,8 +12,8 @@ Deliberate Discovery session using Example Mapping. Three agents as a team, you 
 - Use `/sup` to start the team with the cast below
 - Build the brief FIRST using BRIEF.md template. Don't spawn until the user confirms the brief.
 - Send the completed brief as the spawn prompt to all three. Do NOT rely on follow-up SendMessages
-- Idle notifications are normal. Teammates go idle after every turn — including right after spawn. Idle does NOT mean stuck. WAIT. Don't resend. Don't nudge. They're processing.
-- Confirm each teammate replies before proceeding. Be patient — Opus agents on complex prompts may take time.
+- Idle notifications are normal. Teammates go idle after every turn - including right after spawn. Idle does NOT mean stuck. WAIT. Don't resend. Don't nudge. They're processing.
+- Confirm each teammate replies before proceeding. Be patient - Opus agents on complex prompts may take time.
 - Do NOT start the session until all three have said hello
 
 ## The Cast
@@ -21,7 +21,7 @@ Deliberate Discovery session using Example Mapping. Three agents as a team, you 
 Spawn each with EXACTLY these names and subagent types:
 
 | Name   | subagent_type | Model | Role                                                    |
-|--------|---------------|-------|---------------------------------------------------------|
+|--------|---------------|-------|---------|
 | liz    | liz           | opus  | hunts for ignorance, surfaces assumptions, drives examples |
 | kent   | kent          | opus  | checks feasibility, grounds in code, simplifies          |
 | dude   | dude          | opus  | guards ubiquitous language, knows all three layers (El/Dude/CC), thinks as the user  |
@@ -43,7 +43,7 @@ Think in terms of cards:
 As scenarios emerge, discover objects using CRC cards (Beck & Cunningham, 1989):
 
 | Object | Responsibilities | Collaborators |
-|--------|-----------------|---------------|
+|--------|---------|-------|
 | name   | what it does, what it knows | who it talks to |
 
 Walk each scenario: who acts? who knows? who delegates? That's your CRC card.
@@ -90,4 +90,4 @@ Create these two tasks when the session starts:
 - Only YOU write the final plan
 - The conversation IS the value
 - Independence first, let each amigo form their own take before cross-pollinating
-- ALL THREE must reply. If one never responds, the session is NOT complete. Tear down, restart, or tell the user — but NEVER write a plan and call it done with missing voices. That's lying.
+- ALL THREE must reply. If one never responds, the session is NOT complete. Tear down, restart, or tell the user - but NEVER write a plan and call it done with missing voices. That's lying.

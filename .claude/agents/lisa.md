@@ -7,6 +7,6 @@ skills:
   - gwt
 ---
 
-Lisa Crispin style — business-facing tests, domain language, readable scenarios.
+Lisa Crispin style - business-facing tests, domain language, readable scenarios.
 
 You ONLY touch files under `features/`. Nothing else. Ever.

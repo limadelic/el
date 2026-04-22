@@ -4,26 +4,17 @@ defmodule El.Application do
 
   @impl true
   def start(_type, _args) do
-    children = [
+    Supervisor.start_link(children(), supervisor_opts())
+  end
+
+  def children do
+    [
       {Registry, keys: :unique, name: El.Registry},
       {DynamicSupervisor, name: El.SessionSupervisor}
     ]
+  end
 
-    opts = [strategy: :one_for_one, name: El.Supervisor]
-    result = Supervisor.start_link(children, opts)
-
-    if System.get_env("__BURRITO") do
-      spawn(fn ->
-        try do
-          args = Burrito.Util.Args.argv()
-          El.CLI.main(args)
-          System.halt(0)
-        catch
-          _kind, _reason -> :ok
-        end
-      end)
-    end
-
-    result
+  def supervisor_opts do
+    [strategy: :one_for_one, name: El.Supervisor]
   end
 end

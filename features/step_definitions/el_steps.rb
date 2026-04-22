@@ -1,64 +1,44 @@
 require "rspec/expectations"
 
-def resolve_command(cmd)
-  if cmd.start_with?("el ") && File.exist?("./el")
-    "./#{cmd}"
-  else
-    cmd
-  end
+EL_BIN = "/opt/homebrew/bin/el"
+
+When(/^> (.+[^:])$/) do |cmd|
+  @last_output = run_el(cmd)
 end
 
-def run_el_command(cmd)
-  resolved = resolve_command(cmd)
-  `#{resolved} 2>&1`.strip
+When(/^> (.+):$/) do |cmd, table|
+  verify_with_retry(cmd, table)
 end
 
-When(/^I run el (\S+) in background$/) do |name|
-  cmd = "el #{name}"
-  resolved = resolve_command(cmd)
-
-  system("#{resolved} > /dev/null 2>&1 &")
-
-  daemon_file = File.expand_path("~/.el/daemon_node")
-  tries = 0
-  max_tries = 60
-
-  until File.exist?(daemon_file) || tries >= max_tries
-    sleep 0.5
-    tries += 1
-  end
-
-  sleep 2
+def run_el(cmd)
+  rest = cmd.sub(/^el\s*/, "")
+  `#{EL_BIN} #{rest}`.chomp
 end
 
-When(/^I run el (\S+) (\w+)$/) do |name, action|
-  cmd = "el #{name} #{action}"
-  @output = run_el_command(cmd)
-end
-
-Then(/^el ls should show (.+)$/) do |text|
-  tries = 0
-  max_tries = 10
-
+def verify_with_retry(cmd, table, timeout: 5)
+  deadline = Time.now + timeout
+  last_error = nil
   loop do
-    @output = run_el_command("el ls")
-
-    if text.start_with?("(") && text.end_with?(")")
-      name = text[1..-2]
-      break if !@output.include?(name)
-    else
-      break if @output.include?(text)
+    output = run_el(cmd)
+    begin
+      verify_table(table, output)
+      return
+    rescue => e
+      last_error = e
+      raise if Time.now >= deadline
+      sleep 0.2
     end
-
-    tries += 1
-    break if tries >= max_tries
-    sleep 0.5
   end
+end
 
-  if text.start_with?("(") && text.end_with?(")")
-    name = text[1..-2]
-    expect(@output).not_to include(name)
-  else
-    expect(@output).to include(text)
+def verify_table(table, output)
+  table.raw.flatten.each do |row|
+    row = row.strip
+    if row.start_with?("(") && row.end_with?(")")
+      val = row[1..-2]
+      raise "Expected '#{val}' NOT in output:\n#{output}" if output.include?(val)
+    else
+      raise "Expected '#{row}' in output:\n#{output}" unless row.split.all? { |word| output.include?(word) }
+    end
   end
 end

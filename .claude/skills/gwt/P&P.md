@@ -1,16 +1,16 @@
-# GWT — Patterns & Practices
+# GWT - Patterns & Practices
 
 Lisa writes `.feature` files. Eric reviews them.
 
 ## Goal
 
 - Maximize reuse of existing DSL
-- Minimize step definitions — one step def for `>`
+- Minimize step definitions - one step def for `>`
 - Cucumber (Ruby) compiles `.feature` files to tests
 
 ## The DSL
 
-One operator: `>` — everything is a shell command.
+One operator: `>` - everything is a shell command.
 Gherkin keyword `*` keeps it neutral.
 
 ### Start a session (zombie)
@@ -60,11 +60,11 @@ Gherkin keyword `*` keeps it neutral.
 - Tables verify command output
 - No column headers until needed
 - One step handles `>` with or without tables
-- `el <name>` self-daemonizes — returns to shell immediately, no `&` needed
+- `el <name>` self-daemonizes - returns to shell immediately, no `&` needed
 
 ## Scenarios
 
-- Declarative — WHAT not HOW
+- Declarative - WHAT not HOW
 - One outcome per scenario
 - Domain language: el, dude, elita, tell, ask, log, kill, ls
 - No incidental detail
@@ -93,4 +93,4 @@ features/
 - Creating new step definitions when `>` covers it
 - Imperative scenarios (implementation details)
 - Testing multiple outcomes in one scenario
-- Testing OTP internals — features test the CLI surface
+- Testing OTP internals - features test the CLI surface
