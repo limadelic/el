@@ -1,7 +1,7 @@
 defmodule El.CLI do
   @version (case Application.spec(:el, :vsn) do
               vsn when is_list(vsn) -> List.to_string(vsn)
-              _ -> "0.1.40"
+              _ -> "0.1.41"
             end)
 
   def main(args) do
