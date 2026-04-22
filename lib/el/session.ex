@@ -70,22 +70,13 @@ defmodule El.Session do
   end
 
   defp start_claude(opts, claude_module) do
-    safe_start_code(opts, claude_module)
-  rescue
-    _ -> nil
-  catch
-    :exit, _ -> nil
-    _, _ -> nil
-  end
-
-  defp safe_start_code(opts, claude_module) do
     opts
     |> claude_module.start_link()
     |> handle_start_result()
   end
 
   defp handle_start_result({:ok, pid}), do: pid
-  defp handle_start_result({:error, _reason}), do: nil
+  defp handle_start_result({:error, reason}), do: raise("failed to start claude: #{inspect(reason)}")
 
   @impl true
   def handle_cast({:tell, message}, state) do

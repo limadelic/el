@@ -13,20 +13,18 @@ brew install limadelic/tap/el
 | Feature           | CC | El + |
 |-------------------|:--:|:----:|
 | Headless sessions | ✅  |  ✅   |
-| Model per agent   | ✅  |  ✅   |
+| Agent config      | ✅  |  ✅   |
 | Parallel work     | ✅  |  ✅   |
-| Split Panes       | ✅  |  🌱  |
+| Shell control     | ✅  |  🌱  |
 | Task delegation   | ✅  |  🌱  |
 | File-based        | ✅  |  ❌   |
 | Event-driven      | ❌  |  ✅   |
-| Cross-folder      | ❌  |  ✅   |
-| No orchestrator   | ❌  |  ✅   |
+| Cross-project     | ❌  |  ✅   |
 | Peer-to-peer      | ❌  |  ✅   |
-| Inbox batching    | ❌  |  ✅   |
-| Any Term          | ❌  |  🌱  |
-| Codex agents      | ❌  |  🌱  |
+| Any shell         | ❌  |  🌱  |
+| Codex peers       | ❌  |  🌱  |
 
-✅ supported 🌱 todo ❌ not supported
+✅ done 🌱 todo ❌ not done
 
 ## Help
 

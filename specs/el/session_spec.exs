@@ -75,10 +75,10 @@ defmodule El.Session.Spec do
       assert state.claude_pid == :mock_pid
     end
 
-    test "stores nil for claude_pid on start failure" do
-      {:ok, state} = El.Session.init({:test_session, [claude_module: FailingModule]})
-
-      assert state.claude_pid == nil
+    test "raises on claude_pid start failure" do
+      assert_raise RuntimeError, ~r/failed to start claude/, fn ->
+        El.Session.init({:test_session, [claude_module: FailingModule]})
+      end
     end
 
     test "stores default task_module" do
