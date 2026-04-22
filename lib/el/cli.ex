@@ -106,7 +106,6 @@ defmodule El.CLI do
     :os.cmd(~c"pkill -9 epmd 2>/dev/null")
     :timer.sleep(500)
     cleanup_stale_node(Path.expand("~/.el/daemon_node"))
-    clean_burrito_cache(Path.expand("~/Library/Application Support/.burrito"))
     IO.puts("All sessions killed")
   end
 
@@ -288,22 +287,6 @@ defmodule El.CLI do
 
   defp pick_local_or_remote(false, daemon_node, name_atom, opts) do
     :rpc.call(daemon_node, El, :start, [name_atom, opts])
-  end
-
-  defp clean_burrito_cache(burrito_cache) do
-    remove_el_dirs(File.ls(burrito_cache), burrito_cache)
-  end
-
-  defp remove_el_dirs({:ok, entries}, burrito_cache) do
-    entries
-    |> Enum.filter(&String.starts_with?(&1, "el_"))
-    |> Enum.each(fn dir ->
-      File.rm_rf!(Path.join(burrito_cache, dir))
-    end)
-  end
-
-  defp remove_el_dirs(_error, _burrito_cache) do
-    :ok
   end
 
   defp ensure_daemon_node do
@@ -640,23 +623,6 @@ defmodule El.CLI do
   end
 
   defp get_binary_path do
-    burrito_bin = System.get_env("__BURRITO_BIN_PATH")
-    use_burrito_or_escript(burrito_bin)
-  end
-
-  defp use_burrito_or_escript(nil) do
-    :escript.script_name() |> to_string()
-  end
-
-  defp use_burrito_or_escript(burrito_bin) do
-    pick_binary(byte_size(burrito_bin), burrito_bin)
-  end
-
-  defp pick_binary(size, burrito_bin) when size > 0 do
-    burrito_bin
-  end
-
-  defp pick_binary(_size, _burrito_bin) do
     :escript.script_name() |> to_string()
   end
 
