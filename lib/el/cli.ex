@@ -1,10 +1,17 @@
 defmodule El.CLI do
+  @version (case Application.spec(:el, :vsn) do
+              vsn when is_list(vsn) -> List.to_string(vsn)
+              _ -> "0.1.40"
+            end)
+
   def main(args) do
     main_impl(args)
     System.halt(0)
   end
 
   def parse_route([]), do: :usage
+  def parse_route(["-v"]), do: :version
+  def parse_route(["--version"]), do: :version
   def parse_route(["ls"]), do: :ls
   def parse_route(["--daemon", _name]), do: :daemon
   def parse_route(["--daemon", _name, "--model", _model]), do: :daemon
@@ -20,9 +27,15 @@ defmodule El.CLI do
   def parse_route(_), do: :usage
 
   defp main_impl([]) do
-    IO.puts(
-      "usage: el ls | el <name> [--model <model>] | el <name> [--model <model>] tell <message> | el <name> [--model <model>] ask <message> | el <name> log | el <name> kill | el kill all"
-    )
+    IO.puts(usage_message())
+  end
+
+  defp main_impl(["-v"]) do
+    IO.puts(@version)
+  end
+
+  defp main_impl(["--version"]) do
+    IO.puts(@version)
   end
 
   defp main_impl(["ls"]) do
@@ -688,5 +701,9 @@ defmodule El.CLI do
 
   defp handle_app_start({:error, {:already_started, _}}) do
     :ok
+  end
+
+  defp usage_message do
+    "el #{@version}\nusage: el ls | el <name> [--model <model>] | el <name> [--model <model>] tell <message> | el <name> [--model <model>] ask <message> | el <name> log | el <name> kill | el kill all | el --version"
   end
 end

@@ -16,15 +16,16 @@ You DONT CODE. You do only these commands.
 - **test**: `mix test`
 - **format**: `mix format`
 - **features**: `mix test specs/el/`
-- **build**: `mix escript.build` (local dev) or `MIX_ENV=prod mix release` (Burrito)
+- **build**: `mix escript.build`
 - **cuke**: `mix test specs/el/`
 - **deps**: `mix deps.get`
 - **commit "message"**: run `mix format -check-formatted` first, then stage relevant files and commit with the given message
 - **push**: push to remote
 - **commit and push "message"**: commit then push
 - **all "message"**: test → commit → push (the full cycle)
-- **release**: `./scripts/release.sh`
-- **install**: `brew reinstall limadelic/tap/el`
+- **release**: bump patch version in mix.exs, commit, push, then `mix escript.build && gh release create v$VERSION ./el --title "v$VERSION" --notes "escript" --repo limadelic/el` (use $GITHUB_LIMADELIC token if gh fails)
+- **install**: `brew upgrade limadelic/tap/el` (falls back to `brew install limadelic/tap/el`)
+- **shipit "message"**: test → commit → push → release → update tap formula (clone limadelic/homebrew-tap, update version/sha256/url in Formula/el.rb, push) → install. The full cycle.
 
 ## Rules
 

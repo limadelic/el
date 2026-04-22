@@ -57,5 +57,48 @@ defmodule El.CLI.Spec do
     test "returns daemon with --model flag" do
       assert El.CLI.parse_route(["--daemon", "my_session", "--model", "opus"]) == :daemon
     end
+
+    test "returns version for -v" do
+      assert El.CLI.parse_route(["-v"]) == :version
+    end
+
+    test "returns version for --version" do
+      assert El.CLI.parse_route(["--version"]) == :version
+    end
+  end
+
+  describe "main/1" do
+    setup do
+      Mimic.copy(IO)
+      Mimic.copy(System)
+      :ok
+    end
+
+    test "shows version in usage message when no args" do
+      Mimic.expect(IO, :puts, fn msg ->
+        assert msg == "el 0.1.40\nusage: el ls | el <name> [--model <model>] | el <name> [--model <model>] tell <message> | el <name> [--model <model>] ask <message> | el <name> log | el <name> kill | el kill all | el --version"
+      end)
+      Mimic.stub(System, :halt, fn _ -> :ok end)
+
+      El.CLI.main([])
+    end
+
+    test "shows only version for -v flag" do
+      Mimic.expect(IO, :puts, fn msg ->
+        assert msg == "0.1.40"
+      end)
+      Mimic.stub(System, :halt, fn _ -> :ok end)
+
+      El.CLI.main(["-v"])
+    end
+
+    test "shows only version for --version flag" do
+      Mimic.expect(IO, :puts, fn msg ->
+        assert msg == "0.1.40"
+      end)
+      Mimic.stub(System, :halt, fn _ -> :ok end)
+
+      El.CLI.main(["--version"])
+    end
   end
 end
