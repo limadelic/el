@@ -128,10 +128,16 @@ defmodule El.CLI do
   end
 
   defp handle_ls({:ok, daemon_node}) do
-    :rpc.call(daemon_node, El, :local_ls, [])
-    |> Enum.each(fn name ->
-      IO.puts(Atom.to_string(name))
-    end)
+    case :rpc.call(daemon_node, El, :local_ls, []) do
+      {:badrpc, reason} ->
+        IO.puts(:stderr, "Error: #{inspect(reason)}")
+        System.halt(1)
+
+      names ->
+        Enum.each(names, fn name ->
+          IO.puts(Atom.to_string(name))
+        end)
+    end
   end
 
   defp handle_ls(:not_found) do
@@ -169,7 +175,14 @@ defmodule El.CLI do
   end
 
   defp handle_tell_ask({:ok, daemon_node}, name_atom, target_atom, msg, _name) do
-    :rpc.call(daemon_node, El, :tell_ask, [name_atom, target_atom, msg])
+    case :rpc.call(daemon_node, El, :tell_ask, [name_atom, target_atom, msg]) do
+      {:badrpc, reason} ->
+        IO.puts(:stderr, "Error: #{inspect(reason)}")
+        System.halt(1)
+
+      _ ->
+        :ok
+    end
   end
 
   defp handle_tell_ask(:not_found, _name_atom, _target_atom, _msg, name) do
@@ -178,7 +191,14 @@ defmodule El.CLI do
   end
 
   defp handle_tell({:ok, daemon_node}, name_atom, msg, _name) do
-    :rpc.call(daemon_node, El, :tell, [name_atom, msg])
+    case :rpc.call(daemon_node, El, :tell, [name_atom, msg]) do
+      {:badrpc, reason} ->
+        IO.puts(:stderr, "Error: #{inspect(reason)}")
+        System.halt(1)
+
+      _ ->
+        :ok
+    end
   end
 
   defp handle_tell(:not_found, _name_atom, _msg, name) do
@@ -207,13 +227,17 @@ defmodule El.CLI do
   end
 
   defp handle_log({:ok, daemon_node}, name_atom, _name) do
-    log = :rpc.call(daemon_node, El, :log, [name_atom])
+    case :rpc.call(daemon_node, El, :log, [name_atom]) do
+      {:badrpc, reason} ->
+        IO.puts(:stderr, "Error: #{inspect(reason)}")
+        System.halt(1)
 
-    log
-    |> Enum.each(fn {type, message, response, _metadata} ->
-      IO.puts("[#{type}] #{message}")
-      IO.puts(response)
-    end)
+      log ->
+        Enum.each(log, fn {type, message, response, _metadata} ->
+          IO.puts("[#{type}] #{message}")
+          IO.puts(response)
+        end)
+    end
   end
 
   defp handle_log(:not_found, _name_atom, name) do
@@ -222,7 +246,14 @@ defmodule El.CLI do
   end
 
   defp handle_kill({:ok, daemon_node}, name_atom, _name) do
-    :rpc.call(daemon_node, El, :kill, [name_atom])
+    case :rpc.call(daemon_node, El, :kill, [name_atom]) do
+      {:badrpc, reason} ->
+        IO.puts(:stderr, "Error: #{inspect(reason)}")
+        System.halt(1)
+
+      _ ->
+        :ok
+    end
   end
 
   defp handle_kill(:not_found, _name_atom, name) do
