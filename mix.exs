@@ -15,8 +15,7 @@ defmodule El.MixProject do
       ],
       deps: deps(),
       escript: [main_module: El.CLI],
-      package: package(),
-      releases: releases()
+      package: package()
     ]
   end
 
@@ -46,23 +45,10 @@ defmodule El.MixProject do
   defp deps do
     [
       {:claude_code, "~> 0.36"},
-      {:burrito, "~> 1.0"},
       {:cabbage, "~> 0.4", only: :test},
       {:mimic, "~> 1.7", only: :test},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
 
-  defp releases do
-    [
-      el: [
-        steps: [:assemble, &Burrito.wrap/1],
-        burrito: [
-          targets: [
-            macos_arm64: [os: :darwin, cpu: :aarch64]
-          ]
-        ]
-      ]
-    ]
-  end
 end
