@@ -1,5 +1,3 @@
-Application.ensure_all_started(:mimic)
-
 Mimic.copy(El.SessionAdapter)
 Mimic.copy(El.PortAdapter)
 Mimic.copy(El.FileAdapter)
@@ -7,9 +5,24 @@ Mimic.copy(Task)
 
 ExUnit.start()
 
+ExUnit.after_suite(fn _results ->
+  System.halt(0)
+end)
+
 defmodule MockSessionModule do
-  def start_link(_), do: {:ok, :mock_pid}
+  def start_link(_opts), do: {:ok, :mock_pid}
   def start(_fun), do: {:ok, :task_pid}
+end
+
+defmodule ModelCaptureModule do
+  def start_link(opts) do
+    send(self(), {:captured_opts, opts})
+    {:ok, :mock_pid}
+  end
+end
+
+defmodule FailingModule do
+  def start_link(_), do: {:error, :failed}
 end
 
 defmodule MockTaskModule do

@@ -1,18 +1,3 @@
-defmodule MockSessionModule do
-  def start_link(_opts), do: {:ok, :mock_pid}
-end
-
-defmodule ModelCaptureModule do
-  def start_link(opts) do
-    send(self(), {:captured_opts, opts})
-    {:ok, :mock_pid}
-  end
-end
-
-defmodule FailingModule do
-  def start_link(_), do: {:error, :failed}
-end
-
 defmodule El.Session.Spec do
   use ExUnit.Case
 
