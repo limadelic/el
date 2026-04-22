@@ -35,6 +35,7 @@ defmodule El.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     app_config = [extra_applications: [:logger]]
+
     case Mix.env() do
       :test -> app_config
       _ -> Keyword.put(app_config, :mod, {El.Application, []})
