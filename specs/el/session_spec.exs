@@ -75,10 +75,8 @@ defmodule El.Session.Spec do
       assert state.claude_pid == :mock_pid
     end
 
-    test "raises on claude_pid start failure" do
-      assert_raise RuntimeError, ~r/failed to start claude/, fn ->
-        El.Session.init({:test_session, [claude_module: FailingModule]})
-      end
+    test "stops on claude start failure" do
+      assert {:stop, _reason} = El.Session.init({:test_session, [claude_module: FailingModule]})
     end
 
     test "stores default task_module" do
@@ -338,10 +336,11 @@ defmodule El.Session.Spec do
 
   describe "handle_info/2" do
     test "clears claude_pid on EXIT from claude process", %{state: state} do
-      {:noreply, returned_state} =
+      {:stop, reason, returned_state} =
         El.Session.handle_info({:EXIT, :mock_pid, :normal}, state)
 
-      assert returned_state.claude_pid == nil
+      assert reason == :normal
+      assert returned_state == state
     end
 
     test "preserves state on EXIT from different pid", %{state: state} do

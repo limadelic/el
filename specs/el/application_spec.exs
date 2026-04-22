@@ -13,7 +13,7 @@ defmodule El.Application.Spec do
   end
 
   test "children includes DynamicSupervisor", %{children: children} do
-    assert {DynamicSupervisor, [name: El.SessionSupervisor]} in children
+    assert {DynamicSupervisor, [name: El.SessionSupervisor, max_restarts: 10, max_seconds: 30]} in children
   end
 
   test "children has exactly two entries", %{children: children} do

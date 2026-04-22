@@ -10,7 +10,7 @@ defmodule El.Application do
   def children do
     [
       {Registry, keys: :unique, name: El.Registry},
-      {DynamicSupervisor, name: El.SessionSupervisor}
+      {DynamicSupervisor, name: El.SessionSupervisor, max_restarts: 10, max_seconds: 30}
     ]
   end
 

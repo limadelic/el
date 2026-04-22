@@ -1,6 +1,8 @@
 defmodule El.Session do
   use GenServer
 
+  require Logger
+
   def start_link({name, session_opts}, _opts) do
     GenServer.start_link(__MODULE__, {name, session_opts}, name: via_tuple(name))
   end
@@ -55,18 +57,24 @@ defmodule El.Session do
     task_module = Keyword.get(opts, :task_module, Task)
     alive_fn = Keyword.get(opts, :alive_fn, &El.Session.alive?/1)
     registry_module = Keyword.get(opts, :registry_module, Registry)
-    claude_pid = start_claude(opts, claude_module)
+    start_result = start_claude(opts, claude_module)
 
-    {:ok,
-     %{
-       name: name,
-       claude_pid: claude_pid,
-       messages: [],
-       claude_module: claude_module,
-       task_module: task_module,
-       alive_fn: alive_fn,
-       registry_module: registry_module
-     }}
+    case start_result do
+      {:error, reason} ->
+        {:stop, reason}
+
+      claude_pid ->
+        {:ok,
+         %{
+           name: name,
+           claude_pid: claude_pid,
+           messages: [],
+           claude_module: claude_module,
+           task_module: task_module,
+           alive_fn: alive_fn,
+           registry_module: registry_module
+         }}
+    end
   end
 
   defp start_claude(opts, claude_module) do
@@ -76,7 +84,7 @@ defmodule El.Session do
   end
 
   defp handle_start_result({:ok, pid}), do: pid
-  defp handle_start_result({:error, reason}), do: raise("failed to start claude: #{inspect(reason)}")
+  defp handle_start_result({:error, reason}), do: {:error, reason}
 
   @impl true
   def handle_cast({:tell, message}, state) do
@@ -295,8 +303,9 @@ defmodule El.Session do
   end
 
   @impl true
-  def handle_info({:EXIT, pid, _reason}, %{claude_pid: pid} = state) do
-    {:noreply, %{state | claude_pid: nil}}
+  def handle_info({:EXIT, pid, reason}, %{claude_pid: pid} = state) do
+    Logger.error("Session #{state.name} - Claude process died: #{inspect(reason)}")
+    {:stop, reason, state}
   end
 
   @impl true
