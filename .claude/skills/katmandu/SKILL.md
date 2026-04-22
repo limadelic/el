@@ -7,13 +7,13 @@ description: The dev loop - kent analyzes, kenny codes, cartman reviews
 
 ## The Cast
 
-All agents are ephemeral - no team, no `/sup`. Spawn fresh each time.
+Kent is persistent via `el kent`. Kenny and cartman are ephemeral haiku subagents.
 
-| Name    | subagent_type | Model  | Role                                         |
-|---------|---------------|--------|----------------------------------------------|
-| kent    | kent          | haiku  | analyzes the problem, breaks it into tasks    |
-| kenny   | kenny         | haiku  | implements one task at a time                 |
-| cartman | cartman       | haiku  | reviews kenny's output                        |
+| Name    | How              | Model  | Role                                         |
+|---------|------------------|--------|----------------------------------------------|
+| kent    | `el kent`        | opus   | analyzes the problem, breaks it into tasks    |
+| kenny   | Agent(kenny)     | haiku  | implements one task at a time                 |
+| cartman | Agent(cartman)   | haiku  | reviews kenny's output                        |
 
 ## Tasks
 
@@ -23,7 +23,7 @@ Kent's breakdown becomes the task list. Create one task per item kent identifies
 
 ### 1. Analyze (kent)
 
-Spawn kent with the problem - a failing scenario, a behavior description, whatever you have. Kent looks at the code and breaks the work into small tasks. You sanity-check the list and adjust if needed.
+`el kent ask` with the problem - a failing scenario, a behavior description, whatever you have. Kent looks at the code and breaks the work into small tasks. You sanity-check the list and adjust if needed.
 
 ### 2. Implement (kenny)
 

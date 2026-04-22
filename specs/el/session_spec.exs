@@ -122,8 +122,8 @@ defmodule El.Session.Spec do
       {:ok, state: state, alive_fn_target: alive_fn_target}
     end
 
-    test "starts task to ask claude when no routes", %{state: state} do
-      Mimic.stub(Task, :start, fn _fun -> {:ok, :task_pid} end)
+    test "stores message immediately and spawns task", %{state: state} do
+      Mimic.expect(Task, :start, fn _fun -> {:ok, :task_pid} end)
 
       {:noreply, returned_state} =
         El.Session.handle_cast({:tell, "hello"}, %{
@@ -132,10 +132,11 @@ defmodule El.Session.Spec do
             alive_fn: fn _ -> false end
         })
 
-      assert returned_state.task_module == Task
+      assert [{"tell", "hello", "", %{ref: ref}}] = returned_state.messages
+      assert is_reference(ref)
     end
 
-    test "processes routes when message contains @target", %{
+    test "does not store message for routed tells", %{
       state: state,
       alive_fn_target: alive_fn
     } do
@@ -147,35 +148,42 @@ defmodule El.Session.Spec do
   end
 
   describe "handle_cast/2 :store_tell" do
-    setup %{state: state} do
+    test "replaces pending entry with response", %{state: state} do
+      ref = make_ref()
+      pending_state = %{state | messages: [{"tell", "msg", "", %{ref: ref}}]}
+
       {:noreply, returned_state} =
-        El.Session.handle_cast({:store_tell, "test message", "test response"}, state)
+        El.Session.handle_cast({:store_tell, ref, "msg", "response"}, pending_state)
 
-      [message_tuple] = returned_state.messages
-      {:ok, message_tuple: message_tuple}
+      assert [{"tell", "msg", "response", %{}}] = returned_state.messages
     end
 
-    test "appends tell message to log", %{state: state} do
+    test "replaces correct entry when duplicates exist", %{state: state} do
+      ref1 = make_ref()
+      ref2 = make_ref()
+
+      pending_state = %{
+        state
+        | messages: [
+            {"tell", "msg", "", %{ref: ref1}},
+            {"tell", "msg", "", %{ref: ref2}}
+          ]
+      }
+
       {:noreply, returned_state} =
-        El.Session.handle_cast({:store_tell, "message", "response"}, state)
+        El.Session.handle_cast({:store_tell, ref1, "msg", "done first"}, pending_state)
 
-      assert length(returned_state.messages) == 1
+      assert [{"tell", "msg", "done first", %{}}, {"tell", "msg", "", %{ref: ^ref2}}] =
+               returned_state.messages
     end
 
-    test "stores message type as tell", %{message_tuple: {type, _, _, _}} do
-      assert type == "tell"
-    end
+    test "appends when no pending entry exists", %{state: state} do
+      ref = make_ref()
 
-    test "stores exact message content", %{message_tuple: {_, message, _, _}} do
-      assert message == "test message"
-    end
+      {:noreply, returned_state} =
+        El.Session.handle_cast({:store_tell, ref, "msg", "response"}, state)
 
-    test "stores exact response content", %{message_tuple: {_, _, response, _}} do
-      assert response == "test response"
-    end
-
-    test "stores empty metadata", %{message_tuple: {_, _, _, metadata}} do
-      assert metadata == %{}
+      assert [{"tell", "msg", "response", %{}}] = returned_state.messages
     end
   end
 
@@ -219,65 +227,51 @@ defmodule El.Session.Spec do
   end
 
   describe "handle_call/2 :ask" do
-    setup %{state: state} do
-      alive_fn_other = fn
-        :other -> true
-        _ -> false
-      end
+    test "returns noreply and spawns task", %{state: state} do
+      Mimic.expect(Task, :start, fn _fun -> {:ok, :task_pid} end)
+      from = {self(), make_ref()}
 
-      alive_fn_down = fn _target -> false end
-
-      {:ok, state: state, alive_fn_other: alive_fn_other, alive_fn_down: alive_fn_down}
-    end
-
-    test "returns binary response when no routes", %{state: state} do
-      {:reply, response, _returned_state} =
-        El.Session.handle_call({:ask, "test"}, :from, state)
-
-      assert is_binary(response)
-    end
-
-    test "stores message in log on ask", %{state: state} do
-      {:reply, _response, returned_state} =
-        El.Session.handle_call({:ask, "test"}, :from, state)
-
-      assert length(returned_state.messages) == 1
+      assert {:noreply, _state} =
+               El.Session.handle_call({:ask, "test"}, from, %{state | task_module: Task})
     end
 
     test "filters out self-routes", %{state: state} do
-      {:reply, _response, returned_state} =
-        El.Session.handle_call({:ask, "@test_session> test"}, :from, state)
+      Mimic.stub(Task, :start, fn _fun -> {:ok, :task_pid} end)
+      from = {self(), make_ref()}
 
-      assert length(returned_state.messages) == 1
+      {:noreply, _state} =
+        El.Session.handle_call({:ask, "@test_session> test"}, from, %{state | task_module: Task})
+    end
+  end
+
+  describe "handle_cast/2 :complete_ask" do
+    test "stores message in log", %{state: state} do
+      from = {self(), make_ref()}
+
+      {:noreply, returned_state} =
+        El.Session.handle_cast({:complete_ask, from, "test", "response"}, state)
+
+      assert [{"ask", "test", "response", %{}}] = returned_state.messages
     end
 
-    test "returns route message for single valid route", %{state: state, alive_fn_other: alive_fn} do
-      {:reply, response, _returned_state} =
-        El.Session.handle_call({:ask, "@other> test"}, :from, %{state | alive_fn: alive_fn})
+    test "replies to caller with response", %{state: state} do
+      ref = make_ref()
+      from = {self(), ref}
 
-      assert response == "-> other"
+      El.Session.handle_cast({:complete_ask, from, "test", "the answer"}, state)
+
+      assert_receive {^ref, "the answer"}
     end
 
-    test "stores routed message in log", %{state: state, alive_fn_other: alive_fn} do
-      {:reply, _response, returned_state} =
-        El.Session.handle_call({:ask, "@other> test"}, :from, %{state | alive_fn: alive_fn})
+    test "stores exact message content", %{state: state} do
+      from = {self(), make_ref()}
 
-      assert length(returned_state.messages) == 1
-    end
+      {:noreply, returned_state} =
+        El.Session.handle_cast({:complete_ask, from, "my question", "42"}, state)
 
-    test "stores exact message content in log", %{state: state} do
-      {:reply, _response, returned_state} =
-        El.Session.handle_call({:ask, "message"}, :from, state)
-
-      [{_, message, _, _}] = returned_state.messages
-      assert message == "message"
-    end
-
-    test "returns not running message when target down", %{state: state, alive_fn_down: alive_fn} do
-      {:reply, response, _returned_state} =
-        El.Session.handle_call({:ask, "@other> test"}, :from, %{state | alive_fn: alive_fn})
-
-      assert response == "other is not running"
+      [{_, message, response, _}] = returned_state.messages
+      assert message == "my question"
+      assert response == "42"
     end
   end
 

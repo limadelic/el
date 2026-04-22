@@ -90,15 +90,24 @@ defmodule El.Session do
   @impl true
   def handle_cast({:tell, message}, state) do
     routes = detect_routes(message)
-    process_tell(state, message, routes)
-    {:noreply, state}
+    ref = make_ref()
+    new_state = store_tell_immediate(state, message, ref, routes)
+    process_tell(new_state, message, ref, routes)
+    {:noreply, new_state}
   end
 
   @impl true
-  def handle_cast({:store_tell, message, response}, state) do
-    new_state = %{state | messages: state.messages ++ [{"tell", message, response, %{}}]}
+  def handle_cast({:store_tell, ref, message, response}, state) do
+    new_state = %{state | messages: replace_tell(state.messages, ref, message, response)}
     routes = detect_routes(response)
     process_tell_response(state, response, routes)
+    {:noreply, new_state}
+  end
+
+  @impl true
+  def handle_cast({:complete_ask, from, message, response}, state) do
+    new_state = %{state | messages: state.messages ++ [{"ask", message, response, %{}}]}
+    GenServer.reply(from, response)
     {:noreply, new_state}
   end
 
@@ -120,17 +129,17 @@ defmodule El.Session do
     {:noreply, new_state}
   end
 
-  defp process_tell(state, message, []) do
+  defp process_tell(state, message, ref, []) do
     server_pid = self()
     task_module = Map.get(state, :task_module, Task)
 
     task_module.start(fn ->
       response = ask_claude(state.claude_pid, message)
-      GenServer.cast(server_pid, {:store_tell, message, response})
+      GenServer.cast(server_pid, {:store_tell, ref, message, response})
     end)
   end
 
-  defp process_tell(state, message, routes) do
+  defp process_tell(state, message, _ref, routes) do
     Enum.each(routes, fn {target, payload} ->
       process_tell_route(state, message, target, payload)
     end)
@@ -208,11 +217,11 @@ defmodule El.Session do
   end
 
   @impl true
-  def handle_call({:ask, message}, _from, state) do
+  def handle_call({:ask, message}, from, state) do
     routes = detect_routes(message)
     valid_routes = Enum.filter(routes, fn {target, _payload} -> target != state.name end)
-    {response, new_state} = process_ask(state, message, valid_routes)
-    {:reply, response, new_state}
+    spawn_ask(state, from, message, valid_routes)
+    {:noreply, state}
   end
 
   @impl true
@@ -232,22 +241,26 @@ defmodule El.Session do
     {:reply, response, new_state}
   end
 
-  defp process_ask(state, message, []) do
-    response = ask_claude(state.claude_pid, message)
-    new_state = %{state | messages: state.messages ++ [{"ask", message, response, %{}}]}
-    {response, new_state}
+  defp spawn_ask(state, from, message, valid_routes) do
+    server_pid = self()
+    task_module = Map.get(state, :task_module, Task)
+
+    task_module.start(fn ->
+      response = do_ask_work(state, message, valid_routes)
+      GenServer.cast(server_pid, {:complete_ask, from, message, response})
+    end)
   end
 
-  defp process_ask(state, message, [{target, payload}]) do
-    response = process_ask_single_route(state, message, target, payload)
-    new_state = %{state | messages: state.messages ++ [{"ask", message, response, %{}}]}
-    {response, new_state}
+  defp do_ask_work(state, message, []) do
+    ask_claude(state.claude_pid, message)
   end
 
-  defp process_ask(state, message, _multiple_routes) do
-    response = ask_claude(state.claude_pid, message)
-    new_state = %{state | messages: state.messages ++ [{"ask", message, response, %{}}]}
-    {response, new_state}
+  defp do_ask_work(state, message, [{target, payload}]) do
+    process_ask_single_route(state, message, target, payload)
+  end
+
+  defp do_ask_work(state, message, _multiple_routes) do
+    ask_claude(state.claude_pid, message)
   end
 
   defp process_ask_single_route(state, message, target, payload) do
@@ -309,6 +322,29 @@ defmodule El.Session do
     |> El.ClaudeCode.stream(message)
     |> ClaudeCode.Stream.text_content()
     |> Enum.join()
+  end
+
+  defp store_tell_immediate(state, message, ref, []) do
+    %{state | messages: state.messages ++ [{"tell", message, "", %{ref: ref}}]}
+  end
+
+  defp store_tell_immediate(state, _message, _ref, _routes), do: state
+
+  defp replace_tell(messages, ref, message, response) do
+    messages
+    |> Enum.split_while(fn
+      {"tell", _, "", %{ref: ^ref}} -> false
+      _ -> true
+    end)
+    |> complete_tell(message, response)
+  end
+
+  defp complete_tell({before, [{_, _, _, _} | rest]}, message, response) do
+    before ++ [{"tell", message, response, %{}} | rest]
+  end
+
+  defp complete_tell({messages, []}, message, response) do
+    messages ++ [{"tell", message, response, %{}}]
   end
 
   defp via_tuple(name) do
