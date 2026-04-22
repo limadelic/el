@@ -1,69 +1,43 @@
 # El
 
-CLI for managing headless Claude Code sessions (zombies).
-
-Start a Claude session in the background, send it messages, get responses, view logs, kill when done.
+Actor Model for Claude Code.
 
 ## Install
 
-**Homebrew** (recommended):
 ```bash
 brew install limadelic/tap/el
 ```
 
-**Elixir devs**:
-```bash
-mix escript.install hex el
+## Features
+
+| Feature           | CC | El + |
+|-------------------|:--:|:----:|
+| Headless sessions | ✅  |  ✅   |
+| Model per agent   | ✅  |  ✅   |
+| Parallel work     | ✅  |  ✅   |
+| Split Panes       | ✅  |  🌱  |
+| Task delegation   | ✅  |  🌱  |
+| File-based        | ✅  |  ❌   |
+| Event-driven      | ❌  |  ✅   |
+| Cross-folder      | ❌  |  ✅   |
+| No orchestrator   | ❌  |  ✅   |
+| Peer-to-peer      | ❌  |  ✅   |
+| Inbox batching    | ❌  |  ✅   |
+| Any Term          | ❌  |  🌱  |
+| Codex agents      | ❌  |  🌱  |
+
+✅ supported 🌱 todo ❌ not supported
+
+## Help
+
 ```
-
-## Usage
-
-Start a zombie session:
-```bash
-el dude
+> el
+el -v                      version
+el ls                      list sessions
+el <name> [-m <model>]     start or status
+el <name> tell <message>   fire-and-forget
+el <name> ask <message>    wait for response
+el <name> log              view log
+el <name> kill             kill session
+el kill all                kill all sessions
 ```
-
-Send a message and wait for response:
-```bash
-el dude ask "What is 2+2?"
-```
-
-Send a message without waiting:
-```bash
-el dude tell "Background task: analyze this dataset"
-```
-
-View all messages:
-```bash
-el dude log
-```
-
-List all sessions:
-```bash
-el ls
-```
-
-Kill a session:
-```bash
-el dude kill
-```
-
-Kill all sessions:
-```bash
-el kill all
-```
-
-## How It Works
-
-`el <name>` starts a Claude Code session that self-daemonizes:
-- Binary spawns El.Supervisor (if not running)
-- Creates El.Session for the named session
-- Exits immediately, returning control to shell (no blocking, no `&`, no backgrounding)
-- Session persists as an Erlang process
-- Subsequent commands discover and reuse the active session
-
-Built on the Erlang/OTP supervision model. Sessions crash, they restart. It just works.
-
-## Why
-
-Multi-agent Claude workflows need reliable inter-process messaging. El solves it with the simplest possible interface: one process, one CLI.

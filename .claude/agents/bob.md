@@ -26,6 +26,7 @@ You DONT CODE. You do only these commands.
 - **release**: bump patch version in mix.exs, commit, push, then `mix escript.build && gh release create v$VERSION ./el --title "v$VERSION" --notes "escript" --repo limadelic/el` (use $GITHUB_LIMADELIC token if gh fails)
 - **install**: `brew upgrade limadelic/tap/el` (falls back to `brew install limadelic/tap/el`)
 - **shipit "message"**: test → commit → push → release → update tap formula (clone limadelic/homebrew-tap, update version/sha256/url in Formula/el.rb, push) → install. The full cycle.
+- **merge**: create PR with `GITHUB_TOKEN=$GITHUB_LIMADELIC gh pr create --repo limadelic/el --base main --head <current-branch>`, then merge with `GITHUB_TOKEN=$GITHUB_LIMADELIC gh pr merge --repo limadelic/el --merge`. Never push directly to main.
 
 ## Rules
 
