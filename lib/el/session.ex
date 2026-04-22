@@ -107,7 +107,7 @@ defmodule El.Session do
   @impl true
   def handle_cast({:complete_ask, from, message, response}, state) do
     new_state = %{state | messages: state.messages ++ [{"ask", message, response, %{}}]}
-    GenServer.reply(from, response)
+    safe_reply(from, response)
     {:noreply, new_state}
   end
 
@@ -246,7 +246,16 @@ defmodule El.Session do
     task_module = Map.get(state, :task_module, Task)
 
     task_module.start(fn ->
-      response = do_ask_work(state, message, valid_routes)
+      response =
+        try do
+          do_ask_work(state, message, valid_routes)
+        rescue
+          _ -> "(error)"
+        catch
+          :exit, _ -> "(error)"
+          _, _ -> "(error)"
+        end
+
       GenServer.cast(server_pid, {:complete_ask, from, message, response})
     end)
   end
@@ -302,6 +311,15 @@ defmodule El.Session do
   @impl true
   def handle_info(_msg, state) do
     {:noreply, state}
+  end
+
+  defp safe_reply(from, response) do
+    GenServer.reply(from, response)
+  rescue
+    _ -> :ok
+  catch
+    :exit, _ -> :ok
+    _, _ -> :ok
   end
 
   defp ask_claude(nil, _message) do
