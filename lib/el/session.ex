@@ -64,11 +64,14 @@ defmodule El.Session do
         {:stop, reason}
 
       claude_pid ->
+        messages = El.Application.load_messages(name)
+
         {:ok,
          %{
            name: name,
            claude_pid: claude_pid,
-           messages: [],
+           messages: messages,
+           pending_calls: [],
            claude_module: claude_module,
            task_module: task_module,
            alive_fn: alive_fn,
@@ -97,7 +100,9 @@ defmodule El.Session do
 
   @impl true
   def handle_cast({:store_tell, ref, message, response}, state) do
-    new_state = %{state | messages: replace_tell(state.messages, ref, message, response)}
+    new_messages = replace_tell(state.messages, ref, message, response)
+    new_state = %{state | messages: new_messages}
+    El.Application.store_message(state.name, {"tell", message, response, %{}})
     routes = detect_routes(response)
     process_tell_response(state, response, routes)
     {:noreply, new_state}
@@ -105,25 +110,28 @@ defmodule El.Session do
 
   @impl true
   def handle_cast({:complete_ask, from, message, response}, state) do
-    new_state = %{state | messages: state.messages ++ [{"ask", message, response, %{}}]}
+    entry = {"ask", message, response, %{}}
+    new_messages = state.messages ++ [entry]
+    El.Application.store_message(state.name, entry)
     safe_reply(from, response)
-    {:noreply, new_state}
+    new_pending = List.delete(state.pending_calls, from)
+    {:noreply, %{state | messages: new_messages, pending_calls: new_pending}}
   end
 
   @impl true
   def handle_cast({:store_relay, message, response}, state) do
-    {:noreply,
-     %{state | messages: state.messages ++ [{"relay", message, response, %{from: state.name}}]}}
+    entry = {"relay", message, response, %{from: state.name}}
+    El.Application.store_message(state.name, entry)
+    {:noreply, %{state | messages: state.messages ++ [entry]}}
   end
 
   @impl true
   def handle_cast({:tell_ask, target, message}, state) do
     response = process_tell_ask(state, target, message)
+    entry = {"relay", message, response, %{from: state.name}}
+    El.Application.store_message(state.name, entry)
 
-    new_state = %{
-      state
-      | messages: state.messages ++ [{"relay", message, response, %{from: state.name}}]
-    }
+    new_state = %{state | messages: state.messages ++ [entry]}
 
     {:noreply, new_state}
   end
@@ -219,8 +227,9 @@ defmodule El.Session do
   def handle_call({:ask, message}, from, state) do
     routes = detect_routes(message)
     valid_routes = Enum.filter(routes, fn {target, _payload} -> target != state.name end)
-    spawn_ask(state, from, message, valid_routes)
-    {:noreply, state}
+    new_state = %{state | pending_calls: [from | state.pending_calls]}
+    spawn_ask(new_state, from, message, valid_routes)
+    {:noreply, new_state}
   end
 
   @impl true
@@ -231,11 +240,10 @@ defmodule El.Session do
   @impl true
   def handle_call({:ask_tell, target, message}, _from, state) do
     response = process_ask_tell(state, target, message)
+    entry = {"relay", message, response, %{from: state.name}}
+    El.Application.store_message(state.name, entry)
 
-    new_state = %{
-      state
-      | messages: state.messages ++ [{"relay", message, response, %{from: state.name}}]
-    }
+    new_state = %{state | messages: state.messages ++ [entry]}
 
     {:reply, response, new_state}
   end
@@ -305,6 +313,11 @@ defmodule El.Session do
   @impl true
   def handle_info({:EXIT, pid, reason}, %{claude_pid: pid} = state) do
     Logger.error("Session #{state.name} - Claude process died: #{inspect(reason)}")
+
+    Enum.each(state.pending_calls, fn from ->
+      safe_reply(from, "(error)")
+    end)
+
     {:stop, reason, state}
   end
 
@@ -343,7 +356,9 @@ defmodule El.Session do
   end
 
   defp store_tell_immediate(state, message, ref, []) do
-    %{state | messages: state.messages ++ [{"tell", message, "", %{ref: ref}}]}
+    entry = {"tell", message, "", %{ref: ref}}
+    El.Application.store_message(state.name, entry)
+    %{state | messages: state.messages ++ [entry]}
   end
 
   defp store_tell_immediate(state, _message, _ref, _routes), do: state

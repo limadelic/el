@@ -2,6 +2,8 @@ defmodule El.Application.Spec do
   use ExUnit.Case
 
   setup do
+    El.Application.init_message_store()
+
     [
       children: El.Application.children(),
       supervisor_opts: El.Application.supervisor_opts()
@@ -26,5 +28,28 @@ defmodule El.Application.Spec do
 
   test "supervisor opts names El.Supervisor", %{supervisor_opts: opts} do
     assert opts[:name] == El.Supervisor
+  end
+
+  test "store_message persists to ETS" do
+    name = :test_session
+    entry = {"tell", "hello", "response", %{}}
+    El.Application.store_message(name, entry)
+
+    messages = El.Application.load_messages(name)
+    assert entry in messages
+  end
+
+  test "load_messages returns empty list for new session" do
+    messages = El.Application.load_messages(:new_session)
+    assert messages == []
+  end
+
+  test "delete_session_messages removes entries" do
+    name = :delete_test
+    El.Application.store_message(name, {"tell", "msg", "resp", %{}})
+    El.Application.delete_session_messages(name)
+
+    messages = El.Application.load_messages(name)
+    assert messages == []
   end
 end
