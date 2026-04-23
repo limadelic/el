@@ -512,14 +512,14 @@ defmodule El.CLI do
     connect_to_daemon(node_name, node_file)
   rescue
     _ ->
-      cleanup_stale_node(node_file)
+      if Node.ping(node_name) == :pang, do: cleanup_stale_node(node_file)
       :not_found
   catch
     :connection_failed ->
       :not_found
 
     _, _ ->
-      cleanup_stale_node(node_file)
+      if Node.ping(node_name) == :pang, do: cleanup_stale_node(node_file)
       :not_found
   end
 
