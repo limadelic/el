@@ -4,7 +4,7 @@ defmodule El.MixProject do
   def project do
     [
       app: :el,
-      version: "0.1.41",
+      version: "0.1.47",
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
       test_paths: ["specs"],
@@ -14,7 +14,12 @@ defmodule El.MixProject do
         &String.ends_with?(&1, "_spec.exs")
       ],
       deps: deps(),
-      escript: [main_module: El.CLI],
+      releases: [
+        el: [
+          steps: [:assemble, :tar],
+          overlays: ["rel/overlays"]
+        ]
+      ],
       package: package()
     ]
   end

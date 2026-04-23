@@ -75,8 +75,12 @@ defmodule El.CLI.Spec do
     end
 
     test "shows version in usage message when no args" do
+      version = case Application.spec(:el, :vsn) do
+        vsn when is_list(vsn) -> List.to_string(vsn)
+        _ -> "dev"
+      end
       Mimic.expect(IO, :puts, fn msg ->
-        assert msg == "el 0.1.40\nusage: el ls | el <name> [--model <model>] | el <name> [--model <model>] tell <message> | el <name> [--model <model>] ask <message> | el <name> log | el <name> kill | el kill all | el --version"
+        assert msg == "el #{version}\nusage: el ls | el <name> [--model <model>] | el <name> [--model <model>] tell <message> | el <name> [--model <model>] ask <message> | el <name> log | el <name> kill | el kill all | el --version"
       end)
       Mimic.stub(System, :halt, fn _ -> :ok end)
 
@@ -84,8 +88,12 @@ defmodule El.CLI.Spec do
     end
 
     test "shows only version for -v flag" do
+      version = case Application.spec(:el, :vsn) do
+        vsn when is_list(vsn) -> List.to_string(vsn)
+        _ -> "dev"
+      end
       Mimic.expect(IO, :puts, fn msg ->
-        assert msg == "0.1.40"
+        assert msg == version
       end)
       Mimic.stub(System, :halt, fn _ -> :ok end)
 
@@ -93,8 +101,12 @@ defmodule El.CLI.Spec do
     end
 
     test "shows only version for --version flag" do
+      version = case Application.spec(:el, :vsn) do
+        vsn when is_list(vsn) -> List.to_string(vsn)
+        _ -> "dev"
+      end
       Mimic.expect(IO, :puts, fn msg ->
-        assert msg == "0.1.40"
+        assert msg == version
       end)
       Mimic.stub(System, :halt, fn _ -> :ok end)
 

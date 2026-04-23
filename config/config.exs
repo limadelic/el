@@ -4,3 +4,9 @@ import Config
 config :claude_code, cli_path: :global
 
 config :cabbage, features: "features/"
+
+config :logger,
+  level: :error,
+  handle_sasl_reports: false
+
+config :sasl, sasl_error_logger: :silent

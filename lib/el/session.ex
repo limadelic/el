@@ -1,6 +1,8 @@
 defmodule El.Session do
   use GenServer
 
+  require Logger
+
   def start_link({name, session_opts}, _opts) do
     GenServer.start_link(__MODULE__, {name, session_opts}, name: via_tuple(name))
   end
@@ -55,37 +57,37 @@ defmodule El.Session do
     task_module = Keyword.get(opts, :task_module, Task)
     alive_fn = Keyword.get(opts, :alive_fn, &El.Session.alive?/1)
     registry_module = Keyword.get(opts, :registry_module, Registry)
-    claude_pid = start_claude(opts, claude_module)
+    start_result = start_claude(opts, claude_module)
 
-    {:ok,
-     %{
-       name: name,
-       claude_pid: claude_pid,
-       messages: [],
-       claude_module: claude_module,
-       task_module: task_module,
-       alive_fn: alive_fn,
-       registry_module: registry_module
-     }}
+    case start_result do
+      {:error, reason} ->
+        {:stop, reason}
+
+      claude_pid ->
+        messages = El.Application.load_messages(name)
+
+        {:ok,
+         %{
+           name: name,
+           claude_pid: claude_pid,
+           messages: messages,
+           pending_calls: [],
+           claude_module: claude_module,
+           task_module: task_module,
+           alive_fn: alive_fn,
+           registry_module: registry_module
+         }}
+    end
   end
 
   defp start_claude(opts, claude_module) do
-    safe_start_code(opts, claude_module)
-  rescue
-    _ -> nil
-  catch
-    :exit, _ -> nil
-    _, _ -> nil
-  end
-
-  defp safe_start_code(opts, claude_module) do
     opts
     |> claude_module.start_link()
     |> handle_start_result()
   end
 
   defp handle_start_result({:ok, pid}), do: pid
-  defp handle_start_result({:error, _reason}), do: nil
+  defp handle_start_result({:error, reason}), do: {:error, reason}
 
   @impl true
   def handle_cast({:tell, message}, state) do
@@ -98,7 +100,9 @@ defmodule El.Session do
 
   @impl true
   def handle_cast({:store_tell, ref, message, response}, state) do
-    new_state = %{state | messages: replace_tell(state.messages, ref, message, response)}
+    new_messages = replace_tell(state.messages, ref, message, response)
+    new_state = %{state | messages: new_messages}
+    El.Application.store_message(state.name, {"tell", message, response, %{}})
     routes = detect_routes(response)
     process_tell_response(state, response, routes)
     {:noreply, new_state}
@@ -106,25 +110,28 @@ defmodule El.Session do
 
   @impl true
   def handle_cast({:complete_ask, from, message, response}, state) do
-    new_state = %{state | messages: state.messages ++ [{"ask", message, response, %{}}]}
+    entry = {"ask", message, response, %{}}
+    new_messages = state.messages ++ [entry]
+    El.Application.store_message(state.name, entry)
     safe_reply(from, response)
-    {:noreply, new_state}
+    new_pending = List.delete(state.pending_calls, from)
+    {:noreply, %{state | messages: new_messages, pending_calls: new_pending}}
   end
 
   @impl true
   def handle_cast({:store_relay, message, response}, state) do
-    {:noreply,
-     %{state | messages: state.messages ++ [{"relay", message, response, %{from: state.name}}]}}
+    entry = {"relay", message, response, %{from: state.name}}
+    El.Application.store_message(state.name, entry)
+    {:noreply, %{state | messages: state.messages ++ [entry]}}
   end
 
   @impl true
   def handle_cast({:tell_ask, target, message}, state) do
     response = process_tell_ask(state, target, message)
+    entry = {"relay", message, response, %{from: state.name}}
+    El.Application.store_message(state.name, entry)
 
-    new_state = %{
-      state
-      | messages: state.messages ++ [{"relay", message, response, %{from: state.name}}]
-    }
+    new_state = %{state | messages: state.messages ++ [entry]}
 
     {:noreply, new_state}
   end
@@ -220,8 +227,9 @@ defmodule El.Session do
   def handle_call({:ask, message}, from, state) do
     routes = detect_routes(message)
     valid_routes = Enum.filter(routes, fn {target, _payload} -> target != state.name end)
-    spawn_ask(state, from, message, valid_routes)
-    {:noreply, state}
+    new_state = %{state | pending_calls: [from | state.pending_calls]}
+    spawn_ask(new_state, from, message, valid_routes)
+    {:noreply, new_state}
   end
 
   @impl true
@@ -232,11 +240,10 @@ defmodule El.Session do
   @impl true
   def handle_call({:ask_tell, target, message}, _from, state) do
     response = process_ask_tell(state, target, message)
+    entry = {"relay", message, response, %{from: state.name}}
+    El.Application.store_message(state.name, entry)
 
-    new_state = %{
-      state
-      | messages: state.messages ++ [{"relay", message, response, %{from: state.name}}]
-    }
+    new_state = %{state | messages: state.messages ++ [entry]}
 
     {:reply, response, new_state}
   end
@@ -304,8 +311,15 @@ defmodule El.Session do
   end
 
   @impl true
-  def handle_info({:EXIT, pid, _reason}, %{claude_pid: pid} = state) do
-    {:noreply, %{state | claude_pid: nil}}
+  def handle_info({:EXIT, pid, reason}, %{claude_pid: pid} = state) do
+    Logger.error("Session #{state.name} - Claude process died: #{inspect(reason)}")
+    El.Application.store_message(state.name, {"crash", "session died", inspect(reason), %{}})
+
+    Enum.each(state.pending_calls, fn from ->
+      safe_reply(from, "(error)")
+    end)
+
+    {:stop, reason, state}
   end
 
   @impl true
@@ -343,7 +357,9 @@ defmodule El.Session do
   end
 
   defp store_tell_immediate(state, message, ref, []) do
-    %{state | messages: state.messages ++ [{"tell", message, "", %{ref: ref}}]}
+    entry = {"tell", message, "", %{ref: ref}}
+    El.Application.store_message(state.name, entry)
+    %{state | messages: state.messages ++ [entry]}
   end
 
   defp store_tell_immediate(state, _message, _ref, _routes), do: state

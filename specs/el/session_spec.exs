@@ -2,10 +2,15 @@ defmodule El.Session.Spec do
   use ExUnit.Case
 
   setup do
+    El.Application.init_message_store()
+    :dets.delete_all_objects(:message_store)
+    on_exit(fn -> :dets.close(:message_store) end)
+
     state = %{
       name: :test_session,
       claude_pid: :mock_pid,
       messages: [],
+      pending_calls: [],
       claude_module: MockSessionModule,
       task_module: MockSessionModule,
       alive_fn: fn
@@ -75,10 +80,8 @@ defmodule El.Session.Spec do
       assert state.claude_pid == :mock_pid
     end
 
-    test "stores nil for claude_pid on start failure" do
-      {:ok, state} = El.Session.init({:test_session, [claude_module: FailingModule]})
-
-      assert state.claude_pid == nil
+    test "stops on claude start failure" do
+      assert {:stop, _reason} = El.Session.init({:test_session, [claude_module: FailingModule]})
     end
 
     test "stores default task_module" do
@@ -338,10 +341,21 @@ defmodule El.Session.Spec do
 
   describe "handle_info/2" do
     test "clears claude_pid on EXIT from claude process", %{state: state} do
-      {:noreply, returned_state} =
+      {:stop, reason, returned_state} =
         El.Session.handle_info({:EXIT, :mock_pid, :normal}, state)
 
-      assert returned_state.claude_pid == nil
+      assert reason == :normal
+      assert returned_state == state
+    end
+
+    test "replies to pending calls on EXIT", %{state: state} do
+      ref = make_ref()
+      from = {self(), ref}
+      state_with_pending = %{state | pending_calls: [from]}
+
+      El.Session.handle_info({:EXIT, :mock_pid, :crash}, state_with_pending)
+
+      assert_receive {^ref, "(error)"}
     end
 
     test "preserves state on EXIT from different pid", %{state: state} do

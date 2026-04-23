@@ -1,12 +1,18 @@
 defmodule El.CLI do
-  @version (case Application.spec(:el, :vsn) do
-              vsn when is_list(vsn) -> List.to_string(vsn)
-              _ -> "0.1.41"
-            end)
+  defp version do
+    case Application.spec(:el, :vsn) do
+      vsn when is_list(vsn) -> List.to_string(vsn)
+      _ -> "dev"
+    end
+  end
 
   def main(args) do
     main_impl(args)
     System.halt(0)
+  end
+
+  def dispatch(args) do
+    main_impl(args)
   end
 
   def parse_route([]), do: :usage
@@ -31,11 +37,11 @@ defmodule El.CLI do
   end
 
   defp main_impl(["-v"]) do
-    IO.puts(@version)
+    IO.puts(version())
   end
 
   defp main_impl(["--version"]) do
-    IO.puts(@version)
+    IO.puts(version())
   end
 
   defp main_impl(["ls"]) do
@@ -115,7 +121,8 @@ defmodule El.CLI do
   end
 
   defp main_impl(["kill", "all"]) do
-    :os.cmd(~c"pkill -9 beam 2>/dev/null")
+    :os.cmd(~c"pkill -9 -f 'beam.*el' 2>/dev/null")
+    :os.cmd(~c"pkill -9 -f 'el.*daemon' 2>/dev/null")
     :os.cmd(~c"pkill -9 epmd 2>/dev/null")
     :timer.sleep(500)
     cleanup_stale_node(Path.expand("~/.el/daemon_node"))
@@ -140,7 +147,7 @@ defmodule El.CLI do
   end
 
   defp handle_ls({:ok, daemon_node}) do
-    case :rpc.call(daemon_node, El, :local_ls, []) do
+    case :rpc.call(daemon_node, El, :local_ls, [], 5000) do
       {:badrpc, reason} ->
         IO.puts(:stderr, "Error: #{inspect(reason)}")
         System.halt(1)
@@ -159,7 +166,7 @@ defmodule El.CLI do
 
   defp handle_find_daemon_for_start({:ok, daemon_node}, name, opts) do
     name_atom = String.to_atom(name)
-    :rpc.call(daemon_node, El, :start, [name_atom, opts])
+    :rpc.call(daemon_node, El, :start, [name_atom, opts], 5000)
     IO.puts("el: #{name} is up")
   end
 
@@ -169,7 +176,7 @@ defmodule El.CLI do
 
   defp handle_find_daemon_with_rest({:ok, daemon_node}, name, opts, rest) do
     name_atom = String.to_atom(name)
-    :rpc.call(daemon_node, El, :start, [name_atom, opts])
+    :rpc.call(daemon_node, El, :start, [name_atom, opts], 5000)
     continue_if_rest_present(rest, name)
   end
 
@@ -178,8 +185,8 @@ defmodule El.CLI do
     continue_if_rest_present(rest, name)
   end
 
-  defp continue_if_rest_present([], name) do
-    IO.puts("el: #{name} is up")
+  defp continue_if_rest_present([], _name) do
+    :ok
   end
 
   defp continue_if_rest_present(rest, name) do
@@ -187,7 +194,7 @@ defmodule El.CLI do
   end
 
   defp handle_tell_ask({:ok, daemon_node}, name_atom, target_atom, msg, _name) do
-    case :rpc.call(daemon_node, El, :tell_ask, [name_atom, target_atom, msg]) do
+    case :rpc.call(daemon_node, El, :tell_ask, [name_atom, target_atom, msg], 5000) do
       {:badrpc, reason} ->
         IO.puts(:stderr, "Error: #{inspect(reason)}")
         System.halt(1)
@@ -203,7 +210,7 @@ defmodule El.CLI do
   end
 
   defp handle_tell({:ok, daemon_node}, name_atom, msg, _name) do
-    case :rpc.call(daemon_node, El, :tell, [name_atom, msg]) do
+    case :rpc.call(daemon_node, El, :tell, [name_atom, msg], 5000) do
       {:badrpc, reason} ->
         IO.puts(:stderr, "Error: #{inspect(reason)}")
         System.halt(1)
@@ -219,7 +226,7 @@ defmodule El.CLI do
   end
 
   defp handle_ask_tell({:ok, daemon_node}, name_atom, target_atom, msg, _name) do
-    result = :rpc.call(daemon_node, El, :ask_tell, [name_atom, target_atom, msg])
+    result = :rpc.call(daemon_node, El, :ask_tell, [name_atom, target_atom, msg], 5000)
     handle_rpc_result(result)
   end
 
@@ -229,7 +236,7 @@ defmodule El.CLI do
   end
 
   defp handle_ask({:ok, daemon_node}, name_atom, msg, _name) do
-    result = :rpc.call(daemon_node, El, :ask, [name_atom, msg])
+    result = :rpc.call(daemon_node, El, :ask, [name_atom, msg], 5000)
     handle_rpc_result(result)
   end
 
@@ -239,7 +246,7 @@ defmodule El.CLI do
   end
 
   defp handle_log({:ok, daemon_node}, name_atom, _name) do
-    case :rpc.call(daemon_node, El, :log, [name_atom]) do
+    case :rpc.call(daemon_node, El, :log, [name_atom], 5000) do
       {:badrpc, reason} ->
         IO.puts(:stderr, "Error: #{inspect(reason)}")
         System.halt(1)
@@ -258,7 +265,7 @@ defmodule El.CLI do
   end
 
   defp handle_kill({:ok, daemon_node}, name_atom, _name) do
-    case :rpc.call(daemon_node, El, :kill, [name_atom]) do
+    case :rpc.call(daemon_node, El, :kill, [name_atom], 5000) do
       {:badrpc, reason} ->
         IO.puts(:stderr, "Error: #{inspect(reason)}")
         System.halt(1)
@@ -299,7 +306,7 @@ defmodule El.CLI do
   end
 
   defp pick_local_or_remote(false, daemon_node, name_atom, opts) do
-    :rpc.call(daemon_node, El, :start, [name_atom, opts])
+    :rpc.call(daemon_node, El, :start, [name_atom, opts], 5000)
   end
 
   defp ensure_daemon_node do
@@ -604,10 +611,49 @@ defmodule El.CLI do
 
   defp spawn_daemon(name, opts) do
     binary_path = get_binary_path()
+
+    case System.get_env("RELEASE_ROOT") do
+      nil ->
+        spawn_daemon_escript(name, opts, binary_path)
+
+      _root ->
+        spawn_daemon_release(name, opts, binary_path)
+    end
+  end
+
+  defp spawn_daemon_escript(name, opts, binary_path) do
     model_arg = build_model_arg(opts)
-    cmd = ~c"nohup #{binary_path} --daemon #{name}#{model_arg} > /dev/null 2>&1 &"
+    log = Path.expand("~/.el/el.log")
+    cmd = ~c"nohup #{binary_path} --daemon #{name}#{model_arg} >> #{log} 2>&1 &"
     :os.cmd(cmd)
     handle_poll_result(poll_daemon_ready(300), name)
+  end
+
+  defp spawn_daemon_release(name, opts, binary_path) do
+    log_path = Path.expand("~/.el/el.log")
+    :os.cmd(~c"nohup #{binary_path} daemon >> #{log_path} 2>&1 &")
+    :timer.sleep(1000)
+
+    case poll_daemon_ready(300) do
+      :ok ->
+        {:ok, daemon_node} = find_daemon_node()
+        name_atom = String.to_atom(name)
+        :rpc.call(daemon_node, El, :start, [name_atom, opts], 5000)
+        IO.puts("el: #{name} is up")
+
+      :timeout ->
+        IO.puts(:stderr, "el: daemon startup timeout")
+        System.halt(1)
+    end
+  end
+
+  defp handle_poll_result(:ok, name) do
+    IO.puts("el: #{name} is up")
+  end
+
+  defp handle_poll_result(:timeout, _name) do
+    IO.puts(:stderr, "el: daemon startup timeout")
+    System.halt(1)
   end
 
   defp build_model_arg(opts) when is_list(opts) do
@@ -626,17 +672,11 @@ defmodule El.CLI do
     ""
   end
 
-  defp handle_poll_result(:ok, name) do
-    IO.puts("el: #{name} is up")
-  end
-
-  defp handle_poll_result(:timeout, _name) do
-    IO.puts(:stderr, "el: daemon startup timeout")
-    System.halt(1)
-  end
-
   defp get_binary_path do
-    :escript.script_name() |> to_string()
+    case System.get_env("RELEASE_ROOT") do
+      nil -> :escript.script_name() |> to_string()
+      root -> Path.join([root, "bin", "el"])
+    end
   end
 
   defp poll_daemon_ready(retries_left) when retries_left <= 0 do
@@ -657,7 +697,7 @@ defmodule El.CLI do
   end
 
   defp verify_daemon_rpc(daemon_node, retries_left) do
-    handle_daemon_rpc_call(:rpc.call(daemon_node, El, :local_ls, []), retries_left)
+    handle_daemon_rpc_call(:rpc.call(daemon_node, El, :local_ls, [], 5000), retries_left)
   end
 
   defp handle_daemon_rpc_call({:badrpc, _reason}, retries_left) do
@@ -704,6 +744,6 @@ defmodule El.CLI do
   end
 
   defp usage_message do
-    "el #{@version}\nusage: el ls | el <name> [--model <model>] | el <name> [--model <model>] tell <message> | el <name> [--model <model>] ask <message> | el <name> log | el <name> kill | el kill all | el --version"
+    "el #{version()}\nusage: el ls | el <name> [--model <model>] | el <name> [--model <model>] tell <message> | el <name> [--model <model>] ask <message> | el <name> log | el <name> kill | el kill all | el --version"
   end
 end
