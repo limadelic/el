@@ -1,8 +1,10 @@
 defmodule El.CLI do
-  @version (case Application.spec(:el, :vsn) do
-              vsn when is_list(vsn) -> List.to_string(vsn)
-              _ -> "0.1.41"
-            end)
+  defp version do
+    case Application.spec(:el, :vsn) do
+      vsn when is_list(vsn) -> List.to_string(vsn)
+      _ -> "dev"
+    end
+  end
 
   def main(args) do
     main_impl(args)
@@ -35,11 +37,11 @@ defmodule El.CLI do
   end
 
   defp main_impl(["-v"]) do
-    IO.puts(@version)
+    IO.puts(version())
   end
 
   defp main_impl(["--version"]) do
-    IO.puts(@version)
+    IO.puts(version())
   end
 
   defp main_impl(["ls"]) do
@@ -739,6 +741,6 @@ defmodule El.CLI do
   end
 
   defp usage_message do
-    "el #{@version}\nusage: el ls | el <name> [--model <model>] | el <name> [--model <model>] tell <message> | el <name> [--model <model>] ask <message> | el <name> log | el <name> kill | el kill all | el --version"
+    "el #{version()}\nusage: el ls | el <name> [--model <model>] | el <name> [--model <model>] tell <message> | el <name> [--model <model>] ask <message> | el <name> log | el <name> kill | el kill all | el --version"
   end
 end

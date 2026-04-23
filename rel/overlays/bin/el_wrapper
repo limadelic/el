@@ -1,0 +1,27 @@
+#!/bin/bash
+SOURCE="$0"
+while [ -L "$SOURCE" ]; do
+  DIR="$(cd "$(dirname "$SOURCE")" && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+SCRIPT_DIR="$(cd "$(dirname "$SOURCE")" && pwd)"
+RELEASE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+case "$1" in
+  start|daemon|stop|restart|pid|remote)
+    exec "$RELEASE_ROOT/bin/el" "$@"
+    ;;
+  *)
+    args=""
+    for arg in "$@"; do
+      escaped=$(printf '%s' "$arg" | sed 's/"/\\"/g')
+      if [ -z "$args" ]; then
+        args="\"$escaped\""
+      else
+        args="$args, \"$escaped\""
+      fi
+    done
+    exec "$RELEASE_ROOT/bin/el" eval "El.CLI.dispatch([$args])"
+    ;;
+esac
