@@ -9,6 +9,10 @@ defmodule El.CLI do
     System.halt(0)
   end
 
+  def dispatch(args) do
+    main_impl(args)
+  end
+
   def parse_route([]), do: :usage
   def parse_route(["-v"]), do: :version
   def parse_route(["--version"]), do: :version
@@ -604,10 +608,42 @@ defmodule El.CLI do
 
   defp spawn_daemon(name, opts) do
     binary_path = get_binary_path()
+    case System.get_env("RELEASE_ROOT") do
+      nil ->
+        spawn_daemon_escript(name, opts, binary_path)
+      _root ->
+        spawn_daemon_release(name, opts, binary_path)
+    end
+  end
+
+  defp spawn_daemon_escript(name, opts, binary_path) do
     model_arg = build_model_arg(opts)
     cmd = ~c"nohup #{binary_path} --daemon #{name}#{model_arg} > /dev/null 2>&1 &"
     :os.cmd(cmd)
     handle_poll_result(poll_daemon_ready(300), name)
+  end
+
+  defp spawn_daemon_release(name, opts, binary_path) do
+    :os.cmd(~c"#{binary_path} daemon 2>&1")
+    case poll_daemon_ready(300) do
+      :ok ->
+        {:ok, daemon_node} = find_daemon_node()
+        name_atom = String.to_atom(name)
+        :rpc.call(daemon_node, El, :start, [name_atom, opts])
+        IO.puts("el: #{name} is up")
+      :timeout ->
+        IO.puts(:stderr, "el: daemon startup timeout")
+        System.halt(1)
+    end
+  end
+
+  defp handle_poll_result(:ok, name) do
+    IO.puts("el: #{name} is up")
+  end
+
+  defp handle_poll_result(:timeout, _name) do
+    IO.puts(:stderr, "el: daemon startup timeout")
+    System.halt(1)
   end
 
   defp build_model_arg(opts) when is_list(opts) do
@@ -626,17 +662,11 @@ defmodule El.CLI do
     ""
   end
 
-  defp handle_poll_result(:ok, name) do
-    IO.puts("el: #{name} is up")
-  end
-
-  defp handle_poll_result(:timeout, _name) do
-    IO.puts(:stderr, "el: daemon startup timeout")
-    System.halt(1)
-  end
-
   defp get_binary_path do
-    :escript.script_name() |> to_string()
+    case System.get_env("RELEASE_ROOT") do
+      nil -> :escript.script_name() |> to_string()
+      root -> Path.join([root, "bin", "el"])
+    end
   end
 
   defp poll_daemon_ready(retries_left) when retries_left <= 0 do
