@@ -629,7 +629,8 @@ defmodule El.CLI do
   end
 
   defp spawn_daemon_release(name, opts, binary_path) do
-    :os.cmd(~c"#{binary_path} daemon 2>&1")
+    log_path = Path.expand("~/.el/el.log")
+    :os.cmd(~c"nohup #{binary_path} daemon >> #{log_path} 2>&1 &")
     :timer.sleep(1000)
 
     case poll_daemon_ready(300) do
