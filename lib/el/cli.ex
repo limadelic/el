@@ -146,7 +146,7 @@ defmodule El.CLI do
   end
 
   defp handle_ls({:ok, daemon_node}) do
-    case :rpc.call(daemon_node, El, :local_ls, []) do
+    case :rpc.call(daemon_node, El, :local_ls, [], 5000) do
       {:badrpc, reason} ->
         IO.puts(:stderr, "Error: #{inspect(reason)}")
         System.halt(1)
@@ -165,7 +165,7 @@ defmodule El.CLI do
 
   defp handle_find_daemon_for_start({:ok, daemon_node}, name, opts) do
     name_atom = String.to_atom(name)
-    :rpc.call(daemon_node, El, :start, [name_atom, opts])
+    :rpc.call(daemon_node, El, :start, [name_atom, opts], 5000)
     IO.puts("el: #{name} is up")
   end
 
@@ -175,7 +175,7 @@ defmodule El.CLI do
 
   defp handle_find_daemon_with_rest({:ok, daemon_node}, name, opts, rest) do
     name_atom = String.to_atom(name)
-    :rpc.call(daemon_node, El, :start, [name_atom, opts])
+    :rpc.call(daemon_node, El, :start, [name_atom, opts], 5000)
     continue_if_rest_present(rest, name)
   end
 
@@ -193,7 +193,7 @@ defmodule El.CLI do
   end
 
   defp handle_tell_ask({:ok, daemon_node}, name_atom, target_atom, msg, _name) do
-    case :rpc.call(daemon_node, El, :tell_ask, [name_atom, target_atom, msg]) do
+    case :rpc.call(daemon_node, El, :tell_ask, [name_atom, target_atom, msg], 5000) do
       {:badrpc, reason} ->
         IO.puts(:stderr, "Error: #{inspect(reason)}")
         System.halt(1)
@@ -209,7 +209,7 @@ defmodule El.CLI do
   end
 
   defp handle_tell({:ok, daemon_node}, name_atom, msg, _name) do
-    case :rpc.call(daemon_node, El, :tell, [name_atom, msg]) do
+    case :rpc.call(daemon_node, El, :tell, [name_atom, msg], 5000) do
       {:badrpc, reason} ->
         IO.puts(:stderr, "Error: #{inspect(reason)}")
         System.halt(1)
@@ -225,7 +225,7 @@ defmodule El.CLI do
   end
 
   defp handle_ask_tell({:ok, daemon_node}, name_atom, target_atom, msg, _name) do
-    result = :rpc.call(daemon_node, El, :ask_tell, [name_atom, target_atom, msg])
+    result = :rpc.call(daemon_node, El, :ask_tell, [name_atom, target_atom, msg], 5000)
     handle_rpc_result(result)
   end
 
@@ -235,7 +235,7 @@ defmodule El.CLI do
   end
 
   defp handle_ask({:ok, daemon_node}, name_atom, msg, _name) do
-    result = :rpc.call(daemon_node, El, :ask, [name_atom, msg])
+    result = :rpc.call(daemon_node, El, :ask, [name_atom, msg], 5000)
     handle_rpc_result(result)
   end
 
@@ -245,7 +245,7 @@ defmodule El.CLI do
   end
 
   defp handle_log({:ok, daemon_node}, name_atom, _name) do
-    case :rpc.call(daemon_node, El, :log, [name_atom]) do
+    case :rpc.call(daemon_node, El, :log, [name_atom], 5000) do
       {:badrpc, reason} ->
         IO.puts(:stderr, "Error: #{inspect(reason)}")
         System.halt(1)
@@ -264,7 +264,7 @@ defmodule El.CLI do
   end
 
   defp handle_kill({:ok, daemon_node}, name_atom, _name) do
-    case :rpc.call(daemon_node, El, :kill, [name_atom]) do
+    case :rpc.call(daemon_node, El, :kill, [name_atom], 5000) do
       {:badrpc, reason} ->
         IO.puts(:stderr, "Error: #{inspect(reason)}")
         System.halt(1)
@@ -305,7 +305,7 @@ defmodule El.CLI do
   end
 
   defp pick_local_or_remote(false, daemon_node, name_atom, opts) do
-    :rpc.call(daemon_node, El, :start, [name_atom, opts])
+    :rpc.call(daemon_node, El, :start, [name_atom, opts], 5000)
   end
 
   defp ensure_daemon_node do
@@ -630,12 +630,13 @@ defmodule El.CLI do
 
   defp spawn_daemon_release(name, opts, binary_path) do
     :os.cmd(~c"#{binary_path} daemon 2>&1")
+    :timer.sleep(1000)
 
     case poll_daemon_ready(300) do
       :ok ->
         {:ok, daemon_node} = find_daemon_node()
         name_atom = String.to_atom(name)
-        :rpc.call(daemon_node, El, :start, [name_atom, opts])
+        :rpc.call(daemon_node, El, :start, [name_atom, opts], 5000)
         IO.puts("el: #{name} is up")
 
       :timeout ->
@@ -694,7 +695,7 @@ defmodule El.CLI do
   end
 
   defp verify_daemon_rpc(daemon_node, retries_left) do
-    handle_daemon_rpc_call(:rpc.call(daemon_node, El, :local_ls, []), retries_left)
+    handle_daemon_rpc_call(:rpc.call(daemon_node, El, :local_ls, [], 5000), retries_left)
   end
 
   defp handle_daemon_rpc_call({:badrpc, _reason}, retries_left) do
