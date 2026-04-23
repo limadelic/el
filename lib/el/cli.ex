@@ -182,8 +182,8 @@ defmodule El.CLI do
     continue_if_rest_present(rest, name)
   end
 
-  defp continue_if_rest_present([], name) do
-    IO.puts("el: #{name} is up")
+  defp continue_if_rest_present([], _name) do
+    :ok
   end
 
   defp continue_if_rest_present(rest, name) do
@@ -608,9 +608,11 @@ defmodule El.CLI do
 
   defp spawn_daemon(name, opts) do
     binary_path = get_binary_path()
+
     case System.get_env("RELEASE_ROOT") do
       nil ->
         spawn_daemon_escript(name, opts, binary_path)
+
       _root ->
         spawn_daemon_release(name, opts, binary_path)
     end
@@ -618,19 +620,22 @@ defmodule El.CLI do
 
   defp spawn_daemon_escript(name, opts, binary_path) do
     model_arg = build_model_arg(opts)
-    cmd = ~c"nohup #{binary_path} --daemon #{name}#{model_arg} > /dev/null 2>&1 &"
+    log = Path.expand("~/.el/el.log")
+    cmd = ~c"nohup #{binary_path} --daemon #{name}#{model_arg} >> #{log} 2>&1 &"
     :os.cmd(cmd)
     handle_poll_result(poll_daemon_ready(300), name)
   end
 
   defp spawn_daemon_release(name, opts, binary_path) do
     :os.cmd(~c"#{binary_path} daemon 2>&1")
+
     case poll_daemon_ready(300) do
       :ok ->
         {:ok, daemon_node} = find_daemon_node()
         name_atom = String.to_atom(name)
         :rpc.call(daemon_node, El, :start, [name_atom, opts])
         IO.puts("el: #{name} is up")
+
       :timeout ->
         IO.puts(:stderr, "el: daemon startup timeout")
         System.halt(1)

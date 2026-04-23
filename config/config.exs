@@ -4,3 +4,5 @@ import Config
 config :claude_code, cli_path: :global
 
 config :cabbage, features: "features/"
+
+config :logger, handle_sasl_reports: true

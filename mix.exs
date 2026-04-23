@@ -14,7 +14,12 @@ defmodule El.MixProject do
         &String.ends_with?(&1, "_spec.exs")
       ],
       deps: deps(),
-      escript: [main_module: El.CLI],
+      releases: [
+        el: [
+          steps: [:assemble, :tar],
+          overlays: ["rel/overlays"]
+        ]
+      ],
       package: package()
     ]
   end
