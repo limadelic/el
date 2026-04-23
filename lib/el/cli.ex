@@ -194,7 +194,7 @@ defmodule El.CLI do
   end
 
   defp handle_tell_ask({:ok, daemon_node}, name_atom, target_atom, msg, _name) do
-    case :rpc.call(daemon_node, El, :tell_ask, [name_atom, target_atom, msg], 5000) do
+    case :rpc.call(daemon_node, El, :tell_ask, [name_atom, target_atom, msg], :infinity) do
       {:badrpc, reason} ->
         IO.puts(:stderr, "Error: #{inspect(reason)}")
         System.halt(1)
@@ -226,7 +226,7 @@ defmodule El.CLI do
   end
 
   defp handle_ask_tell({:ok, daemon_node}, name_atom, target_atom, msg, _name) do
-    result = :rpc.call(daemon_node, El, :ask_tell, [name_atom, target_atom, msg], 5000)
+    result = :rpc.call(daemon_node, El, :ask_tell, [name_atom, target_atom, msg], :infinity)
     handle_rpc_result(result)
   end
 
@@ -236,7 +236,7 @@ defmodule El.CLI do
   end
 
   defp handle_ask({:ok, daemon_node}, name_atom, msg, _name) do
-    result = :rpc.call(daemon_node, El, :ask, [name_atom, msg], 5000)
+    result = :rpc.call(daemon_node, El, :ask, [name_atom, msg], :infinity)
     handle_rpc_result(result)
   end
 
