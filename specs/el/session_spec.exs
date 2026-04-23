@@ -17,7 +17,8 @@ defmodule El.Session.Spec do
         :target -> true
         _ -> false
       end,
-      registry_module: MockSessionModule
+      registry_module: MockSessionModule,
+      opts: []
     }
 
     {:ok, state: state}
@@ -341,11 +342,11 @@ defmodule El.Session.Spec do
 
   describe "handle_info/2" do
     test "clears claude_pid on EXIT from claude process", %{state: state} do
-      {:stop, reason, returned_state} =
-        El.Session.handle_info({:EXIT, :mock_pid, :normal}, state)
+      {:noreply, returned_state} =
+        El.Session.handle_info({:EXIT, :mock_pid, :killed}, state)
 
-      assert reason == :normal
-      assert returned_state == state
+      assert returned_state.claude_pid == nil
+      assert returned_state.pending_calls == []
     end
 
     test "replies to pending calls on EXIT", %{state: state} do
