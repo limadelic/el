@@ -313,6 +313,7 @@ defmodule El.Session do
   @impl true
   def handle_info({:EXIT, pid, reason}, %{claude_pid: pid} = state) do
     Logger.error("Session #{state.name} - Claude process died: #{inspect(reason)}")
+    El.Application.store_message(state.name, {"crash", "session died", inspect(reason), %{}})
 
     Enum.each(state.pending_calls, fn from ->
       safe_reply(from, "(error)")

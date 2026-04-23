@@ -3,6 +3,8 @@ defmodule El.Application.Spec do
 
   setup do
     El.Application.init_message_store()
+    :dets.delete_all_objects(:message_store)
+    on_exit(fn -> :dets.close(:message_store) end)
 
     [
       children: El.Application.children(),

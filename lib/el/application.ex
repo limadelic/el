@@ -21,36 +21,23 @@ defmodule El.Application do
   end
 
   def init_message_store do
-    :ets.new(:message_store, [:named_table, :public])
+    path = Path.expand("~/.el/messages.dets") |> String.to_charlist()
+    File.mkdir_p!(Path.expand("~/.el"))
+    {:ok, _} = :dets.open_file(:message_store, file: path, type: :bag)
   end
 
   def delete_session_messages(name) do
-    key = {name, :messages}
-    :ets.delete(:message_store, key)
+    :dets.delete(:message_store, name)
     :ok
   end
 
   def store_message(name, message_entry) do
-    key = {name, :messages}
-    existing = :ets.lookup(:message_store, key)
-
-    case existing do
-      [{^key, messages}] ->
-        :ets.insert(:message_store, {key, messages ++ [message_entry]})
-
-      [] ->
-        :ets.insert(:message_store, {key, [message_entry]})
-    end
-
+    :dets.insert(:message_store, {name, message_entry})
     :ok
   end
 
   def load_messages(name) do
-    key = {name, :messages}
-
-    case :ets.lookup(:message_store, key) do
-      [{^key, messages}] -> messages
-      [] -> []
-    end
+    :dets.lookup(:message_store, name)
+    |> Enum.map(fn {_key, entry} -> entry end)
   end
 end
