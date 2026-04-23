@@ -4,6 +4,10 @@ defmodule El.Features.OnOffSpec do
   @el_bin "/opt/homebrew/bin/el"
 
   setup do
+    El.Application.init_message_store()
+    :dets.delete_all_objects(:message_store)
+    on_exit(fn -> :dets.close(:message_store) end)
+
     node_file = Path.expand("~/.el/daemon_node")
     File.rm(node_file)
     on_exit(fn -> File.rm(node_file) end)
