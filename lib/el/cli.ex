@@ -121,7 +121,8 @@ defmodule El.CLI do
   end
 
   defp main_impl(["kill", "all"]) do
-    :os.cmd(~c"pkill -9 beam 2>/dev/null")
+    :os.cmd(~c"pkill -9 -f 'beam.*el' 2>/dev/null")
+    :os.cmd(~c"pkill -9 -f 'el.*daemon' 2>/dev/null")
     :os.cmd(~c"pkill -9 epmd 2>/dev/null")
     :timer.sleep(500)
     cleanup_stale_node(Path.expand("~/.el/daemon_node"))
