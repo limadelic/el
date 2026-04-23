@@ -357,7 +357,9 @@ defmodule El.CLI do
 
   defp find_daemon_node do
     ensure_epmd()
+
     process_daemon_node_file(read_daemon_node())
+    |> check_daemon_version()
   end
 
   defp process_daemon_node_file({:ok, daemon_node}) do
@@ -594,6 +596,34 @@ defmodule El.CLI do
 
   defp handle_connect_result(_result, _node_name, node_file) do
     cleanup_stale_node(node_file)
+    :not_found
+  end
+
+  defp check_daemon_version({:ok, daemon_node}) do
+    case :rpc.call(daemon_node, Application, :spec, [:el, :vsn], 5000) do
+      vsn when is_list(vsn) ->
+        daemon_version = List.to_string(vsn)
+        current_version = version()
+
+        if daemon_version == current_version do
+          {:ok, daemon_node}
+        else
+          restart_stale_daemon()
+        end
+
+      _ ->
+        restart_stale_daemon()
+    end
+  end
+
+  defp check_daemon_version(:not_found), do: :not_found
+
+  defp restart_stale_daemon do
+    :os.cmd(~c"pkill -9 -f 'beam.*el' 2>/dev/null")
+    :os.cmd(~c"pkill -9 -f 'el.*daemon' 2>/dev/null")
+    :os.cmd(~c"pkill -9 epmd 2>/dev/null")
+    :timer.sleep(1000)
+    cleanup_stale_node(Path.expand("~/.el/daemon_node"))
     :not_found
   end
 

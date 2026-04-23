@@ -16,6 +16,14 @@ defmodule El.Application do
       node_file = Path.expand("~/.el/daemon_node")
       File.mkdir_p!(Path.dirname(node_file))
       File.write!(node_file, Atom.to_string(Node.self()))
+
+      version =
+        case Application.spec(:el, :vsn) do
+          vsn when is_list(vsn) -> List.to_string(vsn)
+          _ -> "unknown"
+        end
+
+      File.write!(Path.join(Path.dirname(node_file), "daemon_version"), version)
     end
   end
 
