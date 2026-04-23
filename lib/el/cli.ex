@@ -121,12 +121,12 @@ defmodule El.CLI do
   end
 
   defp main_impl(["kill", "all"]) do
-    :os.cmd(~c"pkill -9 -f 'beam.*el' 2>/dev/null")
-    :os.cmd(~c"pkill -9 -f 'el.*daemon' 2>/dev/null")
-    :os.cmd(~c"pkill -9 epmd 2>/dev/null")
-    :timer.sleep(500)
-    cleanup_stale_node(Path.expand("~/.el/daemon_node"))
-    IO.puts("All sessions killed")
+    graceful_shutdown()
+    File.rm(Path.expand("~/.el/daemon_node"))
+    File.rm(Path.expand("~/.el/daemon_version"))
+    IO.puts("killed all")
+  rescue
+    _ -> IO.puts("killed all")
   end
 
   defp main_impl(_) do
@@ -344,7 +344,6 @@ defmodule El.CLI do
   end
 
   defp handle_daemon_start({:error, _reason}) do
-    nuke_epmd()
     retry_start_node(5)
   end
 
@@ -405,66 +404,6 @@ defmodule El.CLI do
     _ -> :ok
   catch
     _, _ -> :ok
-  end
-
-  defp nuke_epmd do
-    stale_ports = get_stale_ports()
-    kill_processes_on_ports(stale_ports)
-    restart_epmd()
-  end
-
-  defp get_stale_ports do
-    filter_el_ports(:erl_epmd.names())
-  end
-
-  defp filter_el_ports({:ok, names}) do
-    names
-    |> Enum.filter(fn {node_name, _port} ->
-      String.starts_with?(to_string(node_name), "el")
-    end)
-    |> Enum.map(fn {_node_name, port} -> port end)
-  end
-
-  defp filter_el_ports(_) do
-    []
-  end
-
-  defp kill_processes_on_ports(stale_ports) do
-    Enum.each(stale_ports, fn port ->
-      kill_process_on_port(port)
-    end)
-  end
-
-  defp kill_process_on_port(port) do
-    handle_lsof_result(:os.cmd(~c"lsof -ti :#{port} 2>/dev/null | head -1"))
-  end
-
-  defp handle_lsof_result([]) do
-    :ok
-  end
-
-  defp handle_lsof_result(pid_str) do
-    kill_pid_if_present(pid_str)
-  end
-
-  defp kill_pid_if_present(pid_str) do
-    pid = pid_str |> List.to_string() |> String.trim()
-    send_kill_if_pid_present(pid)
-  end
-
-  defp send_kill_if_pid_present(pid) when pid != "" do
-    :os.cmd(~c"kill -9 #{pid} 2>/dev/null")
-  end
-
-  defp send_kill_if_pid_present(_pid) do
-    :ok
-  end
-
-  defp restart_epmd do
-    System.cmd("pkill", ["-9", "epmd"], stderr_to_stdout: true)
-    :timer.sleep(500)
-    System.cmd("epmd", ["-daemon"], stderr_to_stdout: true)
-    :timer.sleep(200)
   end
 
   defp read_daemon_node do
@@ -618,13 +557,30 @@ defmodule El.CLI do
 
   defp check_daemon_version(:not_found), do: :not_found
 
+  defp graceful_shutdown do
+    node_file = Path.expand("~/.el/daemon_node")
+
+    case File.read(node_file) do
+      {:ok, content} ->
+        node_name = content |> String.trim() |> String.to_atom()
+        ensure_client_node_alive(node_file)
+        :rpc.call(node_name, :init, :stop, [], 5000)
+
+      _ ->
+        :ok
+    end
+  end
+
   defp restart_stale_daemon do
-    :os.cmd(~c"pkill -9 -f 'beam.*el' 2>/dev/null")
-    :os.cmd(~c"pkill -9 -f 'el.*daemon' 2>/dev/null")
-    :os.cmd(~c"pkill -9 epmd 2>/dev/null")
+    node_file = Path.expand("~/.el/daemon_node")
+    graceful_shutdown()
     :timer.sleep(1000)
-    cleanup_stale_node(Path.expand("~/.el/daemon_node"))
+    cleanup_stale_node(node_file)
     :not_found
+  rescue
+    _ ->
+      cleanup_stale_node(Path.expand("~/.el/daemon_node"))
+      :not_found
   end
 
   defp cleanup_stale_node(node_file) do

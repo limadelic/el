@@ -12,9 +12,7 @@ INSTALLED_VERSION=$(awk '{print $2}' "$RELEASE_ROOT/releases/start_erl.data" 2>/
 DAEMON_VERSION=$(cat ~/.el/daemon_version 2>/dev/null)
 
 if [ -n "$DAEMON_VERSION" ] && [ -n "$INSTALLED_VERSION" ] && [ "$DAEMON_VERSION" != "$INSTALLED_VERSION" ]; then
-  pkill -9 -f 'beam.*el' 2>/dev/null
-  pkill -9 -f 'el.*daemon' 2>/dev/null
-  pkill -9 epmd 2>/dev/null
+  "$RELEASE_ROOT/bin/el" stop 2>/dev/null || true
   rm -f ~/.el/daemon_node ~/.el/daemon_version
   sleep 1
 fi
