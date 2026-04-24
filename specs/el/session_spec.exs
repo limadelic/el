@@ -105,6 +105,7 @@ defmodule El.Session.Spec do
 
       assert state.task_module == MockSessionModule
     end
+
   end
 
   describe "handle_cast/2 :tell" do
@@ -385,6 +386,7 @@ defmodule El.Session.Spec do
       assert [{"crash", "session died", ":killed", %{}}] = returned_state.messages
     end
   end
+
 
   describe "terminate/2" do
     test "stores crash entry on abnormal exit", %{state: state} do

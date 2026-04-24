@@ -32,6 +32,12 @@ defmodule ModelCaptureModule do
   end
 end
 
+defmodule SessionIdCaptureModule do
+  def start_link(_opts) do
+    {:ok, "captured-session-id"}
+  end
+end
+
 defmodule FailingModule do
   def start_link(_), do: {:error, :failed}
 end

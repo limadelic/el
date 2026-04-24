@@ -80,6 +80,27 @@ defmodule El.ClaudeCode.Spec do
 
       El.ClaudeCode.start_link(session_module: ClaudeCode.Session)
     end
+
+    test "passes resume option when provided" do
+      Mimic.expect(ClaudeCode.Session, :start_link, fn opts ->
+        assert opts[:resume] == "abc-123-def"
+        {:ok, self()}
+      end)
+
+      El.ClaudeCode.start_link(
+        resume: "abc-123-def",
+        session_module: ClaudeCode.Session
+      )
+    end
+
+    test "omits resume option when not provided" do
+      Mimic.expect(ClaudeCode.Session, :start_link, fn opts ->
+        refute Keyword.has_key?(opts, :resume)
+        {:ok, self()}
+      end)
+
+      El.ClaudeCode.start_link(session_module: ClaudeCode.Session)
+    end
   end
 
   describe "stream/2" do

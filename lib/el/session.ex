@@ -57,19 +57,21 @@ defmodule El.Session do
     task_module = Keyword.get(opts, :task_module, Task)
     alive_fn = Keyword.get(opts, :alive_fn, &El.Session.alive?/1)
     registry_module = Keyword.get(opts, :registry_module, Registry)
-    start_result = start_claude(opts, claude_module)
+    {session_id, opts_without_resume} = extract_resume_or_generate_session_id(opts)
+    start_result = start_claude(opts_without_resume, claude_module)
 
     case start_result do
       {:error, reason} ->
         {:stop, reason}
 
-      claude_pid ->
+      {:ok, claude_pid} ->
         messages = El.Application.load_messages(name)
 
         {:ok,
          %{
            name: name,
            claude_pid: claude_pid,
+           session_id: session_id,
            messages: messages,
            pending_calls: [],
            claude_module: claude_module,
@@ -82,22 +84,42 @@ defmodule El.Session do
   end
 
   defp start_claude(opts, claude_module) do
-    opts
-    |> claude_module.start_link()
-    |> handle_start_result()
+    case claude_module.start_link(opts) do
+      {:ok, pid} ->
+        {:ok, pid}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
-  defp handle_start_result({:ok, pid}), do: pid
-  defp handle_start_result({:error, reason}), do: {:error, reason}
+  defp maybe_respawn_claude(%{claude_pid: nil, opts: opts, session_id: session_id, claude_module: claude_module} = state) do
+    opts_with_resume = Keyword.put(opts, :resume, session_id)
 
-  defp maybe_respawn_claude(%{claude_pid: nil, opts: opts, claude_module: claude_module} = state) do
-    case start_claude(opts, claude_module) do
-      pid when is_pid(pid) -> %{state | claude_pid: pid}
+    case start_claude(opts_with_resume, claude_module) do
+      {:ok, pid} -> %{state | claude_pid: pid}
       _ -> state
     end
   end
 
   defp maybe_respawn_claude(state), do: state
+
+  defp extract_resume_or_generate_session_id(opts) do
+    case Keyword.pop(opts, :resume) do
+      {nil, remaining_opts} ->
+        {generate_session_id(), remaining_opts}
+
+      {session_id, remaining_opts} ->
+        {session_id, remaining_opts}
+    end
+  end
+
+  defp generate_session_id do
+    bytes = :crypto.strong_rand_bytes(16)
+    hex = Base.encode16(bytes, case: :lower)
+
+    "#{String.slice(hex, 0, 8)}-#{String.slice(hex, 8, 4)}-#{String.slice(hex, 12, 4)}-#{String.slice(hex, 16, 4)}-#{String.slice(hex, 20, 12)}"
+  end
 
   @impl true
   def handle_cast({:tell, message}, state) do
