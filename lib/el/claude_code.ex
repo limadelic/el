@@ -5,7 +5,7 @@ defmodule El.ClaudeCode do
     session_module = extract_session_module(opts[:session_module])
     cli_path = Application.get_env(:claude_code, :cli_path, :global)
 
-    {session_id, remaining_opts} = extract_session_id_or_generate(opts)
+    {session_id, remaining_opts} = extract_session_id(opts)
     session_opts = base_session_opts(session_id, cli_path)
     final_opts = add_model(session_opts, remaining_opts[:model])
     final_opts = add_resume_if_present(final_opts, opts)
@@ -36,14 +36,8 @@ defmodule El.ClaudeCode do
     session_opts ++ [model: model]
   end
 
-  defp extract_session_id_or_generate(opts) do
-    case Keyword.pop(opts, :resume) do
-      {nil, remaining_opts} ->
-        {random_uuid(), remaining_opts}
-
-      {session_id, remaining_opts} ->
-        {session_id, remaining_opts}
-    end
+  defp extract_session_id(opts) do
+    Keyword.pop(opts, :session_id)
   end
 
   defp add_resume_if_present(session_opts, opts) do
@@ -55,12 +49,5 @@ defmodule El.ClaudeCode do
 
   def stream(pid, prompt) do
     ClaudeCode.Session.stream(pid, prompt)
-  end
-
-  defp random_uuid do
-    bytes = :crypto.strong_rand_bytes(16)
-    hex = Base.encode16(bytes, case: :lower)
-
-    "#{String.slice(hex, 0, 8)}-#{String.slice(hex, 8, 4)}-#{String.slice(hex, 12, 4)}-#{String.slice(hex, 16, 4)}-#{String.slice(hex, 20, 12)}"
   end
 end

@@ -81,6 +81,12 @@ defmodule El.Session.Spec do
       assert state.claude_pid == :mock_pid
     end
 
+    test "generates and stores session_id" do
+      {:ok, state} = El.Session.init({:test_session, [claude_module: MockSessionModule]})
+
+      assert is_binary(state.session_id)
+    end
+
     test "stores claude_pid from successful start" do
       {:ok, state} = El.Session.init({:test_session, [claude_module: MockSessionModule]})
 

@@ -46,8 +46,9 @@ defmodule El.Session do
     alive_fn = Keyword.get(opts, :alive_fn, &El.Session.alive?/1)
     registry_module = Keyword.get(opts, :registry_module, Registry)
     {session_id, opts_without_resume} = extract_resume_or_generate_session_id(opts)
+    claude_opts = Keyword.put(opts_without_resume, :session_id, session_id)
 
-    case claude_module.start_link(opts_without_resume) do
+    case claude_module.start_link(claude_opts) do
       {:error, reason} ->
         {:stop, reason}
 
