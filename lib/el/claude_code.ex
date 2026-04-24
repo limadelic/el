@@ -2,18 +2,14 @@ defmodule El.ClaudeCode do
   @default_session_module ClaudeCode.Session
 
   def start_link(opts) do
-    session_module = get_session_module(opts)
+    session_module = extract_session_module(opts[:session_module])
     cli_path = Application.get_env(:claude_code, :cli_path, :global)
 
     {session_id, remaining_opts} = extract_session_id_or_generate(opts)
     session_opts = base_session_opts(session_id, cli_path)
-    final_opts = add_model_if_present(session_opts, remaining_opts)
+    final_opts = add_model(session_opts, remaining_opts[:model])
     final_opts = add_resume_if_present(final_opts, opts)
     session_module.start_link(final_opts)
-  end
-
-  defp get_session_module(opts) do
-    extract_session_module(opts[:session_module])
   end
 
   defp extract_session_module(nil) do
@@ -30,10 +26,6 @@ defmodule El.ClaudeCode do
       session_id: session_id,
       dangerously_skip_permissions: true
     ]
-  end
-
-  defp add_model_if_present(session_opts, opts) do
-    add_model(session_opts, opts[:model])
   end
 
   defp add_model(session_opts, nil) do
