@@ -183,10 +183,10 @@ defmodule El.Session.Spec do
     end
   end
 
-  describe "handle_cast/2 :store_relay" do
+  describe "handle_cast/2 :cast_store_relay" do
     setup %{state: state} do
       {:noreply, returned_state} =
-        El.Session.handle_cast({:store_relay, "msg", "resp"}, state)
+        El.Session.handle_cast({:cast_store_relay, "msg", "resp"}, state)
 
       [message_tuple] = returned_state.messages
       {:ok, message_tuple: message_tuple}
@@ -194,7 +194,7 @@ defmodule El.Session.Spec do
 
     test "appends relay message to log", %{state: state} do
       {:noreply, returned_state} =
-        El.Session.handle_cast({:store_relay, "message", "response"}, state)
+        El.Session.handle_cast({:cast_store_relay, "message", "response"}, state)
 
       assert length(returned_state.messages) == 1
     end
@@ -384,6 +384,16 @@ defmodule El.Session.Spec do
         El.Session.handle_info({:EXIT, :mock_pid, :killed}, state)
 
       assert [{"crash", "session died", ":killed", %{}}] = returned_state.messages
+    end
+
+    test "does not store crash entry on normal EXIT reason", %{state: state} do
+      Mimic.reject(El.MessageStore, :insert, 2)
+
+      {:noreply, returned_state} =
+        El.Session.handle_info({:EXIT, :mock_pid, :normal}, state)
+
+      assert returned_state.messages == []
+      assert returned_state.claude_pid == nil
     end
   end
 

@@ -143,7 +143,7 @@ defmodule El.Session do
   end
 
   @impl true
-  def handle_cast({:store_relay, message, response}, state) do
+  def handle_cast({:cast_store_relay, message, response}, state) do
     entry = {"relay", message, response, %{from: state.name}}
     El.Application.store_message(state.name, entry)
     {:noreply, %{state | messages: state.messages ++ [entry]}}
@@ -187,14 +187,14 @@ defmodule El.Session do
   defp process_tell_route_alive(state, message, target, payload, true) do
     GenServer.cast(
       via_tuple(target),
-      {:store_relay, "[from #{state.name}] #{payload}", ""}
+      {:cast_store_relay, "[from #{state.name}] #{payload}", ""}
     )
 
-    store_relay(state.name, message, "-> #{target}")
+    cast_store_relay(state.name, message, "-> #{target}")
   end
 
   defp process_tell_route_alive(state, message, target, _payload, false) do
-    store_relay(state.name, message, "#{target} is not running")
+    cast_store_relay(state.name, message, "#{target} is not running")
   end
 
   defp process_tell_response(state, response, routes) do
@@ -214,11 +214,11 @@ defmodule El.Session do
 
   defp process_tell_response_route_alive(state, response, target, payload, true) do
     El.Session.tell(target, "[from #{state.name}] #{payload}")
-    store_relay(state.name, response, "-> #{target}")
+    cast_store_relay(state.name, response, "-> #{target}")
   end
 
   defp process_tell_response_route_alive(state, response, target, _payload, false) do
-    store_relay(state.name, response, "#{target} is not running")
+    cast_store_relay(state.name, response, "#{target} is not running")
   end
 
   defp process_tell_ask(state, target, message) do
@@ -239,9 +239,9 @@ defmodule El.Session do
     "#{target} is not running"
   end
 
-  defp store_relay(sender_name, message, response) do
+  defp cast_store_relay(sender_name, message, response) do
     pid = via_tuple(sender_name)
-    GenServer.cast(pid, {:store_relay, message, response})
+    GenServer.cast(pid, {:cast_store_relay, message, response})
   end
 
   @impl true
@@ -307,13 +307,13 @@ defmodule El.Session do
 
   defp process_ask_single_route_alive(state, message, target, payload, true) do
     relay_msg = "[from #{state.name}] #{payload}"
-    GenServer.cast(via_tuple(target), {:store_relay, relay_msg, ""})
-    store_relay(state.name, message, "-> #{target}")
+    GenServer.cast(via_tuple(target), {:cast_store_relay, relay_msg, ""})
+    cast_store_relay(state.name, message, "-> #{target}")
     "-> #{target}"
   end
 
   defp process_ask_single_route_alive(state, message, target, _payload, false) do
-    store_relay(state.name, message, "#{target} is not running")
+    cast_store_relay(state.name, message, "#{target} is not running")
     "#{target} is not running"
   end
 
