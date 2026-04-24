@@ -1,12 +1,12 @@
 @el
-Feature: El CLI
+Feature: Help
 
   Scenario: Usage
     * > el:
-      | el 0.1.                        |
-      | el --version                   |
+      | el v0.1.                       |
+      | el -v                          |
       | el ls                          |
-      | el <name> [--model <model>]    |
+      | el <name> [-m <model>]         |
       | el <name> tell <message>       |
       | el <name> ask <message>        |
       | el <name> log                  |
