@@ -50,7 +50,6 @@ defmodule El.MixProject do
   defp deps do
     [
       {:claude_code, "~> 0.36"},
-      {:cabbage, "~> 0.4", only: :test},
       {:mimic, "~> 1.7", only: :test},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
