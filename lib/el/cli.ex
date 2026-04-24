@@ -201,17 +201,24 @@ defmodule El.CLI do
   end
 
   defp usage_message do
-    """
-    el v0.1.
-    el -v
-    el ls
-    el <name> [-m <model>]
-    el <name> tell <message>
-    el <name> ask <message>
-    el <name> log
-    el <name> kill
-    el kill all
-    """
-    |> String.trim_trailing()
+    cmds = [
+      {"el v0.1.", ""},
+      {"el -v", "version"},
+      {"el ls", "list sessions"},
+      {"el <name> [-m <model>]", "start or status"},
+      {"el <name> tell <message>", "fire-and-forget"},
+      {"el <name> ask <message>", "wait for response"},
+      {"el <name> log", "view log"},
+      {"el <name> kill", "kill session"},
+      {"el kill all", "kill all sessions"}
+    ]
+
+    pad = cmds |> Enum.map(fn {cmd, _} -> String.length(cmd) end) |> Enum.max()
+
+    cmds
+    |> Enum.map_join("\n", fn {cmd, desc} ->
+      padded = String.pad_trailing(cmd, pad)
+      if desc == "", do: padded, else: padded <> "  " <> desc
+    end)
   end
 end
