@@ -354,31 +354,53 @@ defmodule El.CLI do
     Node.self()
   end
 
-  defp find_daemon_node do
+  def find_daemon_node do
     ensure_epmd()
 
-    process_daemon_node_file(read_daemon_node())
+    try_connect_to_hardcoded_daemon()
     |> check_daemon_version()
   end
 
-  defp process_daemon_node_file({:ok, daemon_node}) do
-    connect_if_not_alive(daemon_node)
+  defp try_connect_to_hardcoded_daemon do
+    daemon_node = :"el@127.0.0.1"
+
+    if Node.alive?() do
+      check_daemon_alive(daemon_node)
+    else
+      start_client_and_check(daemon_node)
+    end
   end
 
-  defp process_daemon_node_file(:not_found) do
-    :not_found
+  defp check_daemon_alive(daemon_node) do
+    case rpc_version_check(daemon_node) do
+      {:badrpc, _reason} -> :not_found
+      _ -> {:ok, daemon_node}
+    end
   end
 
-  defp connect_if_not_alive(daemon_node) do
-    alive_or_connect(Node.alive?(), daemon_node)
+  defp start_client_and_check(daemon_node) do
+    case start_client_node() do
+      :ok -> check_daemon_alive(daemon_node)
+      :error -> :not_found
+    end
   end
 
-  defp alive_or_connect(true, daemon_node) do
-    {:ok, daemon_node}
+  defp rpc_version_check(daemon_node) do
+    :rpc.call(daemon_node, :el, :__version__, [], 5000)
   end
 
-  defp alive_or_connect(false, _daemon_node) do
-    try_connect_daemon()
+  defp start_client_node do
+    client_node = :"el_client_#{System.os_time()}@127.0.0.1"
+    start_task = Task.async(fn -> Node.start(client_node) end)
+    final_result = wait_or_shutdown_task(start_task)
+
+    case final_result do
+      {:ok, {:ok, _}} -> :ok
+      {:ok, {:error, {:already_started, _}}} -> :ok
+      _ -> :error
+    end
+  rescue
+    _ -> :error
   end
 
   defp ensure_epmd do
@@ -406,81 +428,6 @@ defmodule El.CLI do
     _, _ -> :ok
   end
 
-  defp read_daemon_node do
-    node_file = Path.expand("~/.el/daemon_node")
-    parse_daemon_node_file(File.read(node_file))
-  end
-
-  defp parse_daemon_node_file({:ok, content}) do
-    node_name = content |> String.trim() |> String.to_atom()
-    {:ok, node_name}
-  end
-
-  defp parse_daemon_node_file({:error, :enoent}) do
-    :not_found
-  end
-
-  defp try_connect_daemon do
-    node_file = Path.expand("~/.el/daemon_node")
-    connect_to_daemon_file(File.read(node_file), node_file)
-  end
-
-  defp connect_to_daemon_file({:ok, content}, node_file) do
-    node_name = content |> String.trim() |> String.to_atom()
-    attempt_daemon_connection(node_name, node_file)
-  end
-
-  defp connect_to_daemon_file({:error, :enoent}, _node_file) do
-    :not_found
-  end
-
-  defp attempt_daemon_connection(node_name, node_file) do
-    protected_daemon_connection(node_name, node_file)
-  end
-
-  defp protected_daemon_connection(node_name, node_file) do
-    run_daemon_connection_with_error_handler(node_name, node_file)
-  end
-
-  defp run_daemon_connection_with_error_handler(node_name, node_file) do
-    daemon_connection_safe(node_name, node_file)
-  end
-
-  defp daemon_connection_safe(node_name, node_file) do
-    ensure_client_node_alive(node_file)
-    connect_to_daemon(node_name, node_file)
-  rescue
-    _ ->
-      if Node.ping(node_name) == :pang, do: cleanup_stale_node(node_file)
-      :not_found
-  catch
-    :connection_failed ->
-      :not_found
-
-    _, _ ->
-      if Node.ping(node_name) == :pang, do: cleanup_stale_node(node_file)
-      :not_found
-  end
-
-  defp ensure_client_node_alive(node_file) do
-    start_client_if_not_alive(Node.alive?(), node_file)
-  end
-
-  defp start_client_if_not_alive(true, _node_file) do
-    :ok
-  end
-
-  defp start_client_if_not_alive(false, node_file) do
-    start_client_node(node_file)
-  end
-
-  defp start_client_node(node_file) do
-    client_node = :"el_client_#{System.os_time()}@127.0.0.1"
-    start_task = Task.async(fn -> Node.start(client_node) end)
-    final_result = wait_or_shutdown_task(start_task)
-    handle_start_task_result(final_result, node_file)
-  end
-
   defp wait_or_shutdown_task(start_task) do
     pick_task_result(Task.yield(start_task, 2000), start_task)
   end
@@ -491,51 +438,6 @@ defmodule El.CLI do
 
   defp pick_task_result(nil, start_task) do
     Task.shutdown(start_task)
-  end
-
-  defp handle_start_task_result({:ok, {:ok, _}}, _node_file) do
-    :ok
-  end
-
-  defp handle_start_task_result({:ok, {:error, {:already_started, _}}}, _node_file) do
-    :ok
-  end
-
-  defp handle_start_task_result(_result, node_file) do
-    cleanup_stale_node(node_file)
-    throw(:connection_failed)
-  end
-
-  defp connect_to_daemon(node_name, node_file) do
-    Node.set_cookie(:el)
-    task = Task.async(fn -> Node.connect(node_name) end)
-    final_connect_result = connect_wait_or_shutdown(task)
-    handle_connect_result(final_connect_result, node_name, node_file)
-  end
-
-  defp connect_wait_or_shutdown(task) do
-    pick_connect_result(Task.yield(task, 2000), task)
-  end
-
-  defp pick_connect_result(result, _task) when result != nil do
-    result
-  end
-
-  defp pick_connect_result(nil, task) do
-    Task.shutdown(task)
-  end
-
-  defp handle_connect_result({:ok, true}, node_name, _node_file) do
-    {:ok, node_name}
-  end
-
-  defp handle_connect_result({:ok, :ignored}, node_name, _node_file) do
-    {:ok, node_name}
-  end
-
-  defp handle_connect_result(_result, _node_name, node_file) do
-    cleanup_stale_node(node_file)
-    :not_found
   end
 
   defp check_daemon_version({:ok, daemon_node}) do
@@ -558,33 +460,31 @@ defmodule El.CLI do
   defp check_daemon_version(:not_found), do: :not_found
 
   defp graceful_shutdown do
-    node_file = Path.expand("~/.el/daemon_node")
+    daemon_node = :"el@127.0.0.1"
 
-    case File.read(node_file) do
-      {:ok, content} ->
-        node_name = content |> String.trim() |> String.to_atom()
-        ensure_client_node_alive(node_file)
-        :rpc.call(node_name, :init, :stop, [], 5000)
-
-      _ ->
-        :ok
+    if not Node.alive?() do
+      start_client_node()
     end
+
+    :rpc.call(daemon_node, :init, :stop, [], 5000)
+  rescue
+    _ -> :ok
   end
 
   defp restart_stale_daemon do
-    node_file = Path.expand("~/.el/daemon_node")
     graceful_shutdown()
     :timer.sleep(1000)
-    cleanup_stale_node(node_file)
+    cleanup_stale_daemon_files()
     :not_found
   rescue
     _ ->
-      cleanup_stale_node(Path.expand("~/.el/daemon_node"))
+      cleanup_stale_daemon_files()
       :not_found
   end
 
-  defp cleanup_stale_node(node_file) do
-    File.rm(node_file)
+  defp cleanup_stale_daemon_files do
+    File.rm(Path.expand("~/.el/daemon_node"))
+    File.rm(Path.expand("~/.el/daemon_version"))
   rescue
     _ -> :ok
   end
