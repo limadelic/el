@@ -619,8 +619,16 @@ defmodule El.CLI do
   end
 
   defp get_binary_path do
-    root = System.get_env("RELEASE_ROOT")
-    Path.join([root, "bin", "el"])
+    case System.get_env("RELEASE_ROOT") do
+      nil ->
+        case System.find_executable("el") do
+          nil -> raise "Cannot find el binary. Set RELEASE_ROOT or add el to PATH"
+          path -> path
+        end
+
+      root ->
+        Path.join([root, "bin", "el"])
+    end
   end
 
   defp poll_daemon_ready(retries_left) when retries_left <= 0 do

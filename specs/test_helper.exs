@@ -5,6 +5,17 @@ Mimic.copy(Task)
 
 ExUnit.start()
 
+defmodule TestClaudeCode do
+  def start_link(_opts) do
+    {:ok, self()}
+  end
+
+  def stream(_pid, message) do
+    [text: message]
+    |> Enum.into([])
+  end
+end
+
 ExUnit.after_suite(fn _results ->
   System.halt(0)
 end)
