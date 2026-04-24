@@ -1,0 +1,88 @@
+#!/bin/bash
+set -e
+
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$PROJECT_ROOT"
+
+COMMIT_MSG="${1:?Usage: bin/shipit \"commit message\"}"
+
+echo "Step 1: Running tests..."
+mix test
+echo "✓ Tests passed"
+
+echo ""
+echo "Step 2: Checking formatting..."
+mix format --check-formatted
+echo "✓ Formatting check passed"
+
+echo ""
+echo "Step 3: Committing changes..."
+git add -A && git commit -m "$COMMIT_MSG"
+echo "✓ Changes committed"
+
+echo ""
+echo "Step 4: Pushing current branch..."
+git push
+echo "✓ Branch pushed"
+
+echo ""
+echo "Step 5: Bumping patch version..."
+CURRENT_VERSION=$(grep '@version' mix.exs | sed 's/.*"\(.*\)".*/\1/')
+MAJOR_MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f1-2)
+PATCH=$(echo "$CURRENT_VERSION" | cut -d. -f3)
+NEW_PATCH=$((PATCH + 1))
+NEW_VERSION="$MAJOR_MINOR.$NEW_PATCH"
+
+sed -i '' "s/@version \"$CURRENT_VERSION\"/@version \"$NEW_VERSION\"/" mix.exs
+git add mix.exs
+git commit -m "Bump to $NEW_VERSION"
+git push
+echo "✓ Version bumped to $NEW_VERSION"
+
+echo ""
+echo "Step 6: Building release..."
+MIX_ENV=prod mix release el --overwrite
+echo "✓ Release built"
+
+echo ""
+echo "Step 7: Creating tarball..."
+TARBALL_NAME="el-$NEW_VERSION.tar.gz"
+tar -czf "_build/prod/$TARBALL_NAME" -C _build/prod/rel el
+echo "✓ Tarball created: _build/prod/$TARBALL_NAME"
+
+echo ""
+echo "Step 8: Creating GitHub release..."
+gh release create "v$NEW_VERSION" "_build/prod/$TARBALL_NAME" \
+  --title "v$NEW_VERSION" \
+  --notes "Release $NEW_VERSION"
+echo "✓ GitHub release created"
+
+echo ""
+echo "Step 9: Updating homebrew tap..."
+SHA256=$(shasum -a 256 "_build/prod/$TARBALL_NAME" | awk '{print $1}')
+
+TEMPLATE_PATH="rel/formula.rb.template"
+FORMULA_CONTENT=$(cat "$TEMPLATE_PATH")
+FORMULA_CONTENT="${FORMULA_CONTENT//\$VERSION/$NEW_VERSION}"
+FORMULA_CONTENT="${FORMULA_CONTENT//\$SHA256/$SHA256}"
+
+HOMEBREW_TAP_DIR="$HOME/dev/self/homebrew-tap"
+FORMULA_PATH="$HOMEBREW_TAP_DIR/Formula/el.rb"
+
+mkdir -p "$HOMEBREW_TAP_DIR/Formula"
+echo "$FORMULA_CONTENT" > "$FORMULA_PATH"
+
+cd "$HOMEBREW_TAP_DIR"
+git add -A
+git commit -m "el $NEW_VERSION"
+git push
+cd "$PROJECT_ROOT"
+echo "✓ Homebrew tap updated"
+
+echo ""
+echo "Step 10: Installing new version..."
+brew upgrade limadelic/tap/el
+echo "✓ New version installed"
+
+echo ""
+echo "🚀 Release $NEW_VERSION complete!"
