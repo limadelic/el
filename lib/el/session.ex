@@ -220,12 +220,16 @@ defmodule El.Session do
   end
 
   defp route_if_alive(state, target, on_alive) do
-    if state.alive_fn.(target) do
-      on_alive.()
-      "-> #{target}"
-    else
-      "#{target} is not running"
-    end
+    do_route(target, on_alive, state.alive_fn.(target))
+  end
+
+  defp do_route(target, on_alive, true) do
+    on_alive.()
+    "-> #{target}"
+  end
+
+  defp do_route(target, _on_alive, false) do
+    "#{target} is not running"
   end
 
   defp cast_store_relay(sender_name, message, response) do
