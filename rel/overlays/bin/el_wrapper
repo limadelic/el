@@ -12,6 +12,18 @@ case "$1" in
   start|daemon|stop|restart|pid|remote)
     exec "$RELEASE_ROOT/bin/el" "$@"
     ;;
+  --version|-v|"")
+    args=""
+    for arg in "$@"; do
+      escaped=$(printf '%s' "$arg" | sed 's/"/\\"/g')
+      if [ -z "$args" ]; then
+        args="\"$escaped\""
+      else
+        args="$args, \"$escaped\""
+      fi
+    done
+    exec "$RELEASE_ROOT/bin/el" eval "El.CLI.dispatch([$args])"
+    ;;
   *)
     args=""
     for arg in "$@"; do
@@ -22,6 +34,12 @@ case "$1" in
         args="$args, \"$escaped\""
       fi
     done
-    exec "$RELEASE_ROOT/bin/el" rpc "El.CLI.dispatch([$args])"
+
+    "$RELEASE_ROOT/bin/el" rpc "El.CLI.dispatch([$args])" 2>/dev/null
+    if [ $? -ne 0 ]; then
+      "$RELEASE_ROOT/bin/el" daemon >/dev/null 2>&1 &
+      sleep 2
+      exec "$RELEASE_ROOT/bin/el" rpc "El.CLI.dispatch([$args])"
+    fi
     ;;
 esac
