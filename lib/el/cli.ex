@@ -7,12 +7,12 @@ defmodule El.CLI do
   end
 
   def main(args) do
-    main_impl(args)
+    execute(args)
     System.halt(0)
   end
 
   def dispatch(args) do
-    main_impl(args)
+    execute(args)
   end
 
   def parse_route([]), do: :usage
@@ -32,27 +32,27 @@ defmodule El.CLI do
   def parse_route([_name, "--model", _model | _rest]), do: :start
   def parse_route(_), do: :usage
 
-  defp main_impl([]) do
+  defp execute([]) do
     IO.puts(usage_message())
   end
 
-  defp main_impl(["-v"]) do
+  defp execute(["-v"]) do
     IO.puts(version())
   end
 
-  defp main_impl(["--version"]) do
+  defp execute(["--version"]) do
     IO.puts(version())
   end
 
-  defp main_impl(["ls"]) do
+  defp execute(["ls"]) do
     handle_ls()
   end
 
-  defp main_impl(["--daemon", name]) do
-    main_impl(["--daemon", name, "--model", ""])
+  defp execute(["--daemon", name]) do
+    execute(["--daemon", name, "--model", ""])
   end
 
-  defp main_impl(["--daemon", name, "--model", model]) do
+  defp execute(["--daemon", name, "--model", model]) do
     name_atom = String.to_atom(name)
     model_value = normalize_model(model)
     opts = start_opts(model_value)
@@ -62,54 +62,54 @@ defmodule El.CLI do
     Process.sleep(:infinity)
   end
 
-  defp main_impl([name]) do
+  defp execute([name]) do
     opts = start_opts(nil)
 
     handle_find_daemon_for_start(name, opts)
   end
 
-  defp main_impl([name, "--model", model | rest]) do
+  defp execute([name, "--model", model | rest]) do
     opts = start_opts(model)
     handle_find_daemon_with_rest(name, opts, rest)
   end
 
-  defp main_impl([name, "tell", "ask", "@" <> target | words]) do
+  defp execute([name, "tell", "ask", "@" <> target | words]) do
     target_atom = String.to_atom(target)
     msg = Enum.join(words, " ")
     name_atom = String.to_atom(name)
     handle_tell_ask(name_atom, target_atom, msg, name)
   end
 
-  defp main_impl([name, "tell" | words]) do
+  defp execute([name, "tell" | words]) do
     msg = Enum.join(words, " ")
     name_atom = String.to_atom(name)
     handle_tell(name_atom, msg, name)
   end
 
-  defp main_impl([name, "ask", "tell", "@" <> target | words]) do
+  defp execute([name, "ask", "tell", "@" <> target | words]) do
     target_atom = String.to_atom(target)
     msg = Enum.join(words, " ")
     name_atom = String.to_atom(name)
     handle_ask_tell(name_atom, target_atom, msg, name)
   end
 
-  defp main_impl([name, "ask" | words]) do
+  defp execute([name, "ask" | words]) do
     msg = Enum.join(words, " ")
     name_atom = String.to_atom(name)
     handle_ask(name_atom, msg, name)
   end
 
-  defp main_impl([name, "log"]) do
+  defp execute([name, "log"]) do
     name_atom = String.to_atom(name)
     handle_log(name_atom, name)
   end
 
-  defp main_impl([name, "kill"]) do
+  defp execute([name, "kill"]) do
     name_atom = String.to_atom(name)
     handle_kill(name_atom, name)
   end
 
-  defp main_impl(["kill", "all"]) do
+  defp execute(["kill", "all"]) do
     case El.kill(:all) do
       :ok -> IO.puts("killed all")
       _ -> IO.puts("killed all")
@@ -118,8 +118,8 @@ defmodule El.CLI do
     _ -> IO.puts("killed all")
   end
 
-  defp main_impl(_) do
-    main_impl([])
+  defp execute(_) do
+    execute([])
   end
 
   defp start_opts(nil), do: []
@@ -157,7 +157,7 @@ defmodule El.CLI do
   end
 
   defp continue_if_rest_present(rest, name) do
-    main_impl([name | rest])
+    execute([name | rest])
   end
 
   defp handle_tell_ask(name_atom, target_atom, msg, name) do

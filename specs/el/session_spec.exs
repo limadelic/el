@@ -393,6 +393,14 @@ defmodule El.Session.Spec do
         El.Session.handle_info({:EXIT, :mock_pid, :normal}, state)
 
       assert returned_state.messages == []
+    end
+
+    test "clears claude_pid on normal EXIT reason", %{state: state} do
+      Mimic.reject(El.MessageStore, :insert, 2)
+
+      {:noreply, returned_state} =
+        El.Session.handle_info({:EXIT, :mock_pid, :normal}, state)
+
       assert returned_state.claude_pid == nil
     end
   end
