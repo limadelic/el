@@ -141,14 +141,14 @@ defmodule El.CLI do
   defp handle_find_daemon_with_rest(name, opts, rest) do
     name_atom = String.to_atom(name)
     El.start(name_atom, opts)
-    continue_if_rest_present(rest, name)
+    dispatch_rest(rest, name)
   end
 
-  defp continue_if_rest_present([], _name) do
+  defp dispatch_rest([], _name) do
     :ok
   end
 
-  defp continue_if_rest_present(rest, name) do
+  defp dispatch_rest(rest, name) do
     dispatch([name | rest])
   end
 
