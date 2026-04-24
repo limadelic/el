@@ -38,8 +38,13 @@ case "$1" in
     "$RELEASE_ROOT/bin/el" rpc "El.CLI.dispatch([$args])" 2>/dev/null
     if [ $? -ne 0 ]; then
       "$RELEASE_ROOT/bin/el" daemon >/dev/null 2>&1 &
-      sleep 2
-      exec "$RELEASE_ROOT/bin/el" rpc "El.CLI.dispatch([$args])"
+      n=0
+      while [ $n -lt 10 ]; do
+        "$RELEASE_ROOT/bin/el" rpc "El.CLI.dispatch([$args])" 2>/dev/null && exit 0
+        n=$((n + 1))
+      done
+      echo "Failed to connect to daemon" >&2
+      exit 1
     fi
     ;;
 esac
