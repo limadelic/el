@@ -74,10 +74,26 @@ defmodule El.CLI.Spec do
       :ok
     end
 
-    test "prints version in usage message when no args" do
+    test "version starts with el 0.1." do
       Mimic.expect(IO, :puts, fn msg ->
         assert String.starts_with?(msg, "el 0.1.")
+      end)
+      Mimic.expect(System, :halt, fn 0 -> :ok end)
+
+      El.CLI.main([])
+    end
+
+    test "usage message contains el ls" do
+      Mimic.expect(IO, :puts, fn msg ->
         assert String.contains?(msg, "el ls")
+      end)
+      Mimic.expect(System, :halt, fn 0 -> :ok end)
+
+      El.CLI.main([])
+    end
+
+    test "usage message contains el --version" do
+      Mimic.expect(IO, :puts, fn msg ->
         assert String.contains?(msg, "el --version")
       end)
       Mimic.expect(System, :halt, fn 0 -> :ok end)

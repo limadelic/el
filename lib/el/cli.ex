@@ -212,6 +212,7 @@ defmodule El.CLI do
     el <name> log
     el <name> kill
     el kill all
-    """ |> String.trim_trailing()
+    """
+    |> String.trim_trailing()
   end
 end
