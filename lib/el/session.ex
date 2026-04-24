@@ -181,20 +181,14 @@ defmodule El.Session do
   end
 
   defp process_tell_route(state, message, target, payload) do
-    process_tell_route_alive(state, message, target, payload, state.alive_fn.(target))
-  end
+    route_if_alive(state, target, fn ->
+      GenServer.cast(
+        via_tuple(target),
+        {:cast_store_relay, "[from #{state.name}] #{payload}", ""}
+      )
 
-  defp process_tell_route_alive(state, message, target, payload, true) do
-    GenServer.cast(
-      via_tuple(target),
-      {:cast_store_relay, "[from #{state.name}] #{payload}", ""}
-    )
-
-    cast_store_relay(state.name, message, "-> #{target}")
-  end
-
-  defp process_tell_route_alive(state, message, target, _payload, false) do
-    cast_store_relay(state.name, message, "#{target} is not running")
+      cast_store_relay(state.name, message, "-> #{target}")
+    end)
   end
 
   defp process_tell_response(state, response, routes) do
@@ -209,34 +203,29 @@ defmodule El.Session do
   end
 
   defp process_tell_response_route(state, response, target, payload) do
-    process_tell_response_route_alive(state, response, target, payload, state.alive_fn.(target))
-  end
-
-  defp process_tell_response_route_alive(state, response, target, payload, true) do
-    El.Session.tell(target, "[from #{state.name}] #{payload}")
-    cast_store_relay(state.name, response, "-> #{target}")
-  end
-
-  defp process_tell_response_route_alive(state, response, target, _payload, false) do
-    cast_store_relay(state.name, response, "#{target} is not running")
+    route_if_alive(state, target, fn ->
+      El.Session.tell(target, "[from #{state.name}] #{payload}")
+      cast_store_relay(state.name, response, "-> #{target}")
+    end)
   end
 
   defp process_tell_ask(state, target, message) do
-    process_tell_ask_alive(state, target, message, state.alive_fn.(target))
-  end
+    route_if_alive(state, target, fn ->
+      task_module = Map.get(state, :task_module, Task)
 
-  defp process_tell_ask_alive(state, target, message, true) do
-    task_module = Map.get(state, :task_module, Task)
-
-    task_module.start(fn ->
-      El.ask(target, "[from #{state.name}] #{message}")
+      task_module.start(fn ->
+        El.ask(target, "[from #{state.name}] #{message}")
+      end)
     end)
-
-    "-> #{target}"
   end
 
-  defp process_tell_ask_alive(_state, target, _message, false) do
-    "#{target} is not running"
+  defp route_if_alive(state, target, on_alive) do
+    if state.alive_fn.(target) do
+      on_alive.()
+      "-> #{target}"
+    else
+      "#{target} is not running"
+    end
   end
 
   defp cast_store_relay(sender_name, message, response) do
@@ -302,32 +291,17 @@ defmodule El.Session do
   end
 
   defp process_ask_single_route(state, message, target, payload) do
-    process_ask_single_route_alive(state, message, target, payload, state.alive_fn.(target))
-  end
-
-  defp process_ask_single_route_alive(state, message, target, payload, true) do
-    relay_msg = "[from #{state.name}] #{payload}"
-    GenServer.cast(via_tuple(target), {:cast_store_relay, relay_msg, ""})
-    cast_store_relay(state.name, message, "-> #{target}")
-    "-> #{target}"
-  end
-
-  defp process_ask_single_route_alive(state, message, target, _payload, false) do
-    cast_store_relay(state.name, message, "#{target} is not running")
-    "#{target} is not running"
+    route_if_alive(state, target, fn ->
+      relay_msg = "[from #{state.name}] #{payload}"
+      GenServer.cast(via_tuple(target), {:cast_store_relay, relay_msg, ""})
+      cast_store_relay(state.name, message, "-> #{target}")
+    end)
   end
 
   defp process_ask_tell(state, target, message) do
-    process_ask_tell_alive(state, target, message, state.alive_fn.(target))
-  end
-
-  defp process_ask_tell_alive(state, target, message, true) do
-    El.tell(target, "[from #{state.name}] #{message}")
-    "-> #{target}"
-  end
-
-  defp process_ask_tell_alive(_state, target, _message, false) do
-    "#{target} is not running"
+    route_if_alive(state, target, fn ->
+      El.tell(target, "[from #{state.name}] #{message}")
+    end)
   end
 
   @impl true
