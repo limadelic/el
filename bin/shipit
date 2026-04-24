@@ -17,7 +17,8 @@ echo "✓ Formatting check passed"
 
 echo ""
 echo "Step 3: Committing changes..."
-git add -A && git commit -m "$COMMIT_MSG"
+git add -A
+git diff --cached --quiet || git commit -m "$COMMIT_MSG"
 echo "✓ Changes committed"
 
 echo ""
