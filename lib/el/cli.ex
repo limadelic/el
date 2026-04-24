@@ -222,6 +222,7 @@ defmodule El.CLI do
   end
 
   defp format_line(cmd, "", _pad), do: cmd
+
   defp format_line(cmd, desc, pad) do
     String.pad_trailing(cmd, pad) <> "  " <> desc
   end
