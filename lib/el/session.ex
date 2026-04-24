@@ -333,7 +333,13 @@ defmodule El.Session do
         safe_reply(from, "(error)")
       end)
 
-      new_state = %{state | claude_pid: nil, pending_calls: [], messages: state.messages ++ [entry]}
+      new_state = %{
+        state
+        | claude_pid: nil,
+          pending_calls: [],
+          messages: state.messages ++ [entry]
+      }
+
       {:noreply, new_state}
     else
       Enum.each(state.pending_calls, fn from ->
@@ -352,10 +358,20 @@ defmodule El.Session do
   @impl true
   def terminate(reason, state) do
     case reason do
-      :normal -> :ok
-      :shutdown -> :ok
-      {:shutdown, _} -> :ok
-      _ -> El.Application.store_message(state.name, {"crash", "Session crashed", inspect(reason), %{}})
+      :normal ->
+        :ok
+
+      :shutdown ->
+        :ok
+
+      {:shutdown, _} ->
+        :ok
+
+      _ ->
+        El.Application.store_message(
+          state.name,
+          {"crash", "Session crashed", inspect(reason), %{}}
+        )
     end
 
     :ok
