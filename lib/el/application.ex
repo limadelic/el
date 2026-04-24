@@ -6,25 +6,7 @@ defmodule El.Application do
   def start(_type, _args) do
     :ok = Application.ensure_started(:sasl)
     init_message_store()
-    result = Supervisor.start_link(children(), supervisor_opts())
-    maybe_write_daemon_node()
-    result
-  end
-
-  defp maybe_write_daemon_node do
-    if Node.alive?() do
-      node_file = Path.expand("~/.el/daemon_node")
-      File.mkdir_p!(Path.dirname(node_file))
-      File.write!(node_file, Atom.to_string(Node.self()))
-
-      version =
-        case Application.spec(:el, :vsn) do
-          vsn when is_list(vsn) -> List.to_string(vsn)
-          _ -> "unknown"
-        end
-
-      File.write!(Path.join(Path.dirname(node_file), "daemon_version"), version)
-    end
+    Supervisor.start_link(children(), supervisor_opts())
   end
 
   def children do
