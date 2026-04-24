@@ -371,6 +371,13 @@ defmodule El.Session.Spec do
 
       assert returned_state == state
     end
+
+    test "adds crash entry to state.messages on abnormal EXIT", %{state: state} do
+      {:noreply, returned_state} =
+        El.Session.handle_info({:EXIT, :mock_pid, :killed}, state)
+
+      assert [{"crash", "session died", ":killed", %{}}] = returned_state.messages
+    end
   end
 
   describe "terminate/2" do
