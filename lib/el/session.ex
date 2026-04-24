@@ -3,20 +3,8 @@ defmodule El.Session do
 
   require Logger
 
-  def start_link({name, session_opts}, _opts) do
-    GenServer.start_link(__MODULE__, {name, session_opts}, name: via_tuple(name))
-  end
-
-  def start_link(name, opts) do
-    GenServer.start_link(__MODULE__, {name, opts}, name: via_tuple(name))
-  end
-
   def start_link({name, session_opts}) do
     GenServer.start_link(__MODULE__, {name, session_opts}, name: via_tuple(name))
-  end
-
-  def start_link(name) do
-    GenServer.start_link(__MODULE__, {name, []}, name: via_tuple(name))
   end
 
   def tell(name, message) do
@@ -93,7 +81,10 @@ defmodule El.Session do
     end
   end
 
-  defp maybe_respawn_claude(%{claude_pid: nil, opts: opts, session_id: session_id, claude_module: claude_module} = state) do
+  defp maybe_respawn_claude(
+         %{claude_pid: nil, opts: opts, session_id: session_id, claude_module: claude_module} =
+           state
+       ) do
     opts_with_resume = Keyword.put(opts, :resume, session_id)
 
     case start_claude(opts_with_resume, claude_module) do
