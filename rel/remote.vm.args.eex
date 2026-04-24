@@ -1,2 +1,1 @@
--start_epmd false
--erl_epmd_port 4370
+
