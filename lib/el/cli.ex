@@ -149,23 +149,13 @@ defmodule El.CLI do
   end
 
   defp handle_tell_ask(name_atom, target_atom, msg, name) do
-    case El.tell_ask(name_atom, target_atom, msg) do
-      :not_found ->
-        IO.puts(:stderr, "No sessions running. Start one: el #{name}")
-
-      _ ->
-        :ok
-    end
+    result = El.tell_ask(name_atom, target_atom, msg)
+    handle_result(result, name)
   end
 
   defp handle_tell(name_atom, msg, name) do
-    case El.tell(name_atom, msg) do
-      :not_found ->
-        IO.puts(:stderr, "No sessions running. Start one: el #{name}")
-
-      _ ->
-        :ok
-    end
+    result = El.tell(name_atom, msg)
+    handle_result(result, name)
   end
 
   defp handle_ask_tell(name_atom, target_atom, msg, name) do
@@ -179,26 +169,24 @@ defmodule El.CLI do
   end
 
   defp handle_log(name_atom, name) do
-    case El.log(name_atom) do
-      :not_found ->
-        IO.puts(:stderr, "No sessions running. Start one: el #{name}")
-
-      log ->
-        Enum.each(log, fn {type, message, response, _metadata} ->
-          IO.puts("[#{type}] #{message}")
-          IO.puts(response)
-        end)
-    end
+    result = El.log(name_atom)
+    handle_log_result(result, name)
   end
 
   defp handle_kill(name_atom, name) do
-    case El.kill(name_atom) do
-      :not_found ->
-        IO.puts(:stderr, "No sessions running. Start one: el #{name}")
+    result = El.kill(name_atom)
+    handle_result(result, name)
+  end
 
-      _ ->
-        :ok
-    end
+  defp handle_log_result(:not_found, name) do
+    IO.puts(:stderr, "No sessions running. Start one: el #{name}")
+  end
+
+  defp handle_log_result(log, _name) do
+    Enum.each(log, fn {type, message, response, _metadata} ->
+      IO.puts("[#{type}] #{message}")
+      IO.puts(response)
+    end)
   end
 
   defp handle_result(:not_found, name) do
