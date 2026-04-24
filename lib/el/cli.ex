@@ -597,22 +597,7 @@ defmodule El.CLI do
 
   defp spawn_daemon(name, opts) do
     binary_path = get_binary_path()
-
-    case System.get_env("RELEASE_ROOT") do
-      nil ->
-        spawn_daemon_escript(name, opts, binary_path)
-
-      _root ->
-        spawn_daemon_release(name, opts, binary_path)
-    end
-  end
-
-  defp spawn_daemon_escript(name, opts, binary_path) do
-    model_arg = build_model_arg(opts)
-    log = Path.expand("~/.el/el.log")
-    cmd = ~c"nohup #{binary_path} --daemon #{name}#{model_arg} >> #{log} 2>&1 &"
-    :os.cmd(cmd)
-    handle_poll_result(poll_daemon_ready(300), name)
+    spawn_daemon_release(name, opts, binary_path)
   end
 
   defp spawn_daemon_release(name, opts, binary_path) do
@@ -633,36 +618,9 @@ defmodule El.CLI do
     end
   end
 
-  defp handle_poll_result(:ok, name) do
-    IO.puts("el: #{name} is up")
-  end
-
-  defp handle_poll_result(:timeout, _name) do
-    IO.puts(:stderr, "el: daemon startup timeout")
-    System.halt(1)
-  end
-
-  defp build_model_arg(opts) when is_list(opts) do
-    find_model_arg(opts)
-  end
-
-  defp find_model_arg([{:model, model} | _rest]) do
-    " --model #{model}"
-  end
-
-  defp find_model_arg([_head | rest]) do
-    find_model_arg(rest)
-  end
-
-  defp find_model_arg([]) do
-    ""
-  end
-
   defp get_binary_path do
-    case System.get_env("RELEASE_ROOT") do
-      nil -> :escript.script_name() |> to_string()
-      root -> Path.join([root, "bin", "el"])
-    end
+    root = System.get_env("RELEASE_ROOT")
+    Path.join([root, "bin", "el"])
   end
 
   defp poll_daemon_ready(retries_left) when retries_left <= 0 do
