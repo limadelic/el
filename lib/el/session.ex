@@ -181,8 +181,7 @@ defmodule El.Session do
   end
 
   defp process_tell_route(state, message, target, payload) do
-    alive_fn = Map.get(state, :alive_fn, &El.Session.alive?/1)
-    process_tell_route_alive(state, message, target, payload, alive_fn.(target))
+    process_tell_route_alive(state, message, target, payload, state.alive_fn.(target))
   end
 
   defp process_tell_route_alive(state, message, target, payload, true) do
@@ -210,8 +209,7 @@ defmodule El.Session do
   end
 
   defp process_tell_response_route(state, response, target, payload) do
-    alive_fn = Map.get(state, :alive_fn, &El.Session.alive?/1)
-    process_tell_response_route_alive(state, response, target, payload, alive_fn.(target))
+    process_tell_response_route_alive(state, response, target, payload, state.alive_fn.(target))
   end
 
   defp process_tell_response_route_alive(state, response, target, payload, true) do
@@ -224,8 +222,7 @@ defmodule El.Session do
   end
 
   defp process_tell_ask(state, target, message) do
-    alive_fn = Map.get(state, :alive_fn, &El.Session.alive?/1)
-    process_tell_ask_alive(state, target, message, alive_fn.(target))
+    process_tell_ask_alive(state, target, message, state.alive_fn.(target))
   end
 
   defp process_tell_ask_alive(state, target, message, true) do
@@ -305,8 +302,7 @@ defmodule El.Session do
   end
 
   defp process_ask_single_route(state, message, target, payload) do
-    alive_fn = Map.get(state, :alive_fn, &El.Session.alive?/1)
-    process_ask_single_route_alive(state, message, target, payload, alive_fn.(target))
+    process_ask_single_route_alive(state, message, target, payload, state.alive_fn.(target))
   end
 
   defp process_ask_single_route_alive(state, message, target, payload, true) do
@@ -322,8 +318,7 @@ defmodule El.Session do
   end
 
   defp process_ask_tell(state, target, message) do
-    alive_fn = Map.get(state, :alive_fn, &El.Session.alive?/1)
-    process_ask_tell_alive(state, target, message, alive_fn.(target))
+    process_ask_tell_alive(state, target, message, state.alive_fn.(target))
   end
 
   defp process_ask_tell_alive(state, target, message, true) do
