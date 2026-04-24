@@ -331,31 +331,32 @@ defmodule El.Session do
   end
 
   @impl true
+  def handle_info({:EXIT, pid, :normal}, %{claude_pid: pid} = state) do
+    Enum.each(state.pending_calls, fn from ->
+      safe_reply(from, "(error)")
+    end)
+
+    {:noreply, %{state | claude_pid: nil, pending_calls: []}}
+  end
+
+  @impl true
   def handle_info({:EXIT, pid, reason}, %{claude_pid: pid} = state) do
-    unless reason == :normal do
-      Logger.error("Session #{state.name} - Claude process died: #{inspect(reason)}")
-      entry = {"crash", "session died", inspect(reason), %{}}
-      El.Application.store_message(state.name, entry)
+    Logger.error("Session #{state.name} - Claude process died: #{inspect(reason)}")
+    entry = {"crash", "session died", inspect(reason), %{}}
+    El.Application.store_message(state.name, entry)
 
-      Enum.each(state.pending_calls, fn from ->
-        safe_reply(from, "(error)")
-      end)
+    Enum.each(state.pending_calls, fn from ->
+      safe_reply(from, "(error)")
+    end)
 
-      new_state = %{
-        state
-        | claude_pid: nil,
-          pending_calls: [],
-          messages: state.messages ++ [entry]
-      }
+    new_state = %{
+      state
+      | claude_pid: nil,
+        pending_calls: [],
+        messages: state.messages ++ [entry]
+    }
 
-      {:noreply, new_state}
-    else
-      Enum.each(state.pending_calls, fn from ->
-        safe_reply(from, "(error)")
-      end)
-
-      {:noreply, %{state | claude_pid: nil, pending_calls: []}}
-    end
+    {:noreply, new_state}
   end
 
   @impl true
