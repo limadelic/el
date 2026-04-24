@@ -27,13 +27,13 @@ echo "✓ Branch pushed"
 
 echo ""
 echo "Step 5: Bumping patch version..."
-CURRENT_VERSION=$(grep '@version' mix.exs | sed 's/.*"\(.*\)".*/\1/')
+CURRENT_VERSION=$(grep 'version:' mix.exs | sed 's/.*version: "\(.*\)".*/\1/')
 MAJOR_MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f1-2)
 PATCH=$(echo "$CURRENT_VERSION" | cut -d. -f3)
 NEW_PATCH=$((PATCH + 1))
 NEW_VERSION="$MAJOR_MINOR.$NEW_PATCH"
 
-sed -i '' "s/@version \"$CURRENT_VERSION\"/@version \"$NEW_VERSION\"/" mix.exs
+sed -i '' "s/version: \"$CURRENT_VERSION\"/version: \"$NEW_VERSION\"/" mix.exs
 git add mix.exs
 git commit -m "Bump to $NEW_VERSION"
 git push
@@ -52,7 +52,7 @@ echo "✓ Tarball created: _build/prod/$TARBALL_NAME"
 
 echo ""
 echo "Step 8: Creating GitHub release..."
-gh release create "v$NEW_VERSION" "_build/prod/$TARBALL_NAME" \
+GITHUB_TOKEN=$GITHUB_LIMADELIC gh release create "v$NEW_VERSION" "_build/prod/$TARBALL_NAME" \
   --title "v$NEW_VERSION" \
   --notes "Release $NEW_VERSION"
 echo "✓ GitHub release created"
@@ -75,13 +75,13 @@ echo "$FORMULA_CONTENT" > "$FORMULA_PATH"
 cd "$HOMEBREW_TAP_DIR"
 git add -A
 git commit -m "el $NEW_VERSION"
-git push
+GITHUB_TOKEN=$GITHUB_LIMADELIC git push
 cd "$PROJECT_ROOT"
 echo "✓ Homebrew tap updated"
 
 echo ""
 echo "Step 10: Installing new version..."
-brew upgrade limadelic/tap/el
+brew upgrade limadelic/tap/el 2>/dev/null || brew install limadelic/tap/el
 echo "✓ New version installed"
 
 echo ""
