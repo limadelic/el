@@ -328,23 +328,17 @@ defmodule El.Session do
   end
 
   @impl true
+  def terminate(reason, _state)
+      when reason in [:normal, :shutdown] or (is_tuple(reason) and elem(reason, 0) == :shutdown) do
+    :ok
+  end
+
+  @impl true
   def terminate(reason, state) do
-    case reason do
-      :normal ->
-        :ok
-
-      :shutdown ->
-        :ok
-
-      {:shutdown, _} ->
-        :ok
-
-      _ ->
-        El.Application.store_message(
-          state.name,
-          {"crash", "Session crashed", inspect(reason), %{}}
-        )
-    end
+    El.Application.store_message(
+      state.name,
+      {"crash", "Session crashed", inspect(reason), %{}}
+    )
 
     :ok
   end
