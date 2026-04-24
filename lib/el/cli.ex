@@ -202,6 +202,16 @@ defmodule El.CLI do
   end
 
   defp usage_message do
-    "el #{version()}\nusage: el ls | el <name> [--model <model>] | el <name> [--model <model>] tell <message> | el <name> [--model <model>] ask <message> | el <name> log | el <name> kill | el kill all | el --version"
+    """
+    el #{version()}
+    el --version
+    el ls
+    el <name> [--model <model>]
+    el <name> tell <message>
+    el <name> ask <message>
+    el <name> log
+    el <name> kill
+    el kill all
+    """ |> String.trim_trailing()
   end
 end
