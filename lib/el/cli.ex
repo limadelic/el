@@ -202,7 +202,7 @@ defmodule El.CLI do
 
   defp usage_message do
     cmds = [
-      {"el v0.1.", ""},
+      {"el #{version()}", ""},
       {"el -v", "version"},
       {"el ls", "list sessions"},
       {"el <name> [-m <model>]", "start or status"},
