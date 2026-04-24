@@ -224,10 +224,6 @@ defmodule El.CLI do
     IO.puts(response)
   end
 
-  def find_daemon_node do
-    :not_found
-  end
-
   defp usage_message do
     "el #{version()}\nusage: el ls | el <name> [--model <model>] | el <name> [--model <model>] tell <message> | el <name> [--model <model>] ask <message> | el <name> log | el <name> kill | el kill all | el --version"
   end

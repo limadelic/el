@@ -67,19 +67,6 @@ defmodule El.CLI.Spec do
     end
   end
 
-  describe "find_daemon_node/0" do
-    setup do
-      Mimic.copy(Node)
-      :ok
-    end
-
-    test "returns not_found when daemon is not running" do
-      Mimic.expect(Node, :alive?, fn -> true end)
-
-      assert :not_found = El.CLI.find_daemon_node()
-    end
-  end
-
   describe "main/1" do
     setup do
       Mimic.copy(IO)
