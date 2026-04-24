@@ -21,7 +21,7 @@ defmodule El.Application.Spec do
   end
 
   test "children includes DynamicSupervisor", %{children: children} do
-    assert {DynamicSupervisor, [name: El.SessionSupervisor, max_restarts: 10, max_seconds: 30]} in children
+    assert {DynamicSupervisor, [name: El.SessionSupervisor, max_restarts: 50, max_seconds: 60]} in children
   end
 
   test "children has exactly two entries", %{children: children} do
@@ -34,6 +34,14 @@ defmodule El.Application.Spec do
 
   test "supervisor opts names El.Supervisor", %{supervisor_opts: opts} do
     assert opts[:name] == El.Supervisor
+  end
+
+  test "supervisor opts has high max_restarts", %{supervisor_opts: opts} do
+    assert opts[:max_restarts] == 100
+  end
+
+  test "supervisor opts has max_seconds for restart window", %{supervisor_opts: opts} do
+    assert opts[:max_seconds] == 60
   end
 
   test "store_message delegates to message store" do
