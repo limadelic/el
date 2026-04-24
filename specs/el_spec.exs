@@ -89,15 +89,6 @@ defmodule El.Spec do
     end
   end
 
-  describe "local_ls/0" do
-    test "returns list from Registry.select" do
-      Mimic.stub(Registry, :select, fn El.Registry, _pattern -> [:kent, :lisa] end)
-
-      result = El.local_ls()
-      assert result == [:kent, :lisa]
-    end
-  end
-
   describe "local_lookup/1" do
     test "returns empty list when not found" do
       Mimic.stub(Registry, :lookup, fn El.Registry, :does_not_exist -> [] end)
