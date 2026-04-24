@@ -46,9 +46,8 @@ defmodule El.Session do
     alive_fn = Keyword.get(opts, :alive_fn, &El.Session.alive?/1)
     registry_module = Keyword.get(opts, :registry_module, Registry)
     {session_id, opts_without_resume} = extract_resume_or_generate_session_id(opts)
-    start_result = start_claude(opts_without_resume, claude_module)
 
-    case start_result do
+    case claude_module.start_link(opts_without_resume) do
       {:error, reason} ->
         {:stop, reason}
 
@@ -71,23 +70,13 @@ defmodule El.Session do
     end
   end
 
-  defp start_claude(opts, claude_module) do
-    case claude_module.start_link(opts) do
-      {:ok, pid} ->
-        {:ok, pid}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
-
   defp maybe_respawn_claude(
          %{claude_pid: nil, opts: opts, session_id: session_id, claude_module: claude_module} =
            state
        ) do
     opts_with_resume = Keyword.put(opts, :resume, session_id)
 
-    case start_claude(opts_with_resume, claude_module) do
+    case claude_module.start_link(opts_with_resume) do
       {:ok, pid} -> %{state | claude_pid: pid}
       _ -> state
     end
