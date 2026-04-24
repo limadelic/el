@@ -328,10 +328,13 @@ defmodule El.Session do
   end
 
   @impl true
-  def terminate(reason, _state)
-      when reason in [:normal, :shutdown] or (is_tuple(reason) and elem(reason, 0) == :shutdown) do
-    :ok
-  end
+  def terminate(:normal, _state), do: :ok
+
+  @impl true
+  def terminate(:shutdown, _state), do: :ok
+
+  @impl true
+  def terminate({:shutdown, _}, _state), do: :ok
 
   @impl true
   def terminate(reason, state) do
