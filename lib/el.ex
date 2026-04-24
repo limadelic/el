@@ -39,8 +39,13 @@ defmodule El do
   end
 
   defp kill_if_found([{pid, _}]) do
+    ref = Process.monitor(pid)
     DynamicSupervisor.terminate_child(El.SessionSupervisor, pid)
-    :ok
+    receive do
+      {:DOWN, ^ref, :process, ^pid, _} -> :ok
+    after
+      5000 -> :ok
+    end
   end
 
   defp kill_if_found([]) do
