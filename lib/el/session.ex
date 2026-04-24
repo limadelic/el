@@ -85,6 +85,10 @@ defmodule El.Session do
 
   defp maybe_respawn_claude(state), do: state
 
+  defp envelope(name, payload) do
+    "[from #{name}] #{payload}"
+  end
+
   defp extract_resume_or_generate_session_id(opts) do
     case Keyword.pop(opts, :resume) do
       {nil, remaining_opts} ->
@@ -173,7 +177,7 @@ defmodule El.Session do
     route_if_alive(state, target, fn ->
       GenServer.cast(
         via_tuple(target),
-        {:cast_store_relay, "[from #{state.name}] #{payload}", ""}
+        {:cast_store_relay, envelope(state.name, payload), ""}
       )
 
       cast_store_relay(state.name, message, "-> #{target}")
@@ -193,7 +197,7 @@ defmodule El.Session do
 
   defp process_tell_response_route(state, response, target, payload) do
     route_if_alive(state, target, fn ->
-      El.Session.tell(target, "[from #{state.name}] #{payload}")
+      El.Session.tell(target, envelope(state.name, payload))
       cast_store_relay(state.name, response, "-> #{target}")
     end)
   end
@@ -201,7 +205,7 @@ defmodule El.Session do
   defp process_tell_ask(state, target, message) do
     route_if_alive(state, target, fn ->
       state.task_module.start(fn ->
-        El.ask(target, "[from #{state.name}] #{message}")
+        El.ask(target, envelope(state.name, message))
       end)
     end)
   end
@@ -282,7 +286,7 @@ defmodule El.Session do
 
   defp process_ask_single_route(state, message, target, payload) do
     route_if_alive(state, target, fn ->
-      relay_msg = "[from #{state.name}] #{payload}"
+      relay_msg = envelope(state.name, payload)
       GenServer.cast(via_tuple(target), {:cast_store_relay, relay_msg, ""})
       cast_store_relay(state.name, message, "-> #{target}")
     end)
@@ -290,7 +294,7 @@ defmodule El.Session do
 
   defp process_ask_tell(state, target, message) do
     route_if_alive(state, target, fn ->
-      El.tell(target, "[from #{state.name}] #{message}")
+      El.tell(target, envelope(state.name, message))
     end)
   end
 
