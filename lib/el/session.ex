@@ -162,9 +162,8 @@ defmodule El.Session do
 
   defp process_tell(state, message, ref, []) do
     server_pid = self()
-    task_module = Map.get(state, :task_module, Task)
 
-    task_module.start(fn ->
+    state.task_module.start(fn ->
       response = ask_claude(state.claude_pid, message)
       GenServer.cast(server_pid, {:store_tell, ref, message, response})
     end)
@@ -211,9 +210,7 @@ defmodule El.Session do
 
   defp process_tell_ask(state, target, message) do
     route_if_alive(state, target, fn ->
-      task_module = Map.get(state, :task_module, Task)
-
-      task_module.start(fn ->
+      state.task_module.start(fn ->
         El.ask(target, "[from #{state.name}] #{message}")
       end)
     end)
@@ -265,9 +262,8 @@ defmodule El.Session do
 
   defp spawn_ask(state, from, message, valid_routes) do
     server_pid = self()
-    task_module = Map.get(state, :task_module, Task)
 
-    task_module.start(fn ->
+    state.task_module.start(fn ->
       response =
         try do
           do_ask_work(state, message, valid_routes)
