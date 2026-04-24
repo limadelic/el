@@ -74,10 +74,27 @@ defmodule El.CLI.Spec do
       :ok
     end
 
-    test "prints version in usage message when no args" do
+    test "version starts with el 0.1." do
       Mimic.expect(IO, :puts, fn msg ->
         assert String.starts_with?(msg, "el 0.1.")
-        assert String.contains?(msg, "usage:")
+      end)
+      Mimic.expect(System, :halt, fn 0 -> :ok end)
+
+      El.CLI.main([])
+    end
+
+    test "usage message contains el ls" do
+      Mimic.expect(IO, :puts, fn msg ->
+        assert String.contains?(msg, "el ls")
+      end)
+      Mimic.expect(System, :halt, fn 0 -> :ok end)
+
+      El.CLI.main([])
+    end
+
+    test "usage message contains el --version" do
+      Mimic.expect(IO, :puts, fn msg ->
+        assert String.contains?(msg, "el --version")
       end)
       Mimic.expect(System, :halt, fn 0 -> :ok end)
 
@@ -86,7 +103,7 @@ defmodule El.CLI.Spec do
 
     test "prints version only for -v flag" do
       Mimic.expect(IO, :puts, fn msg ->
-        refute String.contains?(msg, "usage:")
+        refute String.contains?(msg, "el ls")
         assert msg =~ ~r/\d+\.\d+/
       end)
       Mimic.expect(System, :halt, fn 0 -> :ok end)
@@ -96,7 +113,7 @@ defmodule El.CLI.Spec do
 
     test "prints version only for --version flag" do
       Mimic.expect(IO, :puts, fn msg ->
-        refute String.contains?(msg, "usage:")
+        refute String.contains?(msg, "el ls")
         assert msg =~ ~r/\d+\.\d+/
       end)
       Mimic.expect(System, :halt, fn 0 -> :ok end)
