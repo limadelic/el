@@ -8,14 +8,13 @@ defmodule El.ClaudeCode.Spec do
   end
 
   describe "start_link/1" do
-    test "passes session_id that is a UUID string" do
+    test "passes session_id from options" do
       Mimic.expect(ClaudeCode.Session, :start_link, fn opts ->
-        assert Keyword.has_key?(opts, :session_id)
-        assert is_binary(opts[:session_id])
+        assert opts[:session_id] == "test-session-id"
         {:ok, self()}
       end)
 
-      El.ClaudeCode.start_link(session_module: ClaudeCode.Session)
+      El.ClaudeCode.start_link(session_id: "test-session-id", session_module: ClaudeCode.Session)
     end
 
     test "passes adapter configuration tuple" do
@@ -75,6 +74,27 @@ defmodule El.ClaudeCode.Spec do
       Mimic.expect(ClaudeCode.Session, :start_link, fn opts ->
         {ClaudeCode.Adapter.Port, adapter_opts} = opts[:adapter]
         assert adapter_opts[:cli_path] == :global
+        {:ok, self()}
+      end)
+
+      El.ClaudeCode.start_link(session_module: ClaudeCode.Session)
+    end
+
+    test "passes resume option when provided" do
+      Mimic.expect(ClaudeCode.Session, :start_link, fn opts ->
+        assert opts[:resume] == "abc-123-def"
+        {:ok, self()}
+      end)
+
+      El.ClaudeCode.start_link(
+        resume: "abc-123-def",
+        session_module: ClaudeCode.Session
+      )
+    end
+
+    test "omits resume option when not provided" do
+      Mimic.expect(ClaudeCode.Session, :start_link, fn opts ->
+        refute Keyword.has_key?(opts, :resume)
         {:ok, self()}
       end)
 

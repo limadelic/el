@@ -7,12 +7,12 @@ defmodule El.CLI do
   end
 
   def main(args) do
-    main_impl(args)
+    dispatch(args)
     System.halt(0)
   end
 
   def dispatch(args) do
-    main_impl(args)
+    args |> parse_route() |> execute(args)
   end
 
   def parse_route([]), do: :usage
@@ -32,27 +32,23 @@ defmodule El.CLI do
   def parse_route([_name, "--model", _model | _rest]), do: :start
   def parse_route(_), do: :usage
 
-  defp main_impl([]) do
+  defp execute(:usage, _args) do
     IO.puts(usage_message())
   end
 
-  defp main_impl(["-v"]) do
+  defp execute(:version, _args) do
     IO.puts(version())
   end
 
-  defp main_impl(["--version"]) do
-    IO.puts(version())
-  end
-
-  defp main_impl(["ls"]) do
+  defp execute(:ls, _args) do
     handle_ls()
   end
 
-  defp main_impl(["--daemon", name]) do
-    main_impl(["--daemon", name, "--model", ""])
+  defp execute(:daemon, ["--daemon", name]) do
+    execute(:daemon, ["--daemon", name, "--model", ""])
   end
 
-  defp main_impl(["--daemon", name, "--model", model]) do
+  defp execute(:daemon, ["--daemon", name, "--model", model]) do
     name_atom = String.to_atom(name)
     model_value = normalize_model(model)
     opts = start_opts(model_value)
@@ -62,68 +58,57 @@ defmodule El.CLI do
     Process.sleep(:infinity)
   end
 
-  defp main_impl([name]) do
-    {model, []} = extract_model_flag([])
-    opts = start_opts(model)
+  defp execute(:start, [name]) do
+    opts = start_opts(nil)
 
     handle_find_daemon_for_start(name, opts)
   end
 
-  defp main_impl([name, "--model", model | rest]) do
+  defp execute(:start, [name, "--model", model | rest]) do
     opts = start_opts(model)
     handle_find_daemon_with_rest(name, opts, rest)
   end
 
-  defp main_impl([name, "tell", "ask", "@" <> target | words]) do
+  defp execute(:tell_ask, [name, "tell", "ask", "@" <> target | words]) do
     target_atom = String.to_atom(target)
     msg = Enum.join(words, " ")
     name_atom = String.to_atom(name)
     handle_tell_ask(name_atom, target_atom, msg, name)
   end
 
-  defp main_impl([name, "tell" | words]) do
+  defp execute(:tell, [name, "tell" | words]) do
     msg = Enum.join(words, " ")
     name_atom = String.to_atom(name)
     handle_tell(name_atom, msg, name)
   end
 
-  defp main_impl([name, "ask", "tell", "@" <> target | words]) do
+  defp execute(:ask_tell, [name, "ask", "tell", "@" <> target | words]) do
     target_atom = String.to_atom(target)
     msg = Enum.join(words, " ")
     name_atom = String.to_atom(name)
     handle_ask_tell(name_atom, target_atom, msg, name)
   end
 
-  defp main_impl([name, "ask" | words]) do
+  defp execute(:ask, [name, "ask" | words]) do
     msg = Enum.join(words, " ")
     name_atom = String.to_atom(name)
     handle_ask(name_atom, msg, name)
   end
 
-  defp main_impl([name, "log"]) do
+  defp execute(:log, [name, "log"]) do
     name_atom = String.to_atom(name)
     handle_log(name_atom, name)
   end
 
-  defp main_impl([name, "kill"]) do
+  defp execute(:kill, [name, "kill"]) do
     name_atom = String.to_atom(name)
     handle_kill(name_atom, name)
   end
 
-  defp main_impl(["kill", "all"]) do
-    case El.kill(:all) do
-      :ok -> IO.puts("killed all")
-      _ -> IO.puts("killed all")
-    end
-  rescue
-    _ -> IO.puts("killed all")
+  defp execute(:kill_all, ["kill", "all"]) do
+    El.kill(:all)
+    IO.puts("killed all")
   end
-
-  defp main_impl(_) do
-    main_impl([])
-  end
-
-  defp extract_model_flag(args), do: {nil, args}
 
   defp start_opts(nil), do: []
   defp start_opts(model), do: [model: model]
@@ -152,35 +137,25 @@ defmodule El.CLI do
   defp handle_find_daemon_with_rest(name, opts, rest) do
     name_atom = String.to_atom(name)
     El.start(name_atom, opts)
-    continue_if_rest_present(rest, name)
+    dispatch_rest(rest, name)
   end
 
-  defp continue_if_rest_present([], _name) do
+  defp dispatch_rest([], _name) do
     :ok
   end
 
-  defp continue_if_rest_present(rest, name) do
-    main_impl([name | rest])
+  defp dispatch_rest(rest, name) do
+    dispatch([name | rest])
   end
 
   defp handle_tell_ask(name_atom, target_atom, msg, name) do
-    case El.tell_ask(name_atom, target_atom, msg) do
-      :not_found ->
-        IO.puts(:stderr, "No sessions running. Start one: el #{name}")
-
-      _ ->
-        :ok
-    end
+    result = El.tell_ask(name_atom, target_atom, msg)
+    handle_result(result, name)
   end
 
   defp handle_tell(name_atom, msg, name) do
-    case El.tell(name_atom, msg) do
-      :not_found ->
-        IO.puts(:stderr, "No sessions running. Start one: el #{name}")
-
-      _ ->
-        :ok
-    end
+    result = El.tell(name_atom, msg)
+    handle_result(result, name)
   end
 
   defp handle_ask_tell(name_atom, target_atom, msg, name) do
@@ -194,38 +169,36 @@ defmodule El.CLI do
   end
 
   defp handle_log(name_atom, name) do
-    case El.log(name_atom) do
-      :not_found ->
-        IO.puts(:stderr, "No sessions running. Start one: el #{name}")
-
-      log ->
-        Enum.each(log, fn {type, message, response, _metadata} ->
-          IO.puts("[#{type}] #{message}")
-          IO.puts(response)
-        end)
-    end
+    result = El.log(name_atom)
+    handle_log_result(result, name)
   end
 
   defp handle_kill(name_atom, name) do
-    case El.kill(name_atom) do
-      :not_found ->
-        IO.puts(:stderr, "No sessions running. Start one: el #{name}")
+    result = El.kill(name_atom)
+    handle_result(result, name)
+  end
 
-      _ ->
-        :ok
-    end
+  defp handle_log_result(:not_found, name) do
+    handle_not_found(name)
+  end
+
+  defp handle_log_result(log, _name) do
+    Enum.each(log, fn {type, message, response, _metadata} ->
+      IO.puts("[#{type}] #{message}")
+      IO.puts(response)
+    end)
   end
 
   defp handle_result(:not_found, name) do
-    IO.puts(:stderr, "No sessions running. Start one: el #{name}")
+    handle_not_found(name)
   end
 
   defp handle_result(response, _name) do
     IO.puts(response)
   end
 
-  def find_daemon_node do
-    :not_found
+  defp handle_not_found(name) do
+    IO.puts(:stderr, "No sessions running. Start one: el #{name}")
   end
 
   defp usage_message do

@@ -15,6 +15,7 @@ defmodule El.Session.Spec do
     state = %{
       name: :test_session,
       claude_pid: :mock_pid,
+      session_id: "test-session-id",
       messages: [],
       pending_calls: [],
       claude_module: MockSessionModule,
@@ -81,6 +82,12 @@ defmodule El.Session.Spec do
       assert state.claude_pid == :mock_pid
     end
 
+    test "generates and stores session_id" do
+      {:ok, state} = El.Session.init({:test_session, [claude_module: MockSessionModule]})
+
+      assert is_binary(state.session_id)
+    end
+
     test "stores claude_pid from successful start" do
       {:ok, state} = El.Session.init({:test_session, [claude_module: MockSessionModule]})
 
@@ -105,6 +112,7 @@ defmodule El.Session.Spec do
 
       assert state.task_module == MockSessionModule
     end
+
   end
 
   describe "handle_cast/2 :tell" do
@@ -182,10 +190,10 @@ defmodule El.Session.Spec do
     end
   end
 
-  describe "handle_cast/2 :store_relay" do
+  describe "handle_cast/2 :cast_store_relay" do
     setup %{state: state} do
       {:noreply, returned_state} =
-        El.Session.handle_cast({:store_relay, "msg", "resp"}, state)
+        El.Session.handle_cast({:cast_store_relay, "msg", "resp"}, state)
 
       [message_tuple] = returned_state.messages
       {:ok, message_tuple: message_tuple}
@@ -193,7 +201,7 @@ defmodule El.Session.Spec do
 
     test "appends relay message to log", %{state: state} do
       {:noreply, returned_state} =
-        El.Session.handle_cast({:store_relay, "message", "response"}, state)
+        El.Session.handle_cast({:cast_store_relay, "message", "response"}, state)
 
       assert length(returned_state.messages) == 1
     end
@@ -346,6 +354,23 @@ defmodule El.Session.Spec do
     end
   end
 
+  describe "handle_cast/2 with dead claude_pid" do
+    test "respawns claude with session_id when pid is nil", %{state: state} do
+      Mimic.expect(Task, :start, fn _fun -> {:ok, :task_pid} end)
+      dead_state = %{
+        state
+        | claude_pid: nil,
+          claude_module: SessionIdCaptureModule,
+          task_module: Task,
+          opts: [model: "test"]
+      }
+
+      {:noreply, respawned} = El.Session.handle_cast({:tell, "test"}, dead_state)
+
+      assert respawned.claude_pid == "captured-session-id"
+    end
+  end
+
   describe "handle_info/2" do
     test "clears claude_pid on EXIT from claude process", %{state: state} do
       {:noreply, returned_state} =
@@ -384,7 +409,26 @@ defmodule El.Session.Spec do
 
       assert [{"crash", "session died", ":killed", %{}}] = returned_state.messages
     end
+
+    test "does not store crash entry on normal EXIT reason", %{state: state} do
+      Mimic.reject(El.MessageStore, :insert, 2)
+
+      {:noreply, returned_state} =
+        El.Session.handle_info({:EXIT, :mock_pid, :normal}, state)
+
+      assert returned_state.messages == []
+    end
+
+    test "clears claude_pid on normal EXIT reason", %{state: state} do
+      Mimic.reject(El.MessageStore, :insert, 2)
+
+      {:noreply, returned_state} =
+        El.Session.handle_info({:EXIT, :mock_pid, :normal}, state)
+
+      assert returned_state.claude_pid == nil
+    end
   end
+
 
   describe "terminate/2" do
     test "stores crash entry on abnormal exit", %{state: state} do

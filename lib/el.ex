@@ -58,11 +58,11 @@ defmodule El do
     |> Enum.sort()
   end
 
-  def local_ls do
+  defp local_ls do
     Registry.select(El.Registry, [{{:"$1", :_, :_}, [], [:"$1"]}])
   end
 
-  def local_lookup(name) do
+  defp local_lookup(name) do
     Registry.lookup(El.Registry, name)
   end
 end

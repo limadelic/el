@@ -3,20 +3,8 @@ defmodule El.Session do
 
   require Logger
 
-  def start_link({name, session_opts}, _opts) do
-    GenServer.start_link(__MODULE__, {name, session_opts}, name: via_tuple(name))
-  end
-
-  def start_link(name, opts) do
-    GenServer.start_link(__MODULE__, {name, opts}, name: via_tuple(name))
-  end
-
   def start_link({name, session_opts}) do
     GenServer.start_link(__MODULE__, {name, session_opts}, name: via_tuple(name))
-  end
-
-  def start_link(name) do
-    GenServer.start_link(__MODULE__, {name, []}, name: via_tuple(name))
   end
 
   def tell(name, message) do
@@ -57,19 +45,21 @@ defmodule El.Session do
     task_module = Keyword.get(opts, :task_module, Task)
     alive_fn = Keyword.get(opts, :alive_fn, &El.Session.alive?/1)
     registry_module = Keyword.get(opts, :registry_module, Registry)
-    start_result = start_claude(opts, claude_module)
+    {session_id, opts_without_resume} = extract_resume_or_generate_session_id(opts)
+    claude_opts = Keyword.put(opts_without_resume, :session_id, session_id)
 
-    case start_result do
+    case claude_module.start_link(claude_opts) do
       {:error, reason} ->
         {:stop, reason}
 
-      claude_pid ->
+      {:ok, claude_pid} ->
         messages = El.Application.load_messages(name)
 
         {:ok,
          %{
            name: name,
            claude_pid: claude_pid,
+           session_id: session_id,
            messages: messages,
            pending_calls: [],
            claude_module: claude_module,
@@ -81,23 +71,40 @@ defmodule El.Session do
     end
   end
 
-  defp start_claude(opts, claude_module) do
-    opts
-    |> claude_module.start_link()
-    |> handle_start_result()
-  end
+  defp maybe_respawn_claude(
+         %{claude_pid: nil, opts: opts, session_id: session_id, claude_module: claude_module} =
+           state
+       ) do
+    opts_with_session_id = Keyword.put(opts, :session_id, session_id)
 
-  defp handle_start_result({:ok, pid}), do: pid
-  defp handle_start_result({:error, reason}), do: {:error, reason}
-
-  defp maybe_respawn_claude(%{claude_pid: nil, opts: opts, claude_module: claude_module} = state) do
-    case start_claude(opts, claude_module) do
-      pid when is_pid(pid) -> %{state | claude_pid: pid}
+    case claude_module.start_link(opts_with_session_id) do
+      {:ok, pid} -> %{state | claude_pid: pid}
       _ -> state
     end
   end
 
   defp maybe_respawn_claude(state), do: state
+
+  defp envelope(name, payload) do
+    "[from #{name}] #{payload}"
+  end
+
+  defp extract_resume_or_generate_session_id(opts) do
+    case Keyword.pop(opts, :resume) do
+      {nil, remaining_opts} ->
+        {generate_session_id(), remaining_opts}
+
+      {session_id, remaining_opts} ->
+        {session_id, remaining_opts}
+    end
+  end
+
+  defp generate_session_id do
+    bytes = :crypto.strong_rand_bytes(16)
+    hex = Base.encode16(bytes, case: :lower)
+
+    "#{String.slice(hex, 0, 8)}-#{String.slice(hex, 8, 4)}-#{String.slice(hex, 12, 4)}-#{String.slice(hex, 16, 4)}-#{String.slice(hex, 20, 12)}"
+  end
 
   @impl true
   def handle_cast({:tell, message}, state) do
@@ -130,7 +137,7 @@ defmodule El.Session do
   end
 
   @impl true
-  def handle_cast({:store_relay, message, response}, state) do
+  def handle_cast({:cast_store_relay, message, response}, state) do
     entry = {"relay", message, response, %{from: state.name}}
     El.Application.store_message(state.name, entry)
     {:noreply, %{state | messages: state.messages ++ [entry]}}
@@ -149,9 +156,8 @@ defmodule El.Session do
 
   defp process_tell(state, message, ref, []) do
     server_pid = self()
-    task_module = Map.get(state, :task_module, Task)
 
-    task_module.start(fn ->
+    state.task_module.start(fn ->
       response = ask_claude(state.claude_pid, message)
       GenServer.cast(server_pid, {:store_tell, ref, message, response})
     end)
@@ -168,21 +174,14 @@ defmodule El.Session do
   end
 
   defp process_tell_route(state, message, target, payload) do
-    alive_fn = Map.get(state, :alive_fn, &El.Session.alive?/1)
-    process_tell_route_alive(state, message, target, payload, alive_fn.(target))
-  end
+    route_if_alive(state, target, fn ->
+      GenServer.cast(
+        via_tuple(target),
+        {:cast_store_relay, envelope(state.name, payload), ""}
+      )
 
-  defp process_tell_route_alive(state, message, target, payload, true) do
-    GenServer.cast(
-      via_tuple(target),
-      {:store_relay, "[from #{state.name}] #{payload}", ""}
-    )
-
-    store_relay(state.name, message, "-> #{target}")
-  end
-
-  defp process_tell_route_alive(state, message, target, _payload, false) do
-    store_relay(state.name, message, "#{target} is not running")
+      cast_store_relay(state.name, message, "-> #{target}")
+    end)
   end
 
   defp process_tell_response(state, response, routes) do
@@ -197,41 +196,36 @@ defmodule El.Session do
   end
 
   defp process_tell_response_route(state, response, target, payload) do
-    alive_fn = Map.get(state, :alive_fn, &El.Session.alive?/1)
-    process_tell_response_route_alive(state, response, target, payload, alive_fn.(target))
-  end
-
-  defp process_tell_response_route_alive(state, response, target, payload, true) do
-    El.Session.tell(target, "[from #{state.name}] #{payload}")
-    store_relay(state.name, response, "-> #{target}")
-  end
-
-  defp process_tell_response_route_alive(state, response, target, _payload, false) do
-    store_relay(state.name, response, "#{target} is not running")
+    route_if_alive(state, target, fn ->
+      El.Session.tell(target, envelope(state.name, payload))
+      cast_store_relay(state.name, response, "-> #{target}")
+    end)
   end
 
   defp process_tell_ask(state, target, message) do
-    alive_fn = Map.get(state, :alive_fn, &El.Session.alive?/1)
-    process_tell_ask_alive(state, target, message, alive_fn.(target))
+    route_if_alive(state, target, fn ->
+      state.task_module.start(fn ->
+        El.ask(target, envelope(state.name, message))
+      end)
+    end)
   end
 
-  defp process_tell_ask_alive(state, target, message, true) do
-    task_module = Map.get(state, :task_module, Task)
+  defp route_if_alive(state, target, on_alive) do
+    do_route(target, on_alive, state.alive_fn.(target))
+  end
 
-    task_module.start(fn ->
-      El.ask(target, "[from #{state.name}] #{message}")
-    end)
-
+  defp do_route(target, on_alive, true) do
+    on_alive.()
     "-> #{target}"
   end
 
-  defp process_tell_ask_alive(_state, target, _message, false) do
+  defp do_route(target, _on_alive, false) do
     "#{target} is not running"
   end
 
-  defp store_relay(sender_name, message, response) do
+  defp cast_store_relay(sender_name, message, response) do
     pid = via_tuple(sender_name)
-    GenServer.cast(pid, {:store_relay, message, response})
+    GenServer.cast(pid, {:cast_store_relay, message, response})
   end
 
   @impl true
@@ -262,9 +256,8 @@ defmodule El.Session do
 
   defp spawn_ask(state, from, message, valid_routes) do
     server_pid = self()
-    task_module = Map.get(state, :task_module, Task)
 
-    task_module.start(fn ->
+    state.task_module.start(fn ->
       response =
         try do
           do_ask_work(state, message, valid_routes)
@@ -292,62 +285,46 @@ defmodule El.Session do
   end
 
   defp process_ask_single_route(state, message, target, payload) do
-    alive_fn = Map.get(state, :alive_fn, &El.Session.alive?/1)
-    process_ask_single_route_alive(state, message, target, payload, alive_fn.(target))
-  end
-
-  defp process_ask_single_route_alive(state, message, target, payload, true) do
-    relay_msg = "[from #{state.name}] #{payload}"
-    GenServer.cast(via_tuple(target), {:store_relay, relay_msg, ""})
-    store_relay(state.name, message, "-> #{target}")
-    "-> #{target}"
-  end
-
-  defp process_ask_single_route_alive(state, message, target, _payload, false) do
-    store_relay(state.name, message, "#{target} is not running")
-    "#{target} is not running"
+    route_if_alive(state, target, fn ->
+      relay_msg = envelope(state.name, payload)
+      GenServer.cast(via_tuple(target), {:cast_store_relay, relay_msg, ""})
+      cast_store_relay(state.name, message, "-> #{target}")
+    end)
   end
 
   defp process_ask_tell(state, target, message) do
-    alive_fn = Map.get(state, :alive_fn, &El.Session.alive?/1)
-    process_ask_tell_alive(state, target, message, alive_fn.(target))
+    route_if_alive(state, target, fn ->
+      El.tell(target, envelope(state.name, message))
+    end)
   end
 
-  defp process_ask_tell_alive(state, target, message, true) do
-    El.tell(target, "[from #{state.name}] #{message}")
-    "-> #{target}"
-  end
+  @impl true
+  def handle_info({:EXIT, pid, :normal}, %{claude_pid: pid} = state) do
+    Enum.each(state.pending_calls, fn from ->
+      safe_reply(from, "(error)")
+    end)
 
-  defp process_ask_tell_alive(_state, target, _message, false) do
-    "#{target} is not running"
+    {:noreply, %{state | claude_pid: nil, pending_calls: []}}
   end
 
   @impl true
   def handle_info({:EXIT, pid, reason}, %{claude_pid: pid} = state) do
-    unless reason == :normal do
-      Logger.error("Session #{state.name} - Claude process died: #{inspect(reason)}")
-      entry = {"crash", "session died", inspect(reason), %{}}
-      El.Application.store_message(state.name, entry)
+    Logger.error("Session #{state.name} - Claude process died: #{inspect(reason)}")
+    entry = {"crash", "session died", inspect(reason), %{}}
+    El.Application.store_message(state.name, entry)
 
-      Enum.each(state.pending_calls, fn from ->
-        safe_reply(from, "(error)")
-      end)
+    Enum.each(state.pending_calls, fn from ->
+      safe_reply(from, "(error)")
+    end)
 
-      new_state = %{
-        state
-        | claude_pid: nil,
-          pending_calls: [],
-          messages: state.messages ++ [entry]
-      }
+    new_state = %{
+      state
+      | claude_pid: nil,
+        pending_calls: [],
+        messages: state.messages ++ [entry]
+    }
 
-      {:noreply, new_state}
-    else
-      Enum.each(state.pending_calls, fn from ->
-        safe_reply(from, "(error)")
-      end)
-
-      {:noreply, %{state | claude_pid: nil, pending_calls: []}}
-    end
+    {:noreply, new_state}
   end
 
   @impl true
@@ -356,23 +333,20 @@ defmodule El.Session do
   end
 
   @impl true
+  def terminate(:normal, _state), do: :ok
+
+  @impl true
+  def terminate(:shutdown, _state), do: :ok
+
+  @impl true
+  def terminate({:shutdown, _}, _state), do: :ok
+
+  @impl true
   def terminate(reason, state) do
-    case reason do
-      :normal ->
-        :ok
-
-      :shutdown ->
-        :ok
-
-      {:shutdown, _} ->
-        :ok
-
-      _ ->
-        El.Application.store_message(
-          state.name,
-          {"crash", "Session crashed", inspect(reason), %{}}
-        )
-    end
+    El.Application.store_message(
+      state.name,
+      {"crash", "Session crashed", inspect(reason), %{}}
+    )
 
     :ok
   end
