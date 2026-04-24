@@ -2,15 +2,10 @@ defmodule El.Features.OnOffSpec do
   use ExUnit.Case
 
   setup_all do
-    Supervisor.start_link(
-      [
-        {Registry, keys: :unique, name: El.Registry},
-        {DynamicSupervisor, name: El.SessionSupervisor, max_restarts: 10, max_seconds: 30}
-      ],
-      strategy: :one_for_one,
-      name: El.Supervisor
-    )
+    start_supervised!({Registry, [keys: :unique, name: El.Registry]})
+    start_supervised!({DynamicSupervisor, [name: El.SessionSupervisor, max_restarts: 10, max_seconds: 30]})
 
+    Process.sleep(10)
     :ok
   end
 
