@@ -372,4 +372,40 @@ defmodule El.Session.Spec do
       assert returned_state == state
     end
   end
+
+  describe "terminate/2" do
+    test "stores crash entry on abnormal exit", %{state: state} do
+      El.Session.terminate(:kill, state)
+
+      messages = El.Application.load_messages(:test_session)
+
+      assert length(messages) == 1
+      assert [{"crash", "Session crashed", reason_str, %{}}] = messages
+      assert reason_str == ":kill"
+    end
+
+    test "does not store entry on normal exit", %{state: state} do
+      El.Session.terminate(:normal, state)
+
+      messages = El.Application.load_messages(:test_session)
+
+      assert messages == []
+    end
+
+    test "does not store entry on shutdown exit", %{state: state} do
+      El.Session.terminate(:shutdown, state)
+
+      messages = El.Application.load_messages(:test_session)
+
+      assert messages == []
+    end
+
+    test "does not store entry on shutdown with reason", %{state: state} do
+      El.Session.terminate({:shutdown, :reason}, state)
+
+      messages = El.Application.load_messages(:test_session)
+
+      assert messages == []
+    end
+  end
 end

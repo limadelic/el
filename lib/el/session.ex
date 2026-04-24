@@ -341,6 +341,18 @@ defmodule El.Session do
     {:noreply, state}
   end
 
+  @impl true
+  def terminate(reason, state) do
+    case reason do
+      :normal -> :ok
+      :shutdown -> :ok
+      {:shutdown, _} -> :ok
+      _ -> El.Application.store_message(state.name, {"crash", "Session crashed", inspect(reason), %{}})
+    end
+
+    :ok
+  end
+
   defp safe_reply(from, response) do
     GenServer.reply(from, response)
   rescue
