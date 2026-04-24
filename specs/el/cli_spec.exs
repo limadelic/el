@@ -98,9 +98,17 @@ defmodule El.CLI.Spec do
       El.CLI.main([])
     end
 
-    test "prints version only for -v flag" do
+    test "version does not contain usage info" do
       Mimic.expect(IO, :puts, fn msg ->
         refute String.contains?(msg, "el ls")
+      end)
+      Mimic.expect(System, :halt, fn 0 -> :ok end)
+
+      El.CLI.main(["-v"])
+    end
+
+    test "version matches version format" do
+      Mimic.expect(IO, :puts, fn msg ->
         assert msg =~ ~r/\d+\.\d+/
       end)
       Mimic.expect(System, :halt, fn 0 -> :ok end)

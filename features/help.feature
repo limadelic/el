@@ -3,12 +3,12 @@ Feature: Help
 
   Scenario: Usage
     * > el:
-      | el v0.1.                       |
-      | el -v                          |
-      | el ls                          |
-      | el <name> [-m <model>]         |
-      | el <name> tell <message>       |
-      | el <name> ask <message>        |
-      | el <name> log                  |
-      | el <name> kill                 |
-      | el kill all                    |
+      | el v0.1.                       |                    |
+      | el -v                          | version            |
+      | el ls                          | list sessions      |
+      | el <name> [-m <model>]         | start or status    |
+      | el <name> tell <message>       | fire-and-forget    |
+      | el <name> ask <message>        | wait for response  |
+      | el <name> log                  | view log           |
+      | el <name> kill                 | kill session       |
+      | el kill all                    | kill all sessions  |

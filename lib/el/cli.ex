@@ -217,8 +217,12 @@ defmodule El.CLI do
 
     cmds
     |> Enum.map_join("\n", fn {cmd, desc} ->
-      padded = String.pad_trailing(cmd, pad)
-      if desc == "", do: padded, else: padded <> "  " <> desc
+      format_line(cmd, desc, pad)
     end)
+  end
+
+  defp format_line(cmd, "", _pad), do: cmd
+  defp format_line(cmd, desc, pad) do
+    String.pad_trailing(cmd, pad) <> "  " <> desc
   end
 end
