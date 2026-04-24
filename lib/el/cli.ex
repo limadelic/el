@@ -1,8 +1,8 @@
 defmodule El.CLI do
   defp version do
     case Application.spec(:el, :vsn) do
-      vsn when is_list(vsn) -> List.to_string(vsn)
-      _ -> "dev"
+      vsn when is_list(vsn) -> "v" <> List.to_string(vsn)
+      _ -> "v0.1.0"
     end
   end
 
@@ -17,10 +17,9 @@ defmodule El.CLI do
 
   def parse_route([]), do: :usage
   def parse_route(["-v"]), do: :version
-  def parse_route(["--version"]), do: :version
   def parse_route(["ls"]), do: :ls
   def parse_route(["--daemon", _name]), do: :daemon
-  def parse_route(["--daemon", _name, "--model", _model]), do: :daemon
+  def parse_route(["--daemon", _name, "-m", _model]), do: :daemon
   def parse_route(["kill", "all"]), do: :kill_all
   def parse_route([_name, "log"]), do: :log
   def parse_route([_name, "kill"]), do: :kill
@@ -29,7 +28,7 @@ defmodule El.CLI do
   def parse_route([_name, "ask", "tell", "@" <> _target | _words]), do: :ask_tell
   def parse_route([_name, "ask" | _words]), do: :ask
   def parse_route([_name]), do: :start
-  def parse_route([_name, "--model", _model | _rest]), do: :start
+  def parse_route([_name, "-m", _model | _rest]), do: :start
   def parse_route(_), do: :usage
 
   defp execute(:usage, _args) do
@@ -45,10 +44,10 @@ defmodule El.CLI do
   end
 
   defp execute(:daemon, ["--daemon", name]) do
-    execute(:daemon, ["--daemon", name, "--model", ""])
+    execute(:daemon, ["--daemon", name, "-m", ""])
   end
 
-  defp execute(:daemon, ["--daemon", name, "--model", model]) do
+  defp execute(:daemon, ["--daemon", name, "-m", model]) do
     name_atom = String.to_atom(name)
     model_value = normalize_model(model)
     opts = start_opts(model_value)
@@ -64,7 +63,7 @@ defmodule El.CLI do
     handle_find_daemon_for_start(name, opts)
   end
 
-  defp execute(:start, [name, "--model", model | rest]) do
+  defp execute(:start, [name, "-m", model | rest]) do
     opts = start_opts(model)
     handle_find_daemon_with_rest(name, opts, rest)
   end
@@ -203,10 +202,10 @@ defmodule El.CLI do
 
   defp usage_message do
     """
-    el #{version()}
-    el --version
+    el v0.1.
+    el -v
     el ls
-    el <name> [--model <model>]
+    el <name> [-m <model>]
     el <name> tell <message>
     el <name> ask <message>
     el <name> log
