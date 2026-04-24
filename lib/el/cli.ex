@@ -63,8 +63,7 @@ defmodule El.CLI do
   end
 
   defp main_impl([name]) do
-    {model, []} = extract_model_flag([])
-    opts = start_opts(model)
+    opts = start_opts(nil)
 
     handle_find_daemon_for_start(name, opts)
   end
@@ -122,8 +121,6 @@ defmodule El.CLI do
   defp main_impl(_) do
     main_impl([])
   end
-
-  defp extract_model_flag(args), do: {nil, args}
 
   defp start_opts(nil), do: []
   defp start_opts(model), do: [model: model]
