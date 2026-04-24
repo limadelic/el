@@ -6,36 +6,18 @@ defmodule El.Application do
   def start(_type, _args) do
     :ok = Application.ensure_started(:sasl)
     init_message_store()
-    result = Supervisor.start_link(children(), supervisor_opts())
-    maybe_write_daemon_node()
-    result
-  end
-
-  defp maybe_write_daemon_node do
-    if Node.alive?() do
-      node_file = Path.expand("~/.el/daemon_node")
-      File.mkdir_p!(Path.dirname(node_file))
-      File.write!(node_file, Atom.to_string(Node.self()))
-
-      version =
-        case Application.spec(:el, :vsn) do
-          vsn when is_list(vsn) -> List.to_string(vsn)
-          _ -> "unknown"
-        end
-
-      File.write!(Path.join(Path.dirname(node_file), "daemon_version"), version)
-    end
+    Supervisor.start_link(children(), supervisor_opts())
   end
 
   def children do
     [
       {Registry, keys: :unique, name: El.Registry},
-      {DynamicSupervisor, name: El.SessionSupervisor, max_restarts: 10, max_seconds: 30}
+      {DynamicSupervisor, name: El.SessionSupervisor, max_restarts: 50, max_seconds: 60}
     ]
   end
 
   def supervisor_opts do
-    [strategy: :one_for_one, name: El.Supervisor]
+    [strategy: :one_for_one, name: El.Supervisor, max_restarts: 100, max_seconds: 60]
   end
 
   def init_message_store do
@@ -45,17 +27,17 @@ defmodule El.Application do
   end
 
   def delete_session_messages(name) do
-    :dets.delete(:message_store, name)
-    :ok
+    message_store = Application.get_env(:el, :message_store, El.MessageStore)
+    message_store.delete(name)
   end
 
   def store_message(name, message_entry) do
-    :dets.insert(:message_store, {name, message_entry})
-    :ok
+    message_store = Application.get_env(:el, :message_store, El.MessageStore)
+    message_store.insert(name, message_entry)
   end
 
   def load_messages(name) do
-    :dets.lookup(:message_store, name)
-    |> Enum.map(fn {_key, entry} -> entry end)
+    message_store = Application.get_env(:el, :message_store, El.MessageStore)
+    message_store.lookup(name)
   end
 end

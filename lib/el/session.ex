@@ -75,7 +75,8 @@ defmodule El.Session do
            claude_module: claude_module,
            task_module: task_module,
            alive_fn: alive_fn,
-           registry_module: registry_module
+           registry_module: registry_module,
+           opts: opts
          }}
     end
   end
@@ -89,8 +90,18 @@ defmodule El.Session do
   defp handle_start_result({:ok, pid}), do: pid
   defp handle_start_result({:error, reason}), do: {:error, reason}
 
+  defp maybe_respawn_claude(%{claude_pid: nil, opts: opts, claude_module: claude_module} = state) do
+    case start_claude(opts, claude_module) do
+      pid when is_pid(pid) -> %{state | claude_pid: pid}
+      _ -> state
+    end
+  end
+
+  defp maybe_respawn_claude(state), do: state
+
   @impl true
   def handle_cast({:tell, message}, state) do
+    state = maybe_respawn_claude(state)
     routes = detect_routes(message)
     ref = make_ref()
     new_state = store_tell_immediate(state, message, ref, routes)
@@ -225,6 +236,7 @@ defmodule El.Session do
 
   @impl true
   def handle_call({:ask, message}, from, state) do
+    state = maybe_respawn_claude(state)
     routes = detect_routes(message)
     valid_routes = Enum.filter(routes, fn {target, _payload} -> target != state.name end)
     new_state = %{state | pending_calls: [from | state.pending_calls]}
@@ -312,19 +324,57 @@ defmodule El.Session do
 
   @impl true
   def handle_info({:EXIT, pid, reason}, %{claude_pid: pid} = state) do
-    Logger.error("Session #{state.name} - Claude process died: #{inspect(reason)}")
-    El.Application.store_message(state.name, {"crash", "session died", inspect(reason), %{}})
+    unless reason == :normal do
+      Logger.error("Session #{state.name} - Claude process died: #{inspect(reason)}")
+      entry = {"crash", "session died", inspect(reason), %{}}
+      El.Application.store_message(state.name, entry)
 
-    Enum.each(state.pending_calls, fn from ->
-      safe_reply(from, "(error)")
-    end)
+      Enum.each(state.pending_calls, fn from ->
+        safe_reply(from, "(error)")
+      end)
 
-    {:stop, reason, state}
+      new_state = %{
+        state
+        | claude_pid: nil,
+          pending_calls: [],
+          messages: state.messages ++ [entry]
+      }
+
+      {:noreply, new_state}
+    else
+      Enum.each(state.pending_calls, fn from ->
+        safe_reply(from, "(error)")
+      end)
+
+      {:noreply, %{state | claude_pid: nil, pending_calls: []}}
+    end
   end
 
   @impl true
   def handle_info(_msg, state) do
     {:noreply, state}
+  end
+
+  @impl true
+  def terminate(reason, state) do
+    case reason do
+      :normal ->
+        :ok
+
+      :shutdown ->
+        :ok
+
+      {:shutdown, _} ->
+        :ok
+
+      _ ->
+        El.Application.store_message(
+          state.name,
+          {"crash", "Session crashed", inspect(reason), %{}}
+        )
+    end
+
+    :ok
   end
 
   defp safe_reply(from, response) do

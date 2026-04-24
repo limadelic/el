@@ -8,20 +8,21 @@ done
 SCRIPT_DIR="$(cd "$(dirname "$SOURCE")" && pwd)"
 RELEASE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-INSTALLED_VERSION=$(awk '{print $2}' "$RELEASE_ROOT/releases/start_erl.data" 2>/dev/null)
-DAEMON_VERSION=$(cat ~/.el/daemon_version 2>/dev/null)
-
-if [ -n "$DAEMON_VERSION" ] && [ -n "$INSTALLED_VERSION" ] && [ "$DAEMON_VERSION" != "$INSTALLED_VERSION" ]; then
-  pkill -9 -f 'beam.*el' 2>/dev/null
-  pkill -9 -f 'el.*daemon' 2>/dev/null
-  pkill -9 epmd 2>/dev/null
-  rm -f ~/.el/daemon_node ~/.el/daemon_version
-  sleep 1
-fi
-
 case "$1" in
   start|daemon|stop|restart|pid|remote)
     exec "$RELEASE_ROOT/bin/el" "$@"
+    ;;
+  --version|-v|"")
+    args=""
+    for arg in "$@"; do
+      escaped=$(printf '%s' "$arg" | sed 's/"/\\"/g')
+      if [ -z "$args" ]; then
+        args="\"$escaped\""
+      else
+        args="$args, \"$escaped\""
+      fi
+    done
+    exec "$RELEASE_ROOT/bin/el" eval "El.CLI.dispatch([$args])"
     ;;
   *)
     args=""
@@ -33,6 +34,12 @@ case "$1" in
         args="$args, \"$escaped\""
       fi
     done
-    exec "$RELEASE_ROOT/bin/el" eval "El.CLI.dispatch([$args])"
+
+    "$RELEASE_ROOT/bin/el" rpc "El.CLI.dispatch([$args])" 2>/dev/null
+    if [ $? -ne 0 ]; then
+      "$RELEASE_ROOT/bin/el" daemon >/dev/null 2>&1 &
+      sleep 2
+      exec "$RELEASE_ROOT/bin/el" rpc "El.CLI.dispatch([$args])"
+    fi
     ;;
 esac

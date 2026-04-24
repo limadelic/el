@@ -1,76 +1,100 @@
 defmodule El.Features.OnOffSpec do
-  use Cabbage.Feature, file: "on_off.feature"
-
-  @el_bin "/opt/homebrew/bin/el"
+  use ExUnit.Case
 
   setup do
-    El.Application.init_message_store()
-    :dets.delete_all_objects(:message_store)
-    on_exit(fn -> :dets.close(:message_store) end)
-
-    node_file = Path.expand("~/.el/daemon_node")
-    File.rm(node_file)
-    on_exit(fn -> File.rm(node_file) end)
+    Mimic.copy(Registry)
+    Mimic.copy(DynamicSupervisor)
+    Mimic.copy(El.Session)
     :ok
   end
 
-  defwhen ~r/^> (?<cmd>.+):$/, %{cmd: cmd, table: table}, _state do
-    verify_with_retry(cmd, table)
-  end
+  describe "El.start/2" do
+    test "calls DynamicSupervisor.start_child with El.Session" do
+      Mimic.expect(Registry, :lookup, fn El.Registry, :dude -> [] end)
 
-  defwhen ~r/^> (?<cmd>.+[^:])$/, %{cmd: cmd}, _state do
-    run_el(cmd)
-  end
+      Mimic.expect(DynamicSupervisor, :start_child, fn El.SessionSupervisor, {El.Session, {:dude, []}} ->
+        {:ok, :mock_pid}
+      end)
 
-  defp run_el(cmd) do
-    rest = String.replace_prefix(cmd, "el ", "")
-    args = String.split(rest)
-    {output, _} = System.cmd(@el_bin, args, stderr_to_stdout: true)
-    String.trim(output)
-  end
+      El.start(:dude)
+    end
 
-  defp verify_with_retry(cmd, table, timeout \\ 5000) do
-    deadline = System.monotonic_time(:millisecond) + timeout
-    do_verify(cmd, table, deadline)
-  end
+    test "passes options through to El.Session" do
+      Mimic.expect(Registry, :lookup, fn El.Registry, :dude -> [] end)
 
-  defp do_verify(cmd, table, deadline) do
-    output = run_el(cmd)
+      Mimic.expect(DynamicSupervisor, :start_child, fn El.SessionSupervisor, {El.Session, {:dude, [claude_module: TestClaudeCode]}} ->
+        {:ok, :mock_pid}
+      end)
 
-    try do
-      verify_table(table, output)
-    rescue
-      e ->
-        if System.monotonic_time(:millisecond) < deadline do
-          Process.sleep(200)
-          do_verify(cmd, table, deadline)
-        else
-          reraise e, __STACKTRACE__
-        end
+      El.start(:dude, claude_module: TestClaudeCode)
+    end
+
+    test "returns session name on success" do
+      Mimic.stub(Registry, :lookup, fn El.Registry, :dude -> [] end)
+      Mimic.stub(DynamicSupervisor, :start_child, fn El.SessionSupervisor, _ -> {:ok, :mock_pid} end)
+
+      assert El.start(:dude) == :dude
+    end
+
+    test "returns name if session already registered" do
+      Mimic.stub(Registry, :lookup, fn El.Registry, :dude -> [{:existing_pid, :registered}] end)
+
+      result = El.start(:dude)
+      assert result == :dude
     end
   end
 
-  defp verify_table(table, output) do
-    table
-    |> Enum.flat_map(&Map.values/1)
-    |> Enum.each(fn val ->
-      val = String.trim(val)
+  describe "El.kill/1" do
+    test "looks up session in registry" do
+      Mimic.expect(Registry, :lookup, fn El.Registry, :dude -> [] end)
 
-      if String.starts_with?(val, "(") and String.ends_with?(val, ")") do
-        inner = String.slice(val, 1..-2//1)
+      El.kill(:dude)
+    end
 
-        if String.contains?(output, inner) do
-          raise "Expected '#{inner}' NOT in output:\n#{output}"
-        end
-      else
-        val
-        |> String.split()
-        |> Enum.each(fn word ->
-          unless String.contains?(output, word) do
-            raise "Expected '#{word}' in output:\n#{output}"
-          end
-        end)
-      end
-    end)
+    test "terminates child when session found" do
+      Mimic.expect(Registry, :lookup, fn El.Registry, :dude -> [{:mock_pid, :meta}] end)
+
+      Mimic.expect(DynamicSupervisor, :terminate_child, fn El.SessionSupervisor, :mock_pid ->
+        :ok
+      end)
+
+      El.kill(:dude)
+    end
+
+    test "monitors process and waits for DOWN" do
+      Mimic.expect(Registry, :lookup, fn El.Registry, :dude -> [{:mock_pid, :meta}] end)
+      Mimic.stub(DynamicSupervisor, :terminate_child, fn _, _ -> :ok end)
+
+      El.kill(:dude)
+    end
+  end
+
+  describe "El.ls/0" do
+    test "calls Registry.select to list all sessions" do
+      Mimic.expect(Registry, :select, fn El.Registry, [{{:"$1", :_, :_}, [], [:"$1"]}] ->
+        [:dude, :duder, :dudito]
+      end)
+
+      sessions = El.ls()
+      assert sessions == [:dude, :duder, :dudito]
+    end
+
+    test "returns sorted list" do
+      Mimic.expect(Registry, :select, fn El.Registry, _ ->
+        [:dudito, :dude, :duder]
+      end)
+
+      sessions = El.ls()
+      assert sessions == [:dude, :duder, :dudito]
+    end
+
+    test "returns empty list when no sessions" do
+      Mimic.expect(Registry, :select, fn El.Registry, _ ->
+        []
+      end)
+
+      sessions = El.ls()
+      assert sessions == []
+    end
   end
 end

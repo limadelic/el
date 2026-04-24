@@ -2,9 +2,15 @@ defmodule El.Session.Spec do
   use ExUnit.Case
 
   setup do
-    El.Application.init_message_store()
-    :dets.delete_all_objects(:message_store)
-    on_exit(fn -> :dets.close(:message_store) end)
+    Mimic.copy(El.MessageStore)
+
+    on_exit(fn ->
+      Application.delete_env(:el, :message_store)
+    end)
+
+    Application.put_env(:el, :message_store, El.MessageStore)
+    Mimic.stub(El.MessageStore, :lookup, fn _ -> [] end)
+    Mimic.stub(El.MessageStore, :insert, fn _, _ -> :ok end)
 
     state = %{
       name: :test_session,
@@ -17,7 +23,8 @@ defmodule El.Session.Spec do
         :target -> true
         _ -> false
       end,
-      registry_module: MockSessionModule
+      registry_module: MockSessionModule,
+      opts: []
     }
 
     {:ok, state: state}
@@ -341,11 +348,11 @@ defmodule El.Session.Spec do
 
   describe "handle_info/2" do
     test "clears claude_pid on EXIT from claude process", %{state: state} do
-      {:stop, reason, returned_state} =
-        El.Session.handle_info({:EXIT, :mock_pid, :normal}, state)
+      {:noreply, returned_state} =
+        El.Session.handle_info({:EXIT, :mock_pid, :killed}, state)
 
-      assert reason == :normal
-      assert returned_state == state
+      assert returned_state.claude_pid == nil
+      assert returned_state.pending_calls == []
     end
 
     test "replies to pending calls on EXIT", %{state: state} do
@@ -369,6 +376,42 @@ defmodule El.Session.Spec do
       {:noreply, returned_state} = El.Session.handle_info(:unknown_message, state)
 
       assert returned_state == state
+    end
+
+    test "adds crash entry to state.messages on abnormal EXIT", %{state: state} do
+      {:noreply, returned_state} =
+        El.Session.handle_info({:EXIT, :mock_pid, :killed}, state)
+
+      assert [{"crash", "session died", ":killed", %{}}] = returned_state.messages
+    end
+  end
+
+  describe "terminate/2" do
+    test "stores crash entry on abnormal exit", %{state: state} do
+      Mimic.expect(El.MessageStore, :insert, fn :test_session, entry ->
+        assert {"crash", "Session crashed", ":kill", %{}} = entry
+        :ok
+      end)
+
+      El.Session.terminate(:kill, state)
+    end
+
+    test "does not store entry on normal exit", %{state: state} do
+      Mimic.reject(El.MessageStore, :insert, 2)
+
+      El.Session.terminate(:normal, state)
+    end
+
+    test "does not store entry on shutdown exit", %{state: state} do
+      Mimic.reject(El.MessageStore, :insert, 2)
+
+      El.Session.terminate(:shutdown, state)
+    end
+
+    test "does not store entry on shutdown with reason", %{state: state} do
+      Mimic.reject(El.MessageStore, :insert, 2)
+
+      El.Session.terminate({:shutdown, :reason}, state)
     end
   end
 end

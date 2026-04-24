@@ -4,7 +4,7 @@ defmodule El.MixProject do
   def project do
     [
       app: :el,
-      version: "0.1.49",
+      version: "0.1.60",
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
       test_paths: ["specs"],
@@ -50,7 +50,6 @@ defmodule El.MixProject do
   defp deps do
     [
       {:claude_code, "~> 0.36"},
-      {:cabbage, "~> 0.4", only: :test},
       {:mimic, "~> 1.7", only: :test},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]

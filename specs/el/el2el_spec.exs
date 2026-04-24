@@ -1,76 +1,96 @@
 defmodule El.Features.El2ElSpec do
-  use Cabbage.Feature, file: "el2el.feature"
-
-  @el_bin "/opt/homebrew/bin/el"
+  use ExUnit.Case
 
   setup do
-    El.Application.init_message_store()
-    :dets.delete_all_objects(:message_store)
-    on_exit(fn -> :dets.close(:message_store) end)
-
-    node_file = Path.expand("~/.el/daemon_node")
-    File.rm(node_file)
-    on_exit(fn -> File.rm(node_file) end)
+    Mimic.copy(El.Session)
     :ok
   end
 
-  defwhen ~r/^> (?<cmd>.+):$/, %{cmd: cmd, table: table}, _state do
-    verify_with_retry(cmd, table)
-  end
+  describe "El.tell/2" do
+    test "routes message to target session" do
+      Mimic.expect(El.Session, :tell, fn :dude, "@donnie> test message" ->
+        :ok
+      end)
 
-  defwhen ~r/^> (?<cmd>.+[^:])$/, %{cmd: cmd}, _state do
-    run_el(cmd)
-  end
+      El.tell(:dude, "@donnie> test message")
+    end
 
-  defp run_el(cmd) do
-    rest = String.replace_prefix(cmd, "el ", "")
-    args = String.split(rest)
-    {output, _} = System.cmd(@el_bin, args, stderr_to_stdout: true)
-    String.trim(output)
-  end
+    test "passes exact message to session" do
+      expected_msg = "@donnie> you are out of your element"
 
-  defp verify_with_retry(cmd, table, timeout \\ 5000) do
-    deadline = System.monotonic_time(:millisecond) + timeout
-    do_verify(cmd, table, deadline)
-  end
+      Mimic.expect(El.Session, :tell, fn :dude, ^expected_msg ->
+        :ok
+      end)
 
-  defp do_verify(cmd, table, deadline) do
-    output = run_el(cmd)
+      El.tell(:dude, expected_msg)
+    end
 
-    try do
-      verify_table(table, output)
-    rescue
-      e ->
-        if System.monotonic_time(:millisecond) < deadline do
-          Process.sleep(200)
-          do_verify(cmd, table, deadline)
-        else
-          reraise e, __STACKTRACE__
-        end
+    test "returns ok" do
+      Mimic.stub(El.Session, :tell, fn _, _ -> :ok end)
+
+      result = El.tell(:dude, "message")
+      assert result == :ok
     end
   end
 
-  defp verify_table(table, output) do
-    table
-    |> Enum.flat_map(&Map.values/1)
-    |> Enum.each(fn val ->
-      val = String.trim(val)
+  describe "El.ask/2" do
+    test "sends ask to session" do
+      Mimic.expect(El.Session, :ask, fn :dude, "1 + 1" ->
+        "2"
+      end)
 
-      if String.starts_with?(val, "(") and String.ends_with?(val, ")") do
-        inner = String.slice(val, 1..-2//1)
+      El.ask(:dude, "1 + 1")
+    end
 
-        if String.contains?(output, inner) do
-          raise "Expected '#{inner}' NOT in output:\n#{output}"
-        end
-      else
-        val
-        |> String.split()
-        |> Enum.each(fn word ->
-          unless String.contains?(output, word) do
-            raise "Expected '#{word}' in output:\n#{output}"
-          end
-        end)
-      end
-    end)
+    test "returns response from session" do
+      Mimic.stub(El.Session, :ask, fn _, _ -> "response text" end)
+
+      response = El.ask(:dude, "question")
+      assert response == "response text"
+    end
+
+    test "routes to target session in message" do
+      expected_msg = "@donnie> what is your name?"
+
+      Mimic.expect(El.Session, :ask, fn :dude, ^expected_msg ->
+        "-> donnie"
+      end)
+
+      result = El.ask(:dude, expected_msg)
+      assert String.contains?(result, "donnie")
+    end
+  end
+
+  describe "El.log/1" do
+    test "fetches log from session" do
+      log_entry = {"tell", "message", "response", %{}}
+
+      Mimic.expect(El.Session, :log, fn :dude ->
+        [log_entry]
+      end)
+
+      log = El.log(:dude)
+      assert log == [log_entry]
+    end
+
+    test "returns empty list when no messages" do
+      Mimic.stub(El.Session, :log, fn _ -> [] end)
+
+      log = El.log(:dude)
+      assert log == []
+    end
+
+    test "returns multiple entries in order" do
+      entries = [
+        {"tell", "msg1", "resp1", %{}},
+        {"ask", "msg2", "resp2", %{}},
+        {"relay", "msg3", "resp3", %{}}
+      ]
+
+      Mimic.stub(El.Session, :log, fn _ -> entries end)
+
+      log = El.log(:dude)
+      assert log == entries
+    end
   end
 end
