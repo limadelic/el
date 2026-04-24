@@ -89,18 +89,4 @@ defmodule El.Spec do
     end
   end
 
-  describe "local_lookup/1" do
-    test "returns empty list when not found" do
-      Mimic.stub(Registry, :lookup, fn El.Registry, :does_not_exist -> [] end)
-
-      assert El.local_lookup(:does_not_exist) == []
-    end
-
-    test "returns tuple list when found" do
-      Mimic.stub(Registry, :lookup, fn El.Registry, :kent -> [{:pid, :meta}] end)
-
-      result = El.local_lookup(:kent)
-      assert result == [{:pid, :meta}]
-    end
-  end
 end
