@@ -106,12 +106,8 @@ defmodule El.CLI do
   end
 
   defp execute(:kill_all, ["kill", "all"]) do
-    case El.kill(:all) do
-      :ok -> IO.puts("killed all")
-      _ -> IO.puts("killed all")
-    end
-  rescue
-    _ -> IO.puts("killed all")
+    El.kill(:all)
+    IO.puts("killed all")
   end
 
   defp start_opts(nil), do: []
