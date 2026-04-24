@@ -179,7 +179,7 @@ defmodule El.CLI do
   end
 
   defp handle_log_result(:not_found, name) do
-    IO.puts(:stderr, "No sessions running. Start one: el #{name}")
+    handle_not_found(name)
   end
 
   defp handle_log_result(log, _name) do
@@ -190,11 +190,15 @@ defmodule El.CLI do
   end
 
   defp handle_result(:not_found, name) do
-    IO.puts(:stderr, "No sessions running. Start one: el #{name}")
+    handle_not_found(name)
   end
 
   defp handle_result(response, _name) do
     IO.puts(response)
+  end
+
+  defp handle_not_found(name) do
+    IO.puts(:stderr, "No sessions running. Start one: el #{name}")
   end
 
   defp usage_message do

@@ -75,9 +75,9 @@ defmodule El.Session do
          %{claude_pid: nil, opts: opts, session_id: session_id, claude_module: claude_module} =
            state
        ) do
-    opts_with_resume = Keyword.put(opts, :resume, session_id)
+    opts_with_session_id = Keyword.put(opts, :session_id, session_id)
 
-    case claude_module.start_link(opts_with_resume) do
+    case claude_module.start_link(opts_with_session_id) do
       {:ok, pid} -> %{state | claude_pid: pid}
       _ -> state
     end

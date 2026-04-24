@@ -15,6 +15,7 @@ defmodule El.Session.Spec do
     state = %{
       name: :test_session,
       claude_pid: :mock_pid,
+      session_id: "test-session-id",
       messages: [],
       pending_calls: [],
       claude_module: MockSessionModule,
@@ -350,6 +351,23 @@ defmodule El.Session.Spec do
         })
 
       assert length(returned_state.messages) == 1
+    end
+  end
+
+  describe "handle_cast/2 with dead claude_pid" do
+    test "respawns claude with session_id when pid is nil", %{state: state} do
+      Mimic.expect(Task, :start, fn _fun -> {:ok, :task_pid} end)
+      dead_state = %{
+        state
+        | claude_pid: nil,
+          claude_module: SessionIdCaptureModule,
+          task_module: Task,
+          opts: [model: "test"]
+      }
+
+      {:noreply, respawned} = El.Session.handle_cast({:tell, "test"}, dead_state)
+
+      assert respawned.claude_pid == "captured-session-id"
     end
   end
 
