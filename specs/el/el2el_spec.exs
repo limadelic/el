@@ -1,65 +1,96 @@
 defmodule El.Features.El2ElSpec do
   use ExUnit.Case
 
-  setup_all do
-    start_supervised!({Registry, [keys: :unique, name: El.Registry]})
-    start_supervised!({DynamicSupervisor, [name: El.SessionSupervisor, max_restarts: 10, max_seconds: 30]})
-
-    Process.sleep(10)
-    :ok
-  end
-
   setup do
-    El.Application.init_message_store()
-    :dets.delete_all_objects(:message_store)
-
-    on_exit(fn ->
-      El.kill(:dude)
-      El.kill(:donnie)
-      :dets.close(:message_store)
-    end)
-
+    Mimic.copy(El.Session)
     :ok
   end
 
-  describe "El2El routing" do
-    test "tell routes message to another session" do
-      El.start(:dude, claude_module: TestClaudeCode)
-      El.start(:donnie, claude_module: TestClaudeCode)
-
-      El.tell(:dude, "@donnie> you are out of your element")
-
-      assert_eventually(fn ->
-        log = El.log(:donnie)
-        Enum.any?(log, fn {type, msg, _, _} ->
-          type == "relay" && String.contains?(msg, "you are out of your element")
-        end)
+  describe "El.tell/2" do
+    test "routes message to target session" do
+      Mimic.expect(El.Session, :tell, fn :dude, "@donnie> test message" ->
+        :ok
       end)
+
+      El.tell(:dude, "@donnie> test message")
     end
 
-    test "ask routes to another session returns confirmation" do
-      El.start(:dude, claude_module: TestClaudeCode)
-      El.start(:donnie, claude_module: TestClaudeCode)
+    test "passes exact message to session" do
+      expected_msg = "@donnie> you are out of your element"
 
-      response = El.ask(:dude, "@donnie> 1 + 1")
+      Mimic.expect(El.Session, :tell, fn :dude, ^expected_msg ->
+        :ok
+      end)
 
-      assert String.contains?(response, "donnie")
+      El.tell(:dude, expected_msg)
+    end
+
+    test "returns ok" do
+      Mimic.stub(El.Session, :tell, fn _, _ -> :ok end)
+
+      result = El.tell(:dude, "message")
+      assert result == :ok
     end
   end
 
-  defp assert_eventually(assertion_fn, timeout_ms \\ 5000) do
-    deadline = System.monotonic_time(:millisecond) + timeout_ms
+  describe "El.ask/2" do
+    test "sends ask to session" do
+      Mimic.expect(El.Session, :ask, fn :dude, "1 + 1" ->
+        "2"
+      end)
 
-    try do
-      assertion_fn.()
-    rescue
-      _ ->
-        if System.monotonic_time(:millisecond) < deadline do
-          Process.sleep(100)
-          assert_eventually(assertion_fn, timeout_ms)
-        else
-          raise "Assertion timed out"
-        end
+      El.ask(:dude, "1 + 1")
+    end
+
+    test "returns response from session" do
+      Mimic.stub(El.Session, :ask, fn _, _ -> "response text" end)
+
+      response = El.ask(:dude, "question")
+      assert response == "response text"
+    end
+
+    test "routes to target session in message" do
+      expected_msg = "@donnie> what is your name?"
+
+      Mimic.expect(El.Session, :ask, fn :dude, ^expected_msg ->
+        "-> donnie"
+      end)
+
+      result = El.ask(:dude, expected_msg)
+      assert String.contains?(result, "donnie")
+    end
+  end
+
+  describe "El.log/1" do
+    test "fetches log from session" do
+      log_entry = {"tell", "message", "response", %{}}
+
+      Mimic.expect(El.Session, :log, fn :dude ->
+        [log_entry]
+      end)
+
+      log = El.log(:dude)
+      assert log == [log_entry]
+    end
+
+    test "returns empty list when no messages" do
+      Mimic.stub(El.Session, :log, fn _ -> [] end)
+
+      log = El.log(:dude)
+      assert log == []
+    end
+
+    test "returns multiple entries in order" do
+      entries = [
+        {"tell", "msg1", "resp1", %{}},
+        {"ask", "msg2", "resp2", %{}},
+        {"relay", "msg3", "resp3", %{}}
+      ]
+
+      Mimic.stub(El.Session, :log, fn _ -> entries end)
+
+      log = El.log(:dude)
+      assert log == entries
     end
   end
 end

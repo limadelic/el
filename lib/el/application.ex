@@ -45,17 +45,17 @@ defmodule El.Application do
   end
 
   def delete_session_messages(name) do
-    :dets.delete(:message_store, name)
-    :ok
+    message_store = Application.get_env(:el, :message_store, El.MessageStore)
+    message_store.delete(name)
   end
 
   def store_message(name, message_entry) do
-    :dets.insert(:message_store, {name, message_entry})
-    :ok
+    message_store = Application.get_env(:el, :message_store, El.MessageStore)
+    message_store.insert(name, message_entry)
   end
 
   def load_messages(name) do
-    :dets.lookup(:message_store, name)
-    |> Enum.map(fn {_key, entry} -> entry end)
+    message_store = Application.get_env(:el, :message_store, El.MessageStore)
+    message_store.lookup(name)
   end
 end

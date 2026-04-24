@@ -2,9 +2,13 @@ defmodule El.Application.Spec do
   use ExUnit.Case
 
   setup do
-    El.Application.init_message_store()
-    :dets.delete_all_objects(:message_store)
-    on_exit(fn -> :dets.close(:message_store) end)
+    Mimic.copy(El.MessageStore)
+
+    on_exit(fn ->
+      Application.delete_env(:el, :message_store)
+    end)
+
+    Application.put_env(:el, :message_store, El.MessageStore)
 
     [
       children: El.Application.children(),
@@ -32,26 +36,46 @@ defmodule El.Application.Spec do
     assert opts[:name] == El.Supervisor
   end
 
-  test "store_message persists to ETS" do
+  test "store_message delegates to message store" do
     name = :test_session
     entry = {"tell", "hello", "response", %{}}
-    El.Application.store_message(name, entry)
 
-    messages = El.Application.load_messages(name)
-    assert entry in messages
+    Mimic.expect(El.MessageStore, :insert, fn ^name, ^entry ->
+      :ok
+    end)
+
+    assert El.Application.store_message(name, entry) == :ok
   end
 
-  test "load_messages returns empty list for new session" do
+  test "load_messages returns empty list when store returns empty" do
+    Mimic.stub(El.MessageStore, :lookup, fn _name ->
+      []
+    end)
+
     messages = El.Application.load_messages(:new_session)
     assert messages == []
   end
 
-  test "delete_session_messages removes entries" do
-    name = :delete_test
-    El.Application.store_message(name, {"tell", "msg", "resp", %{}})
-    El.Application.delete_session_messages(name)
+  test "load_messages returns entries from store" do
+    name = :test_session
+    entry1 = {"tell", "msg1", "resp1", %{}}
+    entry2 = {"tell", "msg2", "resp2", %{}}
+
+    Mimic.stub(El.MessageStore, :lookup, fn _name ->
+      [entry1, entry2]
+    end)
 
     messages = El.Application.load_messages(name)
-    assert messages == []
+    assert messages == [entry1, entry2]
+  end
+
+  test "delete_session_messages delegates to message store" do
+    name = :delete_test
+
+    Mimic.expect(El.MessageStore, :delete, fn ^name ->
+      :ok
+    end)
+
+    assert El.Application.delete_session_messages(name) == :ok
   end
 end

@@ -2,9 +2,15 @@ defmodule El.Session.Spec do
   use ExUnit.Case
 
   setup do
-    El.Application.init_message_store()
-    :dets.delete_all_objects(:message_store)
-    on_exit(fn -> :dets.close(:message_store) end)
+    Mimic.copy(El.MessageStore)
+
+    on_exit(fn ->
+      Application.delete_env(:el, :message_store)
+    end)
+
+    Application.put_env(:el, :message_store, El.MessageStore)
+    Mimic.stub(El.MessageStore, :lookup, fn _ -> [] end)
+    Mimic.stub(El.MessageStore, :insert, fn _, _ -> :ok end)
 
     state = %{
       name: :test_session,
@@ -382,37 +388,30 @@ defmodule El.Session.Spec do
 
   describe "terminate/2" do
     test "stores crash entry on abnormal exit", %{state: state} do
+      Mimic.expect(El.MessageStore, :insert, fn :test_session, entry ->
+        assert {"crash", "Session crashed", ":kill", %{}} = entry
+        :ok
+      end)
+
       El.Session.terminate(:kill, state)
-
-      messages = El.Application.load_messages(:test_session)
-
-      assert length(messages) == 1
-      assert [{"crash", "Session crashed", reason_str, %{}}] = messages
-      assert reason_str == ":kill"
     end
 
     test "does not store entry on normal exit", %{state: state} do
+      Mimic.reject(El.MessageStore, :insert, 2)
+
       El.Session.terminate(:normal, state)
-
-      messages = El.Application.load_messages(:test_session)
-
-      assert messages == []
     end
 
     test "does not store entry on shutdown exit", %{state: state} do
+      Mimic.reject(El.MessageStore, :insert, 2)
+
       El.Session.terminate(:shutdown, state)
-
-      messages = El.Application.load_messages(:test_session)
-
-      assert messages == []
     end
 
     test "does not store entry on shutdown with reason", %{state: state} do
+      Mimic.reject(El.MessageStore, :insert, 2)
+
       El.Session.terminate({:shutdown, :reason}, state)
-
-      messages = El.Application.load_messages(:test_session)
-
-      assert messages == []
     end
   end
 end

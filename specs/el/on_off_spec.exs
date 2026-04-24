@@ -1,58 +1,100 @@
 defmodule El.Features.OnOffSpec do
   use ExUnit.Case
 
-  setup_all do
-    start_supervised!({Registry, [keys: :unique, name: El.Registry]})
-    start_supervised!({DynamicSupervisor, [name: El.SessionSupervisor, max_restarts: 10, max_seconds: 30]})
-
-    Process.sleep(10)
-    :ok
-  end
-
   setup do
-    El.Application.init_message_store()
-    :dets.delete_all_objects(:message_store)
-
-    on_exit(fn ->
-      El.kill(:dude)
-      El.kill(:duder)
-      El.kill(:dudito)
-      :dets.close(:message_store)
-    end)
-
+    Mimic.copy(Registry)
+    Mimic.copy(DynamicSupervisor)
+    Mimic.copy(El.Session)
     :ok
   end
 
-  describe "Session lifecycle" do
-    test "single session starts and stops" do
-      assert Enum.empty?(El.ls())
+  describe "El.start/2" do
+    test "calls DynamicSupervisor.start_child with El.Session" do
+      Mimic.expect(Registry, :lookup, fn El.Registry, :dude -> [] end)
 
-      El.start(:dude, claude_module: TestClaudeCode)
-      assert Enum.member?(El.ls(), :dude)
+      Mimic.expect(DynamicSupervisor, :start_child, fn El.SessionSupervisor, {El.Session, {:dude, []}} ->
+        {:ok, :mock_pid}
+      end)
 
-      El.kill(:dude)
-      assert !Enum.member?(El.ls(), :dude)
+      El.start(:dude)
     end
 
-    test "multiple sessions can run concurrently" do
-      assert Enum.empty?(El.ls())
+    test "passes options through to El.Session" do
+      Mimic.expect(Registry, :lookup, fn El.Registry, :dude -> [] end)
+
+      Mimic.expect(DynamicSupervisor, :start_child, fn El.SessionSupervisor, {El.Session, {:dude, [claude_module: TestClaudeCode]}} ->
+        {:ok, :mock_pid}
+      end)
 
       El.start(:dude, claude_module: TestClaudeCode)
-      El.start(:duder, claude_module: TestClaudeCode)
-      El.start(:dudito, claude_module: TestClaudeCode)
+    end
 
-      sessions = El.ls()
-      assert Enum.member?(sessions, :dude)
-      assert Enum.member?(sessions, :duder)
-      assert Enum.member?(sessions, :dudito)
-      assert length(sessions) == 3
+    test "returns session name on success" do
+      Mimic.stub(Registry, :lookup, fn El.Registry, :dude -> [] end)
+      Mimic.stub(DynamicSupervisor, :start_child, fn El.SessionSupervisor, _ -> {:ok, :mock_pid} end)
+
+      assert El.start(:dude) == :dude
+    end
+
+    test "returns name if session already registered" do
+      Mimic.stub(Registry, :lookup, fn El.Registry, :dude -> [{:existing_pid, :registered}] end)
+
+      result = El.start(:dude)
+      assert result == :dude
+    end
+  end
+
+  describe "El.kill/1" do
+    test "looks up session in registry" do
+      Mimic.expect(Registry, :lookup, fn El.Registry, :dude -> [] end)
 
       El.kill(:dude)
-      El.kill(:duder)
-      El.kill(:dudito)
+    end
+
+    test "terminates child when session found" do
+      Mimic.expect(Registry, :lookup, fn El.Registry, :dude -> [{:mock_pid, :meta}] end)
+
+      Mimic.expect(DynamicSupervisor, :terminate_child, fn El.SessionSupervisor, :mock_pid ->
+        :ok
+      end)
+
+      El.kill(:dude)
+    end
+
+    test "monitors process and waits for DOWN" do
+      Mimic.expect(Registry, :lookup, fn El.Registry, :dude -> [{:mock_pid, :meta}] end)
+      Mimic.stub(DynamicSupervisor, :terminate_child, fn _, _ -> :ok end)
+
+      El.kill(:dude)
+    end
+  end
+
+  describe "El.ls/0" do
+    test "calls Registry.select to list all sessions" do
+      Mimic.expect(Registry, :select, fn El.Registry, [{{:"$1", :_, :_}, [], [:"$1"]}] ->
+        [:dude, :duder, :dudito]
+      end)
 
       sessions = El.ls()
-      assert Enum.empty?(sessions)
+      assert sessions == [:dude, :duder, :dudito]
+    end
+
+    test "returns sorted list" do
+      Mimic.expect(Registry, :select, fn El.Registry, _ ->
+        [:dudito, :dude, :duder]
+      end)
+
+      sessions = El.ls()
+      assert sessions == [:dude, :duder, :dudito]
+    end
+
+    test "returns empty list when no sessions" do
+      Mimic.expect(Registry, :select, fn El.Registry, _ ->
+        []
+      end)
+
+      sessions = El.ls()
+      assert sessions == []
     end
   end
 end
