@@ -256,6 +256,20 @@ defmodule El.Session.Spec do
       assert [{"ask", "test question", "", %{ref: ref}}] = returned_state.messages
       assert is_reference(ref)
     end
+
+    test "does not store pending entry when ask has routes", %{state: state} do
+      Mimic.expect(Task, :start, fn _fun -> {:ok, :task_pid} end)
+      from = {self(), make_ref()}
+
+      {:noreply, returned_state} =
+        El.Session.handle_call({:ask, "@target> routed question"}, from, %{
+          state
+          | task_module: Task,
+            alive_fn: fn :target -> true; _ -> false end
+        })
+
+      assert returned_state.messages == []
+    end
   end
 
   describe "handle_cast/2 :complete_ask" do

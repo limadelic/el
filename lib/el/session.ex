@@ -238,7 +238,7 @@ defmodule El.Session do
     routes = detect_routes(message)
     valid_routes = Enum.filter(routes, fn {target, _payload} -> target != state.name end)
     new_state = %{state | pending_calls: [from | state.pending_calls]}
-    {ref, state_with_pending} = store_ask_immediate(new_state, message)
+    {ref, state_with_pending} = store_ask_immediate(new_state, message, valid_routes)
     spawn_ask(state_with_pending, from, message, valid_routes, ref)
     {:noreply, state_with_pending}
   end
@@ -395,12 +395,17 @@ defmodule El.Session do
     |> Enum.join()
   end
 
-  defp store_ask_immediate(state, message) do
+  defp store_ask_immediate(state, message, []) do
     ref = make_ref()
     entry = {"ask", message, "", %{ref: ref}}
     El.Application.store_message(state.name, entry)
     new_state = %{state | messages: state.messages ++ [entry]}
     {ref, new_state}
+  end
+
+  defp store_ask_immediate(state, _message, _routes) do
+    ref = make_ref()
+    {ref, state}
   end
 
   defp store_tell_immediate(state, message, ref, []) do
