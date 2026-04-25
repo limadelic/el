@@ -5,6 +5,7 @@ defmodule El.VersionWatcher.Spec do
     Mimic.copy(Application)
     Mimic.copy(System)
     Mimic.copy(File)
+    Mimic.copy(Process)
     :ok
   end
 
@@ -54,6 +55,49 @@ defmodule El.VersionWatcher.Spec do
 
       result = El.VersionWatcher.installed_version()
       assert result == :not_found
+    end
+  end
+
+  describe "init/1" do
+    test "returns ok with timer scheduled" do
+      Mimic.stub(Process, :send_after, fn _pid, :check_version, 60_000 -> :timer_ref end)
+
+      {:ok, state} = El.VersionWatcher.init(%{})
+
+      assert state == %{}
+    end
+  end
+
+  describe "handle_info(:check_version, state)" do
+    test "reschedules check_version message" do
+      Mimic.stub(Process, :send_after, fn _pid, :check_version, 60_000 -> :timer_ref end)
+      Mimic.stub(Application, :spec, fn :el, :vsn -> ~c"1.0.0" end)
+      Mimic.stub(System, :get_env, fn _key -> nil end)
+
+      {:noreply, state} = El.VersionWatcher.handle_info(:check_version, %{})
+
+      assert state == %{}
+    end
+  end
+
+  describe "check_for_update/0" do
+    test "returns ok when versions match" do
+      Mimic.stub(Application, :spec, fn :el, :vsn -> ~c"0.1.74" end)
+      Mimic.stub(System, :get_env, fn "RELEASE_ROOT" -> "/opt/app" end)
+      Mimic.stub(File, :read, fn "/opt/app/releases/start_erl.data" -> {:ok, "24.3.4.11 0.1.74"} end)
+
+      result = El.VersionWatcher.check_for_update()
+
+      assert result == :ok
+    end
+
+    test "returns ok when installed version not found" do
+      Mimic.stub(Application, :spec, fn :el, :vsn -> ~c"0.1.75" end)
+      Mimic.stub(System, :get_env, fn "RELEASE_ROOT" -> nil end)
+
+      result = El.VersionWatcher.check_for_update()
+
+      assert result == :ok
     end
   end
 end

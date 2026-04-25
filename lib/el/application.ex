@@ -12,7 +12,8 @@ defmodule El.Application do
   def children do
     [
       {Registry, keys: :unique, name: El.Registry},
-      {DynamicSupervisor, name: El.SessionSupervisor, max_restarts: 50, max_seconds: 60}
+      {DynamicSupervisor, name: El.SessionSupervisor, max_restarts: 50, max_seconds: 60},
+      El.VersionWatcher
     ]
   end
 

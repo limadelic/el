@@ -1,4 +1,36 @@
 defmodule El.VersionWatcher do
+  use GenServer
+
+  def start_link(_opts) do
+    GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
+  end
+
+  def init(_opts) do
+    Process.send_after(self(), :check_version, 60_000)
+    {:ok, %{}}
+  end
+
+  def handle_info(:check_version, state) do
+    check_for_update()
+    Process.send_after(self(), :check_version, 60_000)
+    {:noreply, state}
+  end
+
+  def check_for_update do
+    current = current_version()
+    installed = installed_version()
+
+    if current != installed && installed != :not_found do
+      restart()
+    end
+
+    :ok
+  end
+
+  defp restart do
+    :init.restart()
+  end
+
   def current_version do
     Application.spec(:el, :vsn) |> List.to_string()
   end

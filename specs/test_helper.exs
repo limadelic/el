@@ -3,9 +3,9 @@ defmodule MockSessionModule do
   def start(_fun), do: {:ok, :task_pid}
 end
 
-Mimic.copy(El.SessionAdapter)
-Mimic.copy(El.PortAdapter)
-Mimic.copy(El.FileAdapter)
+if Code.ensure_loaded?(El.SessionAdapter), do: Mimic.copy(El.SessionAdapter)
+if Code.ensure_loaded?(El.PortAdapter), do: Mimic.copy(El.PortAdapter)
+if Code.ensure_loaded?(El.FileAdapter), do: Mimic.copy(El.FileAdapter)
 Mimic.copy(Task)
 Mimic.copy(MockSessionModule)
 

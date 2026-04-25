@@ -24,8 +24,12 @@ defmodule El.Application.Spec do
     assert {DynamicSupervisor, [name: El.SessionSupervisor, max_restarts: 50, max_seconds: 60]} in children
   end
 
-  test "children has exactly two entries", %{children: children} do
-    assert length(children) == 2
+  test "children has exactly three entries", %{children: children} do
+    assert length(children) == 3
+  end
+
+  test "children includes VersionWatcher", %{children: children} do
+    assert El.VersionWatcher in children
   end
 
   test "supervisor opts strategy is one_for_one", %{supervisor_opts: opts} do
