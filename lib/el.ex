@@ -32,6 +32,10 @@ defmodule El do
     El.Session.ask_tell(name, target, message)
   end
 
+  def kill(:all) do
+    local_ls() |> Enum.each(&kill/1)
+  end
+
   def kill(name) do
     kill_if_found(local_lookup(name))
   rescue

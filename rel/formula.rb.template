@@ -12,6 +12,10 @@ class El < Formula
     bin.install_symlink libexec/"bin/el_wrapper" => "el"
   end
 
+  def post_install
+    quiet_system libexec/"bin/el", "stop"
+  end
+
   test do
     assert_match "el", shell_output("#{bin}/el 2>&1", 0)
   end

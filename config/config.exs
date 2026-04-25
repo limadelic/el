@@ -6,5 +6,3 @@ config :claude_code, cli_path: :global
 config :logger,
   level: :error,
   handle_sasl_reports: false
-
-config :sasl, sasl_error_logger: :silent
