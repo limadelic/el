@@ -1,6 +1,4 @@
 defmodule El do
-  require Logger
-
   def start(name, opts \\ []) when is_atom(name) do
     start_if_needed(name, opts, local_lookup(name))
   end
@@ -36,7 +34,7 @@ defmodule El do
 
   def kill(:all) do
     sessions = local_ls()
-    Logger.info("kill(:all) sessions=#{inspect(sessions)}")
+    IO.puts("kill(:all) sessions=#{inspect(sessions)}")
     sessions |> Enum.each(&kill/1)
     os_pids() |> Enum.each(&kill_os_process/1)
   end
@@ -57,13 +55,13 @@ defmodule El do
   defp kill_if_found([{pid, _}]) do
     ref = Process.monitor(pid)
     result = DynamicSupervisor.terminate_child(El.SessionSupervisor, pid)
-    Logger.info("kill_if_found pid=#{inspect(pid)} terminate=#{inspect(result)}")
+    IO.puts("kill pid=#{inspect(pid)} result=#{inspect(result)}")
 
     receive do
       {:DOWN, ^ref, :process, ^pid, _} -> :ok
     after
       5000 ->
-        Logger.info("kill_if_found pid=#{inspect(pid)} timeout, alive=#{Process.alive?(pid)}")
+        IO.puts("kill pid=#{inspect(pid)} timeout alive=#{Process.alive?(pid)}")
         :ok
     end
   end
