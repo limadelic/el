@@ -19,6 +19,10 @@ defmodule El.Session do
     GenServer.call(via_tuple(name), :log, :infinity)
   end
 
+  def log(name, count) do
+    GenServer.call(via_tuple(name), {:log, count}, :infinity)
+  end
+
   def tell_ask(name, target, message) do
     GenServer.cast(via_tuple(name), {:tell_ask, target, message})
   end
@@ -241,6 +245,16 @@ defmodule El.Session do
   @impl true
   def handle_call(:log, _from, state) do
     {:reply, state.messages, state}
+  end
+
+  @impl true
+  def handle_call({:log, :all}, _from, state) do
+    {:reply, state.messages, state}
+  end
+
+  @impl true
+  def handle_call({:log, count}, _from, state) do
+    {:reply, Enum.take(state.messages, -count), state}
   end
 
   @impl true
