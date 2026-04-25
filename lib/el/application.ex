@@ -4,7 +4,6 @@ defmodule El.Application do
 
   @impl true
   def start(_type, _args) do
-    :ok = Application.ensure_started(:sasl)
     init_message_store()
     Supervisor.start_link(children(), supervisor_opts())
   end
