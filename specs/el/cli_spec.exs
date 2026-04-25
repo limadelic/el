@@ -81,21 +81,54 @@ defmodule El.CLI.Spec do
 
     test "execute :log_n with number calls El.log with count" do
       Mimic.expect(El, :log, fn :session, 5 -> [] end)
-      Mimic.expect(IO, :puts, fn _msg -> :ok end)
+
+      El.CLI.execute(:log_n, ["session", "log", "5"])
+    end
+
+    test "execute :log_n with number prints result" do
+      Mimic.expect(El, :log, fn :session, 5 -> [{"ask", "hello", "world", %{}}] end)
+      Mimic.expect(IO, :puts, fn msg ->
+        assert msg == "[ask] hello"
+      end)
+      Mimic.expect(IO, :puts, fn msg ->
+        assert msg == "world"
+      end)
 
       El.CLI.execute(:log_n, ["session", "log", "5"])
     end
 
     test "execute :log_n with 'all' calls El.log with :all" do
       Mimic.expect(El, :log, fn :session, :all -> [] end)
-      Mimic.expect(IO, :puts, fn _msg -> :ok end)
+
+      El.CLI.execute(:log_n, ["session", "log", "all"])
+    end
+
+    test "execute :log_n with 'all' prints result" do
+      Mimic.expect(El, :log, fn :session, :all -> [{"tell", "goodbye", "see ya", %{}}] end)
+      Mimic.expect(IO, :puts, fn msg ->
+        assert msg == "[tell] goodbye"
+      end)
+      Mimic.expect(IO, :puts, fn msg ->
+        assert msg == "see ya"
+      end)
 
       El.CLI.execute(:log_n, ["session", "log", "all"])
     end
 
     test "execute :log calls El.log with count 1" do
       Mimic.expect(El, :log, fn :session, 1 -> [] end)
-      Mimic.expect(IO, :puts, fn _msg -> :ok end)
+
+      El.CLI.execute(:log, ["session", "log"])
+    end
+
+    test "execute :log prints result" do
+      Mimic.expect(El, :log, fn :session, 1 -> [{"ask", "hi", "reply", %{}}] end)
+      Mimic.expect(IO, :puts, fn msg ->
+        assert msg == "[ask] hi"
+      end)
+      Mimic.expect(IO, :puts, fn msg ->
+        assert msg == "reply"
+      end)
 
       El.CLI.execute(:log, ["session", "log"])
     end
