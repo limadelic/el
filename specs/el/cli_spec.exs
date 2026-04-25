@@ -14,16 +14,20 @@ defmodule El.CLI.Spec do
       assert El.CLI.parse_route(["my_session"]) == :start
     end
 
-    test "returns start with --model flag" do
-      assert El.CLI.parse_route(["my_session", "--model", "haiku"]) == :start
+    test "returns start with -m flag" do
+      assert El.CLI.parse_route(["my_session", "-m", "haiku"]) == :start
     end
 
-    test "returns tell for name tell message" do
-      assert El.CLI.parse_route(["session", "tell", "hello"]) == :tell
+    test "returns msg for name word message" do
+      assert El.CLI.parse_route(["session", "hello"]) == :msg
     end
 
-    test "returns ask for name ask message" do
-      assert El.CLI.parse_route(["session", "ask", "question"]) == :ask
+    test "returns msg for name multiple words" do
+      assert El.CLI.parse_route(["session", "hello", "world", "foo"]) == :msg
+    end
+
+    test "routes arbitrary args to msg" do
+      assert El.CLI.parse_route(["bogus", "args"]) == :msg
     end
 
     test "returns log for name log" do
@@ -38,10 +42,6 @@ defmodule El.CLI.Spec do
       assert El.CLI.parse_route(["kill", "all"]) == :kill_all
     end
 
-    test "returns usage for invalid args" do
-      assert El.CLI.parse_route(["bogus", "args", "that", "dont", "match"]) == :usage
-    end
-
     test "returns tell_ask for name tell ask @target message" do
       assert El.CLI.parse_route(["session", "tell", "ask", "@other", "hello"]) == :tell_ask
     end
@@ -54,17 +54,14 @@ defmodule El.CLI.Spec do
       assert El.CLI.parse_route(["--daemon", "my_session"]) == :daemon
     end
 
-    test "returns daemon with --model flag" do
-      assert El.CLI.parse_route(["--daemon", "my_session", "--model", "opus"]) == :daemon
+    test "returns daemon with -m flag" do
+      assert El.CLI.parse_route(["--daemon", "my_session", "-m", "opus"]) == :daemon
     end
 
     test "returns version for -v" do
       assert El.CLI.parse_route(["-v"]) == :version
     end
 
-    test "returns version for --version" do
-      assert El.CLI.parse_route(["--version"]) == :version
-    end
   end
 
   describe "main/1" do
@@ -74,9 +71,9 @@ defmodule El.CLI.Spec do
       :ok
     end
 
-    test "version starts with el 0.1." do
+    test "version starts with el v0.1." do
       Mimic.expect(IO, :puts, fn msg ->
-        assert String.starts_with?(msg, "el 0.1.")
+        assert String.starts_with?(msg, "el v0.1.")
       end)
       Mimic.expect(System, :halt, fn 0 -> :ok end)
 
@@ -92,18 +89,26 @@ defmodule El.CLI.Spec do
       El.CLI.main([])
     end
 
-    test "usage message contains el --version" do
+    test "usage message contains el -v" do
       Mimic.expect(IO, :puts, fn msg ->
-        assert String.contains?(msg, "el --version")
+        assert String.contains?(msg, "el -v")
       end)
       Mimic.expect(System, :halt, fn 0 -> :ok end)
 
       El.CLI.main([])
     end
 
-    test "prints version only for -v flag" do
+    test "version does not contain usage info" do
       Mimic.expect(IO, :puts, fn msg ->
         refute String.contains?(msg, "el ls")
+      end)
+      Mimic.expect(System, :halt, fn 0 -> :ok end)
+
+      El.CLI.main(["-v"])
+    end
+
+    test "version matches version format" do
+      Mimic.expect(IO, :puts, fn msg ->
         assert msg =~ ~r/\d+\.\d+/
       end)
       Mimic.expect(System, :halt, fn 0 -> :ok end)
@@ -111,14 +116,5 @@ defmodule El.CLI.Spec do
       El.CLI.main(["-v"])
     end
 
-    test "prints version only for --version flag" do
-      Mimic.expect(IO, :puts, fn msg ->
-        refute String.contains?(msg, "el ls")
-        assert msg =~ ~r/\d+\.\d+/
-      end)
-      Mimic.expect(System, :halt, fn 0 -> :ok end)
-
-      El.CLI.main(["--version"])
-    end
   end
 end

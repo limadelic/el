@@ -3,6 +3,10 @@
 - This is El source
 - `el` if confused bout it
 
+# BOB
+
+- dont give bob instructions he know what todo
+
 # CURRENT VERSION
 
 - Current release line: 0.1.x

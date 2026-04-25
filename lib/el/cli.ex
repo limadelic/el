@@ -1,8 +1,8 @@
 defmodule El.CLI do
   defp version do
     case Application.spec(:el, :vsn) do
-      vsn when is_list(vsn) -> List.to_string(vsn)
-      _ -> "dev"
+      vsn when is_list(vsn) -> "v" <> List.to_string(vsn)
+      _ -> "v0.1.0"
     end
   end
 
@@ -17,19 +17,17 @@ defmodule El.CLI do
 
   def parse_route([]), do: :usage
   def parse_route(["-v"]), do: :version
-  def parse_route(["--version"]), do: :version
   def parse_route(["ls"]), do: :ls
   def parse_route(["--daemon", _name]), do: :daemon
-  def parse_route(["--daemon", _name, "--model", _model]), do: :daemon
+  def parse_route(["--daemon", _name, "-m", _model]), do: :daemon
   def parse_route(["kill", "all"]), do: :kill_all
   def parse_route([_name, "log"]), do: :log
   def parse_route([_name, "kill"]), do: :kill
   def parse_route([_name, "tell", "ask", "@" <> _target | _words]), do: :tell_ask
-  def parse_route([_name, "tell" | _words]), do: :tell
   def parse_route([_name, "ask", "tell", "@" <> _target | _words]), do: :ask_tell
-  def parse_route([_name, "ask" | _words]), do: :ask
   def parse_route([_name]), do: :start
-  def parse_route([_name, "--model", _model | _rest]), do: :start
+  def parse_route([_name, "-m", _model | _rest]), do: :start
+  def parse_route([_name, _word | _more_words]), do: :msg
   def parse_route(_), do: :usage
 
   defp execute(:usage, _args) do
@@ -45,10 +43,10 @@ defmodule El.CLI do
   end
 
   defp execute(:daemon, ["--daemon", name]) do
-    execute(:daemon, ["--daemon", name, "--model", ""])
+    execute(:daemon, ["--daemon", name, "-m", ""])
   end
 
-  defp execute(:daemon, ["--daemon", name, "--model", model]) do
+  defp execute(:daemon, ["--daemon", name, "-m", model]) do
     name_atom = String.to_atom(name)
     model_value = normalize_model(model)
     opts = start_opts(model_value)
@@ -64,7 +62,7 @@ defmodule El.CLI do
     handle_find_daemon_for_start(name, opts)
   end
 
-  defp execute(:start, [name, "--model", model | rest]) do
+  defp execute(:start, [name, "-m", model | rest]) do
     opts = start_opts(model)
     handle_find_daemon_with_rest(name, opts, rest)
   end
@@ -76,12 +74,6 @@ defmodule El.CLI do
     handle_tell_ask(name_atom, target_atom, msg, name)
   end
 
-  defp execute(:tell, [name, "tell" | words]) do
-    msg = Enum.join(words, " ")
-    name_atom = String.to_atom(name)
-    handle_tell(name_atom, msg, name)
-  end
-
   defp execute(:ask_tell, [name, "ask", "tell", "@" <> target | words]) do
     target_atom = String.to_atom(target)
     msg = Enum.join(words, " ")
@@ -89,10 +81,10 @@ defmodule El.CLI do
     handle_ask_tell(name_atom, target_atom, msg, name)
   end
 
-  defp execute(:ask, [name, "ask" | words]) do
-    msg = Enum.join(words, " ")
+  defp execute(:msg, [name, word | more_words]) do
+    msg = Enum.join([word | more_words], " ")
     name_atom = String.to_atom(name)
-    handle_ask(name_atom, msg, name)
+    handle_msg(name_atom, msg, name)
   end
 
   defp execute(:log, [name, "log"]) do
@@ -153,17 +145,12 @@ defmodule El.CLI do
     handle_result(result, name)
   end
 
-  defp handle_tell(name_atom, msg, name) do
-    result = El.tell(name_atom, msg)
-    handle_result(result, name)
-  end
-
   defp handle_ask_tell(name_atom, target_atom, msg, name) do
     result = El.ask_tell(name_atom, target_atom, msg)
     handle_result(result, name)
   end
 
-  defp handle_ask(name_atom, msg, name) do
+  defp handle_msg(name_atom, msg, name) do
     result = El.ask(name_atom, msg)
     handle_result(result, name)
   end
@@ -202,17 +189,28 @@ defmodule El.CLI do
   end
 
   defp usage_message do
-    """
-    el #{version()}
-    el --version
-    el ls
-    el <name> [--model <model>]
-    el <name> tell <message>
-    el <name> ask <message>
-    el <name> log
-    el <name> kill
-    el kill all
-    """
-    |> String.trim_trailing()
+    cmds = [
+      {"el #{version()}", ""},
+      {"el -v", "version"},
+      {"el ls", "list sessions"},
+      {"el <name> [-m <model>]", "start or status"},
+      {"el <name> <msg>", "send a msg"},
+      {"el <name> log", "view log"},
+      {"el <name> kill", "kill session"},
+      {"el kill all", "kill all sessions"}
+    ]
+
+    pad = cmds |> Enum.map(fn {cmd, _} -> String.length(cmd) end) |> Enum.max()
+
+    cmds
+    |> Enum.map_join("\n", fn {cmd, desc} ->
+      format_line(cmd, desc, pad)
+    end)
+  end
+
+  defp format_line(cmd, "", _pad), do: cmd
+
+  defp format_line(cmd, desc, pad) do
+    String.pad_trailing(cmd, pad) <> "  " <> desc
   end
 end
