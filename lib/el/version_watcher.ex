@@ -17,14 +17,11 @@ defmodule El.VersionWatcher do
   end
 
   def check_for_update do
-    current = current_version()
-    installed = installed_version()
-
-    if current != installed && installed != :not_found do
-      restart()
+    case {current_version(), installed_version()} do
+      {same, same} -> :ok
+      {_, :not_found} -> :ok
+      _ -> restart()
     end
-
-    :ok
   end
 
   defp restart do
@@ -36,23 +33,20 @@ defmodule El.VersionWatcher do
   end
 
   def installed_version do
-    case System.get_env("RELEASE_ROOT") do
-      nil ->
-        :not_found
-
-      release_root ->
-        path = Path.join([release_root, "releases", "start_erl.data"])
-
-        case File.read(path) do
-          {:ok, content} ->
-            content
-            |> String.trim()
-            |> String.split()
-            |> Enum.at(1)
-
-          {:error, _} ->
-            :not_found
-        end
-    end
+    System.get_env("RELEASE_ROOT") |> read_installed_version()
   end
+
+  defp read_installed_version(nil), do: :not_found
+
+  defp read_installed_version(release_root) do
+    Path.join([release_root, "releases", "start_erl.data"])
+    |> File.read()
+    |> parse_version()
+  end
+
+  defp parse_version({:ok, content}) do
+    content |> String.trim() |> String.split() |> Enum.at(1)
+  end
+
+  defp parse_version({:error, _}), do: :not_found
 end

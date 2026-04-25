@@ -16,13 +16,6 @@ defmodule El.VersionWatcher.Spec do
       result = El.VersionWatcher.current_version()
       assert result == "1.2.3"
     end
-
-    test "converts charlist to string" do
-      Mimic.stub(Application, :spec, fn :el, :vsn -> ~c"0.1.74" end)
-
-      result = El.VersionWatcher.current_version()
-      assert is_binary(result)
-    end
   end
 
   describe "installed_version/0" do
@@ -60,11 +53,12 @@ defmodule El.VersionWatcher.Spec do
 
   describe "init/1" do
     test "returns ok with timer scheduled" do
-      Mimic.stub(Process, :send_after, fn _pid, :check_version, 60_000 -> :timer_ref end)
+      Mimic.expect(Process, :send_after, fn _pid, :check_version, 60_000 -> :timer_ref end)
 
       {:ok, state} = El.VersionWatcher.init(%{})
 
       assert state == %{}
+      Mimic.verify!()
     end
   end
 
