@@ -245,32 +245,46 @@ defmodule El.Session.Spec do
       {:noreply, _state} =
         El.Session.handle_call({:ask, "@test_session> test"}, from, %{state | task_module: Task})
     end
+
+    test "stores pending entry immediately", %{state: state} do
+      Mimic.expect(Task, :start, fn _fun -> {:ok, :task_pid} end)
+      from = {self(), make_ref()}
+
+      {:noreply, returned_state} =
+        El.Session.handle_call({:ask, "test question"}, from, %{state | task_module: Task})
+
+      assert [{"ask", "test question", "", %{ref: ref}}] = returned_state.messages
+      assert is_reference(ref)
+    end
   end
 
   describe "handle_cast/2 :complete_ask" do
     test "stores message in log", %{state: state} do
       from = {self(), make_ref()}
+      ref = make_ref()
 
       {:noreply, returned_state} =
-        El.Session.handle_cast({:complete_ask, from, "test", "response"}, state)
+        El.Session.handle_cast({:complete_ask, from, "test", "response", ref}, state)
 
       assert [{"ask", "test", "response", %{}}] = returned_state.messages
     end
 
     test "replies to caller with response", %{state: state} do
-      ref = make_ref()
-      from = {self(), ref}
+      caller_ref = make_ref()
+      from = {self(), caller_ref}
+      cast_ref = make_ref()
 
-      El.Session.handle_cast({:complete_ask, from, "test", "the answer"}, state)
+      El.Session.handle_cast({:complete_ask, from, "test", "the answer", cast_ref}, state)
 
-      assert_receive {^ref, "the answer"}
+      assert_receive {^caller_ref, "the answer"}
     end
 
     test "stores exact message content", %{state: state} do
       from = {self(), make_ref()}
+      ref = make_ref()
 
       {:noreply, returned_state} =
-        El.Session.handle_cast({:complete_ask, from, "my question", "42"}, state)
+        El.Session.handle_cast({:complete_ask, from, "my question", "42", ref}, state)
 
       [{_, message, response, _}] = returned_state.messages
       assert message == "my question"

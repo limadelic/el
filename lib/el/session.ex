@@ -131,7 +131,7 @@ defmodule El.Session do
   end
 
   @impl true
-  def handle_cast({:complete_ask, from, message, response}, state) do
+  def handle_cast({:complete_ask, from, message, response, _ref}, state) do
     entry = {"ask", message, response, %{}}
     new_messages = state.messages ++ [entry]
     El.Application.store_message(state.name, entry)
@@ -238,8 +238,9 @@ defmodule El.Session do
     routes = detect_routes(message)
     valid_routes = Enum.filter(routes, fn {target, _payload} -> target != state.name end)
     new_state = %{state | pending_calls: [from | state.pending_calls]}
-    spawn_ask(new_state, from, message, valid_routes)
-    {:noreply, new_state}
+    {ref, state_with_pending} = store_ask_immediate(new_state, message)
+    spawn_ask(state_with_pending, from, message, valid_routes, ref)
+    {:noreply, state_with_pending}
   end
 
   @impl true
@@ -268,7 +269,7 @@ defmodule El.Session do
     {:reply, response, new_state}
   end
 
-  defp spawn_ask(state, from, message, valid_routes) do
+  defp spawn_ask(state, from, message, valid_routes, ref) do
     server_pid = self()
 
     state.task_module.start(fn ->
@@ -282,7 +283,7 @@ defmodule El.Session do
           _, _ -> "(error)"
         end
 
-      GenServer.cast(server_pid, {:complete_ask, from, message, response})
+      GenServer.cast(server_pid, {:complete_ask, from, message, response, ref})
     end)
   end
 
@@ -392,6 +393,14 @@ defmodule El.Session do
     |> El.ClaudeCode.stream(message)
     |> ClaudeCode.Stream.text_content()
     |> Enum.join()
+  end
+
+  defp store_ask_immediate(state, message) do
+    ref = make_ref()
+    entry = {"ask", message, "", %{ref: ref}}
+    El.Application.store_message(state.name, entry)
+    new_state = %{state | messages: state.messages ++ [entry]}
+    {ref, new_state}
   end
 
   defp store_tell_immediate(state, message, ref, []) do
