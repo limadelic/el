@@ -83,6 +83,7 @@ defmodule El.Spec do
       Mimic.expect(DynamicSupervisor, :terminate_child, fn El.SessionSupervisor, :pid2 -> :ok end)
 
       El.kill(:all)
+      Mimic.verify!()
     end
   end
 
