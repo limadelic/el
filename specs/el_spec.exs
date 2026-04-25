@@ -75,6 +75,11 @@ defmodule El.Spec do
   end
 
   describe "kill/1 with :all" do
+    setup do
+      Mimic.copy(System)
+      :ok
+    end
+
     test "terminates all sessions" do
       Mimic.stub(Registry, :select, fn El.Registry, _pattern -> [:kent, :lisa] end)
       Mimic.stub(Registry, :lookup, fn El.Registry, :kent -> [{:pid1, :meta}] end)
@@ -84,6 +89,39 @@ defmodule El.Spec do
 
       El.kill(:all)
       Mimic.verify!()
+    end
+
+    test "kills OS processes via SIGTERM" do
+      Mimic.stub(Registry, :select, fn El.Registry, _pattern -> [] end)
+      Mimic.stub(System, :cmd, fn "pgrep", ["-f", "el --daemon"] -> {"5000\n6000\n", 0} end)
+      Mimic.stub(System, :pid, fn -> "1234" end)
+      Mimic.expect(System, :cmd, fn "kill", ["5000"] -> {"", 0} end)
+      Mimic.expect(System, :cmd, fn "kill", ["6000"] -> {"", 0} end)
+
+      El.kill(:all)
+      Mimic.verify!()
+    end
+
+    test "terminates local sessions and kills OS processes" do
+      Mimic.stub(Registry, :select, fn El.Registry, _pattern -> [:kent] end)
+      Mimic.stub(Registry, :lookup, fn El.Registry, :kent -> [{:pid1, :meta}] end)
+      Mimic.expect(DynamicSupervisor, :terminate_child, fn El.SessionSupervisor, :pid1 -> :ok end)
+      Mimic.stub(System, :cmd, fn "pgrep", ["-f", "el --daemon"] -> {"5000\n", 0} end)
+      Mimic.stub(System, :pid, fn -> "1234" end)
+      Mimic.expect(System, :cmd, fn "kill", ["5000"] -> {"", 0} end)
+
+      El.kill(:all)
+      Mimic.verify!()
+    end
+
+    test "rescues errors from OS process kills" do
+      Mimic.stub(Registry, :select, fn El.Registry, _pattern -> [] end)
+      Mimic.stub(System, :cmd, fn "pgrep", ["-f", "el --daemon"] -> {"5000\n", 0} end)
+      Mimic.stub(System, :pid, fn -> "1234" end)
+      Mimic.stub(System, :cmd, fn "kill", ["5000"] -> raise "kill failed" end)
+
+      result = El.kill(:all)
+      assert result == :ok
     end
   end
 

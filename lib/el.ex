@@ -34,10 +34,18 @@ defmodule El do
 
   def kill(:all) do
     local_ls() |> Enum.each(&kill/1)
+    os_pids() |> Enum.each(&kill_os_process/1)
   end
 
   def kill(name) do
     kill_if_found(local_lookup(name))
+  rescue
+    _ -> :ok
+  end
+
+  defp kill_os_process(pid) do
+    System.cmd("kill", [to_string(pid)])
+    :ok
   rescue
     _ -> :ok
   end
