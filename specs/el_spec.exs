@@ -74,6 +74,18 @@ defmodule El.Spec do
     end
   end
 
+  describe "kill/1 with :all" do
+    test "terminates all sessions" do
+      Mimic.stub(Registry, :select, fn El.Registry, _pattern -> [:kent, :lisa] end)
+      Mimic.stub(Registry, :lookup, fn El.Registry, :kent -> [{:pid1, :meta}] end)
+      Mimic.stub(Registry, :lookup, fn El.Registry, :lisa -> [{:pid2, :meta}] end)
+      Mimic.expect(DynamicSupervisor, :terminate_child, fn El.SessionSupervisor, :pid1 -> :ok end)
+      Mimic.expect(DynamicSupervisor, :terminate_child, fn El.SessionSupervisor, :pid2 -> :ok end)
+
+      El.kill(:all)
+    end
+  end
+
   describe "ls/0" do
     test "returns sorted list from Registry.select" do
       Mimic.stub(Registry, :select, fn El.Registry, _pattern -> [:zeta, :alpha, :beta] end)
