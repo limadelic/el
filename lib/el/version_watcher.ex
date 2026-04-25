@@ -28,7 +28,7 @@ defmodule El.VersionWatcher do
   end
 
   defp restart do
-    :init.restart()
+    Application.get_env(:el, :restart_fn, fn -> :init.restart() end).()
   end
 
   def current_version do

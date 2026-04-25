@@ -99,5 +99,17 @@ defmodule El.VersionWatcher.Spec do
 
       assert result == :ok
     end
+
+    test "calls restart when versions differ" do
+      test_pid = self()
+      Mimic.stub(Application, :spec, fn :el, :vsn -> ~c"0.1.75" end)
+      Mimic.stub(Application, :get_env, fn :el, :restart_fn, _default -> fn -> send(test_pid, :restarted) end end)
+      Mimic.stub(System, :get_env, fn "RELEASE_ROOT" -> "/opt/app" end)
+      Mimic.stub(File, :read, fn "/opt/app/releases/start_erl.data" -> {:ok, "24.3.4.11 0.1.74"} end)
+
+      El.VersionWatcher.check_for_update()
+
+      assert_received :restarted
+    end
   end
 end
