@@ -273,7 +273,7 @@ defmodule El.Session.Spec do
   end
 
   describe "handle_cast/2 :complete_ask" do
-    test "stores message in log", %{state: state} do
+    test "appends when no pending entry exists", %{state: state} do
       from = {self(), make_ref()}
       ref = make_ref()
 
@@ -314,6 +314,26 @@ defmodule El.Session.Spec do
         El.Session.handle_cast({:complete_ask, from, "hello", "response", ref}, pending_state)
 
       assert [{"ask", "hello", "response", %{}}] = returned_state.messages
+    end
+
+    test "replaces correct entry when duplicates exist", %{state: state} do
+      from = {self(), make_ref()}
+      ref1 = make_ref()
+      ref2 = make_ref()
+
+      pending_state = %{
+        state
+        | messages: [
+            {"ask", "question", "", %{ref: ref1}},
+            {"ask", "question", "", %{ref: ref2}}
+          ]
+      }
+
+      {:noreply, returned_state} =
+        El.Session.handle_cast({:complete_ask, from, "question", "answer first", ref1}, pending_state)
+
+      assert [{"ask", "question", "answer first", %{}}, {"ask", "question", "", %{ref: ^ref2}}] =
+               returned_state.messages
     end
   end
 
