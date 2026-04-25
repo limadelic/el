@@ -18,12 +18,12 @@ defmodule El.CLI.Spec do
       assert El.CLI.parse_route(["my_session", "-m", "haiku"]) == :start
     end
 
-    test "returns tell for name tell message" do
-      assert El.CLI.parse_route(["session", "tell", "hello"]) == :tell
+    test "returns msg for name word message" do
+      assert El.CLI.parse_route(["session", "hello"]) == :msg
     end
 
-    test "returns ask for name ask message" do
-      assert El.CLI.parse_route(["session", "ask", "question"]) == :ask
+    test "returns msg for name multiple words" do
+      assert El.CLI.parse_route(["session", "hello", "world", "foo"]) == :msg
     end
 
     test "returns log for name log" do
@@ -36,10 +36,6 @@ defmodule El.CLI.Spec do
 
     test "returns kill_all for kill all" do
       assert El.CLI.parse_route(["kill", "all"]) == :kill_all
-    end
-
-    test "returns usage for invalid args" do
-      assert El.CLI.parse_route(["bogus", "args", "that", "dont", "match"]) == :usage
     end
 
     test "returns tell_ask for name tell ask @target message" do

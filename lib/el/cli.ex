@@ -24,11 +24,10 @@ defmodule El.CLI do
   def parse_route([_name, "log"]), do: :log
   def parse_route([_name, "kill"]), do: :kill
   def parse_route([_name, "tell", "ask", "@" <> _target | _words]), do: :tell_ask
-  def parse_route([_name, "tell" | _words]), do: :tell
   def parse_route([_name, "ask", "tell", "@" <> _target | _words]), do: :ask_tell
-  def parse_route([_name, "ask" | _words]), do: :ask
   def parse_route([_name]), do: :start
   def parse_route([_name, "-m", _model | _rest]), do: :start
+  def parse_route([_name, _word | _more_words]), do: :msg
   def parse_route(_), do: :usage
 
   defp execute(:usage, _args) do
@@ -75,12 +74,6 @@ defmodule El.CLI do
     handle_tell_ask(name_atom, target_atom, msg, name)
   end
 
-  defp execute(:tell, [name, "tell" | words]) do
-    msg = Enum.join(words, " ")
-    name_atom = String.to_atom(name)
-    handle_tell(name_atom, msg, name)
-  end
-
   defp execute(:ask_tell, [name, "ask", "tell", "@" <> target | words]) do
     target_atom = String.to_atom(target)
     msg = Enum.join(words, " ")
@@ -88,10 +81,10 @@ defmodule El.CLI do
     handle_ask_tell(name_atom, target_atom, msg, name)
   end
 
-  defp execute(:ask, [name, "ask" | words]) do
-    msg = Enum.join(words, " ")
+  defp execute(:msg, [name, word | more_words]) do
+    msg = Enum.join([word | more_words], " ")
     name_atom = String.to_atom(name)
-    handle_ask(name_atom, msg, name)
+    handle_msg(name_atom, msg, name)
   end
 
   defp execute(:log, [name, "log"]) do
@@ -152,17 +145,12 @@ defmodule El.CLI do
     handle_result(result, name)
   end
 
-  defp handle_tell(name_atom, msg, name) do
-    result = El.tell(name_atom, msg)
-    handle_result(result, name)
-  end
-
   defp handle_ask_tell(name_atom, target_atom, msg, name) do
     result = El.ask_tell(name_atom, target_atom, msg)
     handle_result(result, name)
   end
 
-  defp handle_ask(name_atom, msg, name) do
+  defp handle_msg(name_atom, msg, name) do
     result = El.ask(name_atom, msg)
     handle_result(result, name)
   end
@@ -206,8 +194,7 @@ defmodule El.CLI do
       {"el -v", "version"},
       {"el ls", "list sessions"},
       {"el <name> [-m <model>]", "start or status"},
-      {"el <name> tell <message>", "fire-and-forget"},
-      {"el <name> ask <message>", "wait for response"},
+      {"el <name> <msg>", "send a msg"},
       {"el <name> log", "view log"},
       {"el <name> kill", "kill session"},
       {"el kill all", "kill all sessions"}
