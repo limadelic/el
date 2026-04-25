@@ -1,0 +1,59 @@
+defmodule El.VersionWatcher.Spec do
+  use ExUnit.Case
+
+  setup do
+    Mimic.copy(Application)
+    Mimic.copy(System)
+    Mimic.copy(File)
+    :ok
+  end
+
+  describe "current_version/0" do
+    test "returns current running app version" do
+      Mimic.stub(Application, :spec, fn :el, :vsn -> ~c"1.2.3" end)
+
+      result = El.VersionWatcher.current_version()
+      assert result == "1.2.3"
+    end
+
+    test "converts charlist to string" do
+      Mimic.stub(Application, :spec, fn :el, :vsn -> ~c"0.1.74" end)
+
+      result = El.VersionWatcher.current_version()
+      assert is_binary(result)
+    end
+  end
+
+  describe "installed_version/0" do
+    test "reads version from start_erl.data file" do
+      Mimic.stub(System, :get_env, fn "RELEASE_ROOT" -> "/opt/app" end)
+      Mimic.stub(File, :read, fn "/opt/app/releases/start_erl.data" -> {:ok, "24.3.4.11 0.1.74"} end)
+
+      result = El.VersionWatcher.installed_version()
+      assert result == "0.1.74"
+    end
+
+    test "handles file not found" do
+      Mimic.stub(System, :get_env, fn "RELEASE_ROOT" -> "/opt/app" end)
+      Mimic.stub(File, :read, fn "/opt/app/releases/start_erl.data" -> {:error, :enoent} end)
+
+      result = El.VersionWatcher.installed_version()
+      assert result == :not_found
+    end
+
+    test "parses second token from start_erl.data format" do
+      Mimic.stub(System, :get_env, fn "RELEASE_ROOT" -> "/home/user/release" end)
+      Mimic.stub(File, :read, fn "/home/user/release/releases/start_erl.data" -> {:ok, "25.0 0.2.1"} end)
+
+      result = El.VersionWatcher.installed_version()
+      assert result == "0.2.1"
+    end
+
+    test "returns nil when RELEASE_ROOT not set" do
+      Mimic.stub(System, :get_env, fn "RELEASE_ROOT" -> nil end)
+
+      result = El.VersionWatcher.installed_version()
+      assert result == :not_found
+    end
+  end
+end
