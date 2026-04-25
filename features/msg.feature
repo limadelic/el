@@ -1,13 +1,7 @@
-@el
-Feature: Comms
+@el_dude
+Feature: Sup Dude
 
-  Scenario: Tell
-    * > el dude
-    * > el dude tell sup dude
-    * > el dude log:
+  Scenario: User Msg
+    * > el dude "sup dude"
+    * > el dude:
       | user > sup dude |
-
-  Scenario: Ask
-    * > el dude
-    * > el dude ask 1 + 1
-      | 2 |
