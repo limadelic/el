@@ -70,7 +70,7 @@ defmodule El do
   end
 
   defp parse_pids(output) do
-    current_pid = System.pid()
+    current_pid = System.pid() |> String.to_integer()
 
     output
     |> String.split("\n", trim: true)
