@@ -26,6 +26,10 @@ defmodule El.CLI.Spec do
       assert El.CLI.parse_route(["session", "hello", "world", "foo"]) == :msg
     end
 
+    test "routes arbitrary args to msg" do
+      assert El.CLI.parse_route(["bogus", "args"]) == :msg
+    end
+
     test "returns log for name log" do
       assert El.CLI.parse_route(["session", "log"]) == :log
     end
