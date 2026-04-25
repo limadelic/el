@@ -59,7 +59,12 @@ GITHUB_TOKEN=$GITHUB_LIMADELIC gh release create "v$NEW_VERSION" "_build/prod/$T
 echo "✓ GitHub release created"
 
 echo ""
-echo "Step 9: Updating homebrew tap..."
+echo "Step 9: Publishing to hex.pm..."
+mix hex.publish package --yes
+echo "✓ Published to hex.pm"
+
+echo ""
+echo "Step 10: Updating homebrew tap..."
 SHA256=$(shasum -a 256 "_build/prod/$TARBALL_NAME" | awk '{print $1}')
 
 TEMPLATE_PATH="rel/formula.rb.template"
@@ -81,7 +86,7 @@ cd "$PROJECT_ROOT"
 echo "✓ Homebrew tap updated"
 
 echo ""
-echo "Step 10: Installing new version..."
+echo "Step 11: Installing new version..."
 brew upgrade limadelic/tap/el 2>/dev/null || brew install limadelic/tap/el
 echo "✓ New version installed"
 
