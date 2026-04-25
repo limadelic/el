@@ -11,7 +11,7 @@ description: CLI to control teams of agents. Used when asked to delegate to "el 
 
 - Always Bash via HAIKU and sent to background
 
-## Do and Don't
+## Dos and Don'ts
 
 - Do ask 1 question at a time
 - Do background all interactions

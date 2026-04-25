@@ -33,10 +33,7 @@ defmodule El do
   end
 
   def kill(:all) do
-    sessions = local_ls()
-    IO.puts("kill(:all) sessions=#{inspect(sessions)}")
-    sessions |> Enum.each(&kill/1)
-    os_pids() |> Enum.each(&kill_os_process/1)
+    local_ls() |> Enum.each(&kill/1)
   end
 
   def kill(name) do
@@ -45,24 +42,14 @@ defmodule El do
     _ -> :ok
   end
 
-  defp kill_os_process(pid) do
-    System.cmd("kill", [to_string(pid)])
-    :ok
-  rescue
-    _ -> :ok
-  end
-
   defp kill_if_found([{pid, _}]) do
     ref = Process.monitor(pid)
-    result = DynamicSupervisor.terminate_child(El.SessionSupervisor, pid)
-    IO.puts("kill pid=#{inspect(pid)} result=#{inspect(result)}")
+    DynamicSupervisor.terminate_child(El.SessionSupervisor, pid)
 
     receive do
       {:DOWN, ^ref, :process, ^pid, _} -> :ok
     after
-      5000 ->
-        IO.puts("kill pid=#{inspect(pid)} timeout alive=#{Process.alive?(pid)}")
-        :ok
+      5000 -> :ok
     end
   end
 
@@ -73,22 +60,6 @@ defmodule El do
   def ls do
     local_ls()
     |> Enum.sort()
-  end
-
-  def os_pids do
-    case System.cmd("pgrep", ["-f", "el --daemon"]) do
-      {output, 0} -> parse_pids(output)
-      {_output, 1} -> []
-    end
-  end
-
-  defp parse_pids(output) do
-    current_pid = System.pid() |> String.to_integer()
-
-    output
-    |> String.split("\n", trim: true)
-    |> Enum.map(&String.to_integer/1)
-    |> Enum.reject(&(&1 == current_pid))
   end
 
   defp local_ls do
