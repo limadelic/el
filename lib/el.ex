@@ -33,7 +33,7 @@ defmodule El do
   end
 
   def kill(:all) do
-    local_ls() |> Enum.reject(&(&1 == :all)) |> Enum.each(&kill/1)
+    local_ls() |> Enum.each(&kill/1)
   end
 
   def kill(name) do

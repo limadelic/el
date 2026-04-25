@@ -50,7 +50,7 @@ defmodule El.VersionWatcher.Spec do
     end
   end
 
-describe "check_for_update/0" do
+  describe "check_for_update/0" do
     test "returns ok when versions match" do
       Mimic.stub(Application, :spec, fn :el, :vsn -> ~c"0.1.74" end)
       Mimic.stub(System, :get_env, fn "RELEASE_ROOT" -> "/opt/app" end)
