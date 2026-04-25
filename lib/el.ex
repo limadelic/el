@@ -62,6 +62,22 @@ defmodule El do
     |> Enum.sort()
   end
 
+  def os_pids do
+    case System.cmd("pgrep", ["-f", "el --daemon"]) do
+      {output, 0} -> parse_pids(output)
+      {_output, 1} -> []
+    end
+  end
+
+  defp parse_pids(output) do
+    current_pid = System.pid()
+
+    output
+    |> String.split("\n", trim: true)
+    |> Enum.map(&String.to_integer/1)
+    |> Enum.reject(&(&1 == current_pid))
+  end
+
   defp local_ls do
     Registry.select(El.Registry, [{{:"$1", :_, :_}, [], [:"$1"]}])
   end

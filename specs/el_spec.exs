@@ -102,4 +102,45 @@ defmodule El.Spec do
     end
   end
 
+  describe "os_pids/0" do
+    setup do
+      Mimic.copy(System)
+      :ok
+    end
+
+    test "returns list of El process PIDs from pgrep" do
+      pgrep_output = "1234\n5678\n9012\n"
+      Mimic.stub(System, :cmd, fn "pgrep", ["-f", "el --daemon"] -> {pgrep_output, 0} end)
+      Mimic.stub(System, :pid, fn -> 1234 end)
+
+      result = El.os_pids()
+      assert result == [5678, 9012]
+    end
+
+    test "returns empty list when pgrep finds nothing" do
+      Mimic.stub(System, :cmd, fn "pgrep", ["-f", "el --daemon"] -> {"", 1} end)
+
+      result = El.os_pids()
+      assert result == []
+    end
+
+    test "excludes current process PID from results" do
+      pgrep_output = "1111\n2222\n3333\n"
+      Mimic.stub(System, :cmd, fn "pgrep", ["-f", "el --daemon"] -> {pgrep_output, 0} end)
+      Mimic.stub(System, :get_pid, fn -> 2222 end)
+
+      result = El.os_pids()
+      assert result == [1111, 3333]
+    end
+
+    test "handles newline-separated PIDs correctly" do
+      pgrep_output = "100\n200\n"
+      Mimic.stub(System, :cmd, fn "pgrep", ["-f", "el --daemon"] -> {pgrep_output, 0} end)
+      Mimic.stub(System, :get_pid, fn -> 999 end)
+
+      result = El.os_pids()
+      assert result == [100, 200]
+    end
+  end
+
 end
