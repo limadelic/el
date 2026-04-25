@@ -245,36 +245,95 @@ defmodule El.Session.Spec do
       {:noreply, _state} =
         El.Session.handle_call({:ask, "@test_session> test"}, from, %{state | task_module: Task})
     end
-  end
 
-  describe "handle_cast/2 :complete_ask" do
-    test "stores message in log", %{state: state} do
+    test "stores pending entry immediately", %{state: state} do
+      Mimic.expect(Task, :start, fn _fun -> {:ok, :task_pid} end)
       from = {self(), make_ref()}
 
       {:noreply, returned_state} =
-        El.Session.handle_cast({:complete_ask, from, "test", "response"}, state)
+        El.Session.handle_call({:ask, "test question"}, from, %{state | task_module: Task})
+
+      assert [{"ask", "test question", "", %{ref: ref}}] = returned_state.messages
+      assert is_reference(ref)
+    end
+
+    test "does not store pending entry when ask has routes", %{state: state} do
+      Mimic.expect(Task, :start, fn _fun -> {:ok, :task_pid} end)
+      from = {self(), make_ref()}
+
+      {:noreply, returned_state} =
+        El.Session.handle_call({:ask, "@target> routed question"}, from, %{
+          state
+          | task_module: Task,
+            alive_fn: fn :target -> true; _ -> false end
+        })
+
+      assert returned_state.messages == []
+    end
+  end
+
+  describe "handle_cast/2 :complete_ask" do
+    test "appends when no pending entry exists", %{state: state} do
+      from = {self(), make_ref()}
+      ref = make_ref()
+
+      {:noreply, returned_state} =
+        El.Session.handle_cast({:complete_ask, from, "test", "response", ref}, state)
 
       assert [{"ask", "test", "response", %{}}] = returned_state.messages
     end
 
     test "replies to caller with response", %{state: state} do
-      ref = make_ref()
-      from = {self(), ref}
+      caller_ref = make_ref()
+      from = {self(), caller_ref}
+      cast_ref = make_ref()
 
-      El.Session.handle_cast({:complete_ask, from, "test", "the answer"}, state)
+      El.Session.handle_cast({:complete_ask, from, "test", "the answer", cast_ref}, state)
 
-      assert_receive {^ref, "the answer"}
+      assert_receive {^caller_ref, "the answer"}
     end
 
     test "stores exact message content", %{state: state} do
       from = {self(), make_ref()}
+      ref = make_ref()
 
       {:noreply, returned_state} =
-        El.Session.handle_cast({:complete_ask, from, "my question", "42"}, state)
+        El.Session.handle_cast({:complete_ask, from, "my question", "42", ref}, state)
 
       [{_, message, response, _}] = returned_state.messages
       assert message == "my question"
       assert response == "42"
+    end
+
+    test "replaces pending entry with response", %{state: state} do
+      from = {self(), make_ref()}
+      ref = make_ref()
+      pending_state = %{state | messages: [{"ask", "hello", "", %{ref: ref}}]}
+
+      {:noreply, returned_state} =
+        El.Session.handle_cast({:complete_ask, from, "hello", "response", ref}, pending_state)
+
+      assert [{"ask", "hello", "response", %{}}] = returned_state.messages
+    end
+
+    test "replaces correct entry when duplicates exist", %{state: state} do
+      from = {self(), make_ref()}
+      ref1 = make_ref()
+      ref2 = make_ref()
+
+      pending_state = %{
+        state
+        | messages: [
+            {"ask", "question", "", %{ref: ref1}},
+            {"ask", "question", "", %{ref: ref2}}
+          ]
+      }
+
+      {:noreply, returned_state} =
+        El.Session.handle_cast({:complete_ask, from, "question", "answer first", ref1}, pending_state)
+
+      assert [{"ask", "question", "answer first", %{}}, {"ask", "question", "", %{ref: ^ref2}}] =
+               returned_state.messages
     end
   end
 
@@ -298,6 +357,74 @@ defmodule El.Session.Spec do
       {:reply, messages, _returned_state} = El.Session.handle_call(:log, :from, state)
 
       assert messages == []
+    end
+  end
+
+  describe "handle_call/2 {:log, count}" do
+    test "{:log, :all} returns all messages", %{state: state} do
+      messages = [{"type1", "msg1", "resp1", %{}}, {"type2", "msg2", "resp2", %{}}]
+      state_with_messages = %{state | messages: messages}
+
+      {:reply, returned_messages, _returned_state} =
+        El.Session.handle_call({:log, :all}, :from, state_with_messages)
+
+      assert returned_messages == messages
+    end
+
+    test "{:log, 1} returns last 1 message", %{state: state} do
+      messages = [{"type1", "msg1", "resp1", %{}}, {"type2", "msg2", "resp2", %{}}]
+      state_with_messages = %{state | messages: messages}
+
+      {:reply, returned_messages, _returned_state} =
+        El.Session.handle_call({:log, 1}, :from, state_with_messages)
+
+      assert returned_messages == [{"type2", "msg2", "resp2", %{}}]
+    end
+
+    test "{:log, 3} returns last 3 messages", %{state: state} do
+      messages = [
+        {"type1", "msg1", "resp1", %{}},
+        {"type2", "msg2", "resp2", %{}},
+        {"type3", "msg3", "resp3", %{}},
+        {"type4", "msg4", "resp4", %{}}
+      ]
+      state_with_messages = %{state | messages: messages}
+
+      {:reply, returned_messages, _returned_state} =
+        El.Session.handle_call({:log, 3}, :from, state_with_messages)
+
+      assert returned_messages == [
+        {"type2", "msg2", "resp2", %{}},
+        {"type3", "msg3", "resp3", %{}},
+        {"type4", "msg4", "resp4", %{}}
+      ]
+    end
+
+    test "{:log, N} where N > length returns all messages", %{state: state} do
+      messages = [{"type1", "msg1", "resp1", %{}}, {"type2", "msg2", "resp2", %{}}]
+      state_with_messages = %{state | messages: messages}
+
+      {:reply, returned_messages, _returned_state} =
+        El.Session.handle_call({:log, 10}, :from, state_with_messages)
+
+      assert returned_messages == messages
+    end
+
+    test "{:log, count} with empty messages returns empty list", %{state: state} do
+      {:reply, returned_messages, _returned_state} =
+        El.Session.handle_call({:log, 3}, :from, state)
+
+      assert returned_messages == []
+    end
+
+    test "returns state unchanged", %{state: state} do
+      messages = [{"type1", "msg1", "resp1", %{}}]
+      state_with_messages = %{state | messages: messages}
+
+      {:reply, _returned_messages, returned_state} =
+        El.Session.handle_call({:log, 1}, :from, state_with_messages)
+
+      assert returned_state == state_with_messages
     end
   end
 

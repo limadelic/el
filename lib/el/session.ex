@@ -19,6 +19,10 @@ defmodule El.Session do
     GenServer.call(via_tuple(name), :log, :infinity)
   end
 
+  def log(name, count) do
+    GenServer.call(via_tuple(name), {:log, count}, :infinity)
+  end
+
   def tell_ask(name, target, message) do
     GenServer.cast(via_tuple(name), {:tell_ask, target, message})
   end
@@ -127,9 +131,9 @@ defmodule El.Session do
   end
 
   @impl true
-  def handle_cast({:complete_ask, from, message, response}, state) do
+  def handle_cast({:complete_ask, from, message, response, ref}, state) do
     entry = {"ask", message, response, %{}}
-    new_messages = state.messages ++ [entry]
+    new_messages = replace_ask(state.messages, ref, message, response)
     El.Application.store_message(state.name, entry)
     safe_reply(from, response)
     new_pending = List.delete(state.pending_calls, from)
@@ -234,13 +238,24 @@ defmodule El.Session do
     routes = detect_routes(message)
     valid_routes = Enum.filter(routes, fn {target, _payload} -> target != state.name end)
     new_state = %{state | pending_calls: [from | state.pending_calls]}
-    spawn_ask(new_state, from, message, valid_routes)
-    {:noreply, new_state}
+    {ref, state_with_pending} = store_ask_immediate(new_state, message, valid_routes)
+    spawn_ask(state_with_pending, from, message, valid_routes, ref)
+    {:noreply, state_with_pending}
   end
 
   @impl true
   def handle_call(:log, _from, state) do
     {:reply, state.messages, state}
+  end
+
+  @impl true
+  def handle_call({:log, :all}, _from, state) do
+    {:reply, state.messages, state}
+  end
+
+  @impl true
+  def handle_call({:log, count}, _from, state) do
+    {:reply, Enum.take(state.messages, -count), state}
   end
 
   @impl true
@@ -254,7 +269,7 @@ defmodule El.Session do
     {:reply, response, new_state}
   end
 
-  defp spawn_ask(state, from, message, valid_routes) do
+  defp spawn_ask(state, from, message, valid_routes, ref) do
     server_pid = self()
 
     state.task_module.start(fn ->
@@ -268,7 +283,7 @@ defmodule El.Session do
           _, _ -> "(error)"
         end
 
-      GenServer.cast(server_pid, {:complete_ask, from, message, response})
+      GenServer.cast(server_pid, {:complete_ask, from, message, response, ref})
     end)
   end
 
@@ -380,6 +395,19 @@ defmodule El.Session do
     |> Enum.join()
   end
 
+  defp store_ask_immediate(state, message, []) do
+    ref = make_ref()
+    entry = {"ask", message, "", %{ref: ref}}
+    El.Application.store_message(state.name, entry)
+    new_state = %{state | messages: state.messages ++ [entry]}
+    {ref, new_state}
+  end
+
+  defp store_ask_immediate(state, _message, _routes) do
+    ref = make_ref()
+    {ref, state}
+  end
+
   defp store_tell_immediate(state, message, ref, []) do
     entry = {"tell", message, "", %{ref: ref}}
     El.Application.store_message(state.name, entry)
@@ -403,6 +431,23 @@ defmodule El.Session do
 
   defp complete_tell({messages, []}, message, response) do
     messages ++ [{"tell", message, response, %{}}]
+  end
+
+  defp replace_ask(messages, ref, message, response) do
+    messages
+    |> Enum.split_while(fn
+      {"ask", _, "", %{ref: ^ref}} -> false
+      _ -> true
+    end)
+    |> complete_ask(message, response)
+  end
+
+  defp complete_ask({before, [{_, _, _, _} | rest]}, message, response) do
+    before ++ [{"ask", message, response, %{}} | rest]
+  end
+
+  defp complete_ask({messages, []}, message, response) do
+    messages ++ [{"ask", message, response, %{}}]
   end
 
   defp via_tuple(name) do

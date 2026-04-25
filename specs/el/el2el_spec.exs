@@ -93,4 +93,14 @@ defmodule El.Features.El2ElSpec do
       assert log == entries
     end
   end
+
+  describe "El.log/2" do
+    test "delegates to session with name and count" do
+      Mimic.expect(El.Session, :log, fn :dude, 5 ->
+        :ok
+      end)
+
+      El.log(:dude, 5)
+    end
+  end
 end

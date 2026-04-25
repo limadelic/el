@@ -4,7 +4,7 @@ defmodule El.MixProject do
   def project do
     [
       app: :el,
-      version: "0.1.82",
+      version: "0.1.84",
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
       test_paths: ["specs"],
@@ -20,6 +20,7 @@ defmodule El.MixProject do
           overlays: ["rel/overlays"]
         ]
       ],
+      escript: [main_module: El.CLI],
       package: package()
     ]
   end

@@ -34,6 +34,14 @@ defmodule El.CLI.Spec do
       assert El.CLI.parse_route(["session", "log"]) == :log
     end
 
+    test "returns log_n for name log with number" do
+      assert El.CLI.parse_route(["session", "log", "5"]) == :log_n
+    end
+
+    test "returns log_n for name log all" do
+      assert El.CLI.parse_route(["session", "log", "all"]) == :log_n
+    end
+
     test "returns kill for name kill" do
       assert El.CLI.parse_route(["session", "kill"]) == :kill
     end
@@ -62,6 +70,68 @@ defmodule El.CLI.Spec do
       assert El.CLI.parse_route(["-v"]) == :version
     end
 
+  end
+
+  describe "execute/2" do
+    setup do
+      Mimic.copy(El)
+      Mimic.copy(IO)
+      :ok
+    end
+
+    test "execute :log_n with number calls El.log with count" do
+      Mimic.expect(El, :log, fn :session, 5 -> [] end)
+
+      El.CLI.execute(:log_n, ["session", "log", "5"])
+    end
+
+    test "execute :log_n with number prints result" do
+      Mimic.expect(El, :log, fn :session, 5 -> [{"ask", "hello", "world", %{}}] end)
+      Mimic.expect(IO, :puts, fn msg ->
+        assert msg == "[ask] hello"
+      end)
+      Mimic.expect(IO, :puts, fn msg ->
+        assert msg == "world"
+      end)
+
+      El.CLI.execute(:log_n, ["session", "log", "5"])
+    end
+
+    test "execute :log_n with 'all' calls El.log with :all" do
+      Mimic.expect(El, :log, fn :session, :all -> [] end)
+
+      El.CLI.execute(:log_n, ["session", "log", "all"])
+    end
+
+    test "execute :log_n with 'all' prints result" do
+      Mimic.expect(El, :log, fn :session, :all -> [{"tell", "goodbye", "see ya", %{}}] end)
+      Mimic.expect(IO, :puts, fn msg ->
+        assert msg == "[tell] goodbye"
+      end)
+      Mimic.expect(IO, :puts, fn msg ->
+        assert msg == "see ya"
+      end)
+
+      El.CLI.execute(:log_n, ["session", "log", "all"])
+    end
+
+    test "execute :log calls El.log with count 1" do
+      Mimic.expect(El, :log, fn :session, 1 -> [] end)
+
+      El.CLI.execute(:log, ["session", "log"])
+    end
+
+    test "execute :log prints result" do
+      Mimic.expect(El, :log, fn :session, 1 -> [{"ask", "hi", "reply", %{}}] end)
+      Mimic.expect(IO, :puts, fn msg ->
+        assert msg == "[ask] hi"
+      end)
+      Mimic.expect(IO, :puts, fn msg ->
+        assert msg == "reply"
+      end)
+
+      El.CLI.execute(:log, ["session", "log"])
+    end
   end
 
   describe "main/1" do
