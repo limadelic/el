@@ -290,6 +290,17 @@ defmodule El.Session.Spec do
       assert message == "my question"
       assert response == "42"
     end
+
+    test "replaces pending entry with response", %{state: state} do
+      from = {self(), make_ref()}
+      ref = make_ref()
+      pending_state = %{state | messages: [{"ask", "hello", "", %{ref: ref}}]}
+
+      {:noreply, returned_state} =
+        El.Session.handle_cast({:complete_ask, from, "hello", "response", ref}, pending_state)
+
+      assert [{"ask", "hello", "response", %{}}] = returned_state.messages
+    end
   end
 
   describe "handle_call/2 :log" do

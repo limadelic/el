@@ -131,9 +131,9 @@ defmodule El.Session do
   end
 
   @impl true
-  def handle_cast({:complete_ask, from, message, response, _ref}, state) do
+  def handle_cast({:complete_ask, from, message, response, ref}, state) do
     entry = {"ask", message, response, %{}}
-    new_messages = state.messages ++ [entry]
+    new_messages = replace_ask(state.messages, ref, message, response)
     El.Application.store_message(state.name, entry)
     safe_reply(from, response)
     new_pending = List.delete(state.pending_calls, from)
@@ -426,6 +426,23 @@ defmodule El.Session do
 
   defp complete_tell({messages, []}, message, response) do
     messages ++ [{"tell", message, response, %{}}]
+  end
+
+  defp replace_ask(messages, ref, message, response) do
+    messages
+    |> Enum.split_while(fn
+      {"ask", _, "", %{ref: ^ref}} -> false
+      _ -> true
+    end)
+    |> complete_ask(message, response)
+  end
+
+  defp complete_ask({before, [{_, _, _, _} | rest]}, message, response) do
+    before ++ [{"ask", message, response, %{}} | rest]
+  end
+
+  defp complete_ask({messages, []}, message, response) do
+    messages ++ [{"ask", message, response, %{}}]
   end
 
   defp via_tuple(name) do
