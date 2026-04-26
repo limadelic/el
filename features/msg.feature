@@ -1,7 +1,7 @@
-#@el_dude
-#Feature: Sup Dude
-#
-#  Scenario: User Msg
-#    * > el dude "sup dude"
-#    * > el dude:
-#      | user > sup dude |
+@el_dude
+Feature: Knock Knock
+
+  Scenario: Msg
+    * > el dude knock knock
+    * > el dude log:
+      | knock knock |
