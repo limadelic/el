@@ -1,4 +1,3 @@
-@el
 Feature: Sessions
 
   Scenario: Single
@@ -20,7 +19,7 @@ Feature: Sessions
       | dude   |
       | duder  |
       | dudito |
-    * > el * exit
+    * > el exit
     * > el ls:
       | (dude)   |
       | (duder)  |

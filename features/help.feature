@@ -1,4 +1,3 @@
-@el
 Feature: Help
 
   Scenario Outline: <scenario>
@@ -11,7 +10,7 @@ Feature: Help
       | el <name> log [n\|all] | view log (default: last 1) |
       | el <name> clear        | clear log                  |
       | el <name> exit         | exit session               |
-      | el exit all            | exit all sessions          |
+      | el exit                | exit all sessions          |
 
     Examples:
       | scenario | args       |

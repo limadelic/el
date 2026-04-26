@@ -121,6 +121,7 @@ defmodule El.CLI do
       String.contains?(name, ["*", "?"]) ->
         El.exit_pattern(name)
         IO.puts("exited sessions matching #{name}")
+
       true ->
         name_atom = String.to_atom(name)
         handle_exit(name_atom, name)
@@ -229,11 +230,10 @@ defmodule El.CLI do
       {"el ls", "list sessions"},
       {"el <name> [-m <model>]", "start or status"},
       {"el <name> <msg>", "send a msg"},
-      {"el <name> log [N|all]", "view log (default: last 1)"},
+      {"el <name> log [n|all]", "view log (default: last 1)"},
       {"el <name> clear", "clear log"},
-      {"el exit", "exit all sessions"},
       {"el <name> exit", "exit session"},
-      {"el <pattern> exit", "exit matching sessions"}
+      {"el exit", "exit all sessions"}
     ]
 
     pad = cmds |> Enum.map(fn {cmd, _} -> String.length(cmd) end) |> Enum.max()
