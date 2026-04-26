@@ -1,25 +1,22 @@
-@el_dude @el_duder @el_dudito
+@el_dude @el_duder
 Feature: Glob
 
   Scenario: All
     * > el ls:
-      | dude   |
-      | duder  |
-      | dudito |
+      | dude  |
+      | duder |
     * > el exit
     * > el ls:
-      | (dude)   |
-      | (duder)  |
-      | (dudito) |
+      | (dude)  |
+      | (duder) |
 
   @el_kenny
   Scenario: Pattern
     * > el dud* exit
     * > el ls:
-      | kenny    |
-      | (dude)   |
-      | (duder)  |
-      | (dudito) |
+      | kenny   |
+      | (dude)  |
+      | (duder) |
 
   Scenario: Clear
     * > el dude 1 + 1
