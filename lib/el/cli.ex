@@ -21,6 +21,7 @@ defmodule El.CLI do
   def parse_route(["--daemon", _name]), do: :daemon
   def parse_route(["--daemon", _name, "-m", _model]), do: :daemon
   def parse_route(["exit", "all"]), do: :exit_all
+  def parse_route(["exit", _pattern]), do: :exit_pattern
   def parse_route([_name, "log", _n]), do: :log_n
   def parse_route([_name, "log"]), do: :log
   def parse_route([_name, "exit"]), do: :exit
@@ -116,6 +117,11 @@ defmodule El.CLI do
   def execute(:exit_all, ["exit", "all"]) do
     El.exit(:all)
     IO.puts("exited all")
+  end
+
+  def execute(:exit_pattern, ["exit", pattern]) do
+    El.exit_pattern(pattern)
+    IO.puts("exited sessions matching #{pattern}")
   end
 
   defp parse_log_count("all"), do: :all

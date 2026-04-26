@@ -50,6 +50,18 @@ defmodule El do
     _ -> :ok
   end
 
+  def exit_pattern(pattern) do
+    ls()
+    |> Enum.filter(&match_pattern?(&1, pattern))
+    |> Enum.each(&El.exit/1)
+  end
+
+  defp match_pattern?(name, pattern) do
+    name_str = Atom.to_string(name)
+    regex_pattern = pattern |> String.replace("*", ".*") |> String.replace("?", ".")
+    Regex.match?(~r/^#{regex_pattern}$/, name_str)
+  end
+
   defp exit_if_found(name, [{pid, _}]) do
     ref = Process.monitor(pid)
     DynamicSupervisor.terminate_child(El.SessionSupervisor, pid)

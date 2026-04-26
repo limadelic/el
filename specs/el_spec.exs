@@ -111,6 +111,30 @@ defmodule El.Spec do
     end
   end
 
+  describe "exit_pattern/1" do
+    test "exits sessions matching glob pattern" do
+      Mimic.stub(Registry, :select, fn El.Registry, _pattern -> [:dude1, :dude2, :lisa] end)
+      Mimic.stub(Registry, :lookup, fn
+        El.Registry, :dude1 -> [{:pid1, :meta}]
+        El.Registry, :dude2 -> [{:pid2, :meta}]
+      end)
+      Mimic.expect(DynamicSupervisor, :terminate_child, fn El.SessionSupervisor, :pid1 -> :ok end)
+      Mimic.expect(DynamicSupervisor, :terminate_child, fn El.SessionSupervisor, :pid2 -> :ok end)
+      Mimic.expect(El.Application, :delete_session_messages, fn :dude1 -> :ok end)
+      Mimic.expect(El.Application, :delete_session_messages, fn :dude2 -> :ok end)
+
+      El.exit_pattern("dude*")
+      Mimic.verify!()
+    end
+
+    test "exits no sessions when pattern matches nothing" do
+      Mimic.stub(Registry, :select, fn El.Registry, _pattern -> [:alice, :bob] end)
+
+      result = El.exit_pattern("charlie*")
+      assert result == :ok
+    end
+  end
+
   describe "ls/0" do
     test "returns sorted list from Registry.select" do
       Mimic.stub(Registry, :select, fn El.Registry, _pattern -> [:zeta, :alpha, :beta] end)

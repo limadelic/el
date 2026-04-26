@@ -54,6 +54,10 @@ defmodule El.CLI.Spec do
       assert El.CLI.parse_route(["exit", "all"]) == :exit_all
     end
 
+    test "returns exit_pattern for exit with glob pattern" do
+      assert El.CLI.parse_route(["exit", "dud*"]) == :exit_pattern
+    end
+
     test "returns tell_ask for name tell ask @target message" do
       assert El.CLI.parse_route(["session", "tell", "ask", "@other", "hello"]) == :tell_ask
     end
@@ -159,6 +163,12 @@ defmodule El.CLI.Spec do
       end)
 
       El.CLI.execute(:clear, ["session", "clear"])
+    end
+
+    test "execute :exit_pattern calls El.exit_pattern" do
+      Mimic.expect(El, :exit_pattern, fn "dud*" -> :ok end)
+
+      El.CLI.execute(:exit_pattern, ["exit", "dud*"])
     end
   end
 
