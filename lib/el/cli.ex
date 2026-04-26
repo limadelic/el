@@ -16,6 +16,7 @@ defmodule El.CLI do
       {:ok, node} -> :rpc.call(node, El.CLI, :dispatch, [args])
       :local -> dispatch(args)
     end
+
     System.halt(0)
   end
 
@@ -153,7 +154,7 @@ defmodule El.CLI do
 
   defp handle_ls do
     case El.ls() do
-      [] -> IO.puts(:stderr, "No sessions running. Start one: el <name>")
+      [] -> IO.puts("No sessions running. Start one: el <name>")
       names -> Enum.each(names, &IO.puts/1)
     end
   end
@@ -218,7 +219,7 @@ defmodule El.CLI do
   end
 
   defp handle_not_found(name) do
-    IO.puts(:stderr, "No sessions running. Start one: el #{name}")
+    IO.puts("No sessions running. Start one: el #{name}")
   end
 
   defp usage_message do
@@ -251,11 +252,14 @@ defmodule El.CLI do
   defp daemon_node, do: :"el@127.0.0.1"
 
   defp start_daemon_node do
+    start_epmd()
     :net_kernel.start([daemon_node(), :longnames])
     Node.set_cookie(:el)
   end
 
   defp connect_to_daemon do
+    start_epmd()
+
     with {:ok, _} <- start_client_node(),
          :ok <- ensure_daemon() do
       {:ok, daemon_node()}
@@ -266,10 +270,15 @@ defmodule El.CLI do
 
   defp start_client_node do
     id = System.unique_integer([:positive])
+
     :net_kernel.start([:"el-cli-#{id}@127.0.0.1", :longnames])
     |> case do
-      {:ok, _} -> Node.set_cookie(:el); {:ok, :started}
-      error -> error
+      {:ok, _} ->
+        Node.set_cookie(:el)
+        {:ok, :started}
+
+      error ->
+        error
     end
   end
 
@@ -282,9 +291,13 @@ defmodule El.CLI do
     end
   end
 
+  defp start_epmd do
+    System.cmd("epmd", ["-daemon"])
+  end
+
   defp spawn_daemon do
     script = :escript.script_name() |> to_string()
-    System.cmd("sh", ["-c", "#{script} --daemon &"])
+    System.cmd("sh", ["-c", "#{script} --daemon > /dev/null 2>&1 &"])
   end
 
   defp wait_for_daemon(0), do: {:error, :timeout}
