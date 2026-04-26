@@ -21,7 +21,6 @@ Feature: Glob
       | (duder)  |
       | (dudito) |
 
-  @el_kenny
   Scenario: Clear
     * > el dude 1 + 1
     * > el duder 2 + 2
@@ -31,7 +30,6 @@ Feature: Glob
     * > el duder log:
       | (2 + 2) |
 
-  @el_kenny
   Scenario: Log
     * > el dude 1 + 1
     * > el duder 2 + 2
