@@ -19,7 +19,6 @@ defmodule El.MessageStore do
 
   def lookup(name) do
     backend = Application.get_env(:el, :dets_backend, El.DetsBackend)
-    backend.lookup(:message_store, name)
-    |> Enum.map(fn {_key, entry} -> entry end)
+    backend.lookup(:message_store, name) |> Enum.map(fn {_key, entry} -> entry end)
   end
 end

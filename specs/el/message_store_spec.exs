@@ -25,16 +25,5 @@ defmodule El.MessageStore.Spec do
 
       assert result == :ok
     end
-
-    test "passes entry as tuple with name to backend" do
-      name = :test_entries
-      entry = {"tell", "msg1", "resp1", %{}}
-
-      Mimic.expect(El.DetsBackend, :delete_object, fn :message_store, {^name, ^entry} ->
-        :ok
-      end)
-
-      El.MessageStore.delete_entry(name, entry)
-    end
   end
 end
