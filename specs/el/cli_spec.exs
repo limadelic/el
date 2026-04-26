@@ -74,6 +74,14 @@ defmodule El.CLI.Spec do
       assert El.CLI.parse_route(["-v"]) == :version
     end
 
+    test "returns usage for args starting with --" do
+      assert El.CLI.parse_route(["--nonsense"]) == :usage
+    end
+
+    test "returns usage for args starting with -" do
+      assert El.CLI.parse_route(["-x"]) == :usage
+    end
+
   end
 
   describe "execute/2" do
