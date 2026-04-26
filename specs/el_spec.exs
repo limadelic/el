@@ -5,6 +5,7 @@ defmodule El.Spec do
     Mimic.copy(Registry)
     Mimic.copy(DynamicSupervisor)
     Mimic.copy(El.Session)
+    Mimic.copy(El.Application)
     :ok
   end
 
@@ -62,9 +63,19 @@ defmodule El.Spec do
     test "returns ok when session found and terminated" do
       Mimic.stub(Registry, :lookup, fn El.Registry, :kent -> [{:pid, :meta}] end)
       Mimic.expect(DynamicSupervisor, :terminate_child, fn El.SessionSupervisor, :pid -> :ok end)
+      Mimic.stub(El.Application, :delete_session_messages, fn :kent -> :ok end)
 
       result = El.exit(:kent)
       assert result == :ok
+    end
+
+    test "deletes session messages on successful termination" do
+      Mimic.stub(Registry, :lookup, fn El.Registry, :kent -> [{:pid, :meta}] end)
+      Mimic.expect(DynamicSupervisor, :terminate_child, fn El.SessionSupervisor, :pid -> :ok end)
+      Mimic.expect(El.Application, :delete_session_messages, fn :kent -> :ok end)
+
+      El.exit(:kent)
+      Mimic.verify!()
     end
 
     test "returns not_found when session not running" do
@@ -76,6 +87,7 @@ defmodule El.Spec do
     test "rescues errors and returns ok" do
       Mimic.stub(Registry, :lookup, fn El.Registry, _name -> [{:pid, :meta}] end)
       Mimic.stub(DynamicSupervisor, :terminate_child, fn _, _ -> raise "error" end)
+      Mimic.stub(El.Application, :delete_session_messages, fn _name -> :ok end)
 
       result = El.exit(:kent)
       assert result == :ok

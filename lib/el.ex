@@ -45,23 +45,27 @@ defmodule El do
   end
 
   def exit(name) do
-    exit_if_found(local_lookup(name))
+    exit_if_found(name, local_lookup(name))
   rescue
     _ -> :ok
   end
 
-  defp exit_if_found([{pid, _}]) do
+  defp exit_if_found(name, [{pid, _}]) do
     ref = Process.monitor(pid)
     DynamicSupervisor.terminate_child(El.SessionSupervisor, pid)
 
     receive do
-      {:DOWN, ^ref, :process, ^pid, _} -> :ok
+      {:DOWN, ^ref, :process, ^pid, _} ->
+        El.Application.delete_session_messages(name)
+        :ok
     after
-      5000 -> :ok
+      5000 ->
+        El.Application.delete_session_messages(name)
+        :ok
     end
   end
 
-  defp exit_if_found([]) do
+  defp exit_if_found(_name, []) do
     :not_found
   end
 
