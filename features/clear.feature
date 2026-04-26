@@ -1,9 +1,10 @@
+@el_dude
 Feature: Clear
 
-  Scenario: Clear log
-    * > el dude
+  Scenario: Clear
+    * > el dude 1 + 1
     * > el dude log:
-      | (dude) |
-    * > el dude clear:
-      | ok |
-    * > el dude exit
+      | 1 + 1 |
+    * > el dude clear
+    * > el dude log:
+      | (1 + 1) |

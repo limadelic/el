@@ -1,9 +1,8 @@
+@el_dude @el_duder @el_dudito
 Feature: Glob
 
+
   Scenario: All
-    * > el dude
-    * > el duder
-    * > el dudito
     * > el ls:
       | dude   |
       | duder  |
@@ -14,15 +13,11 @@ Feature: Glob
       | (duder)  |
       | (dudito) |
 
+  @el_kenny
   Scenario: Pattern
-    * > el dude
-    * > el duder
-    * > el dudito
-    * > el kenny
     * > el dud* exit
     * > el ls:
       | kenny    |
       | (dude)   |
       | (duder)  |
       | (dudito) |
-    * > el kenny exit
