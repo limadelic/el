@@ -74,20 +74,9 @@ defmodule El.Session do
 
   @impl true
   def handle_continue(:start_claude, state) do
-    case state.claude_module.start_link(state.claude_opts) do
-      {:error, reason} ->
-        {:stop, reason}
-
-      {:ok, claude_pid} ->
-        messages = El.Application.load_messages(state.name)
-
-        {:noreply,
-         %{
-           state
-           | claude_pid: claude_pid,
-             messages: messages
-         }}
-    end
+    messages = El.Application.load_messages(state.name)
+    claude_pid = safe_start_claude(state.claude_module, state.claude_opts)
+    {:noreply, %{state | claude_pid: claude_pid, messages: messages}}
   end
 
   defp maybe_respawn_claude(
@@ -95,14 +84,22 @@ defmodule El.Session do
            state
        ) do
     opts_with_session_id = Keyword.put(opts, :session_id, session_id)
-
-    case claude_module.start_link(opts_with_session_id) do
-      {:ok, pid} -> %{state | claude_pid: pid}
-      _ -> state
-    end
+    pid = safe_start_claude(claude_module, opts_with_session_id)
+    %{state | claude_pid: pid}
   end
 
   defp maybe_respawn_claude(state), do: state
+
+  defp safe_start_claude(claude_module, opts) do
+    case claude_module.start_link(opts) do
+      {:ok, pid} -> pid
+      _ -> nil
+    end
+  rescue
+    _ -> nil
+  catch
+    _, _ -> nil
+  end
 
   defp envelope(name, payload) do
     "[from #{name}] #{payload}"
@@ -119,10 +116,12 @@ defmodule El.Session do
   end
 
   defp generate_session_id do
-    bytes = :crypto.strong_rand_bytes(16)
-    hex = Base.encode16(bytes, case: :lower)
-
-    "#{String.slice(hex, 0, 8)}-#{String.slice(hex, 8, 4)}-#{String.slice(hex, 12, 4)}-#{String.slice(hex, 16, 4)}-#{String.slice(hex, 20, 12)}"
+    <<a::48, _::4, b::12, _::2, c::62>> = :crypto.strong_rand_bytes(16)
+    <<a::48, 4::4, b::12, 2::2, c::62>>
+    |> Base.encode16(case: :lower)
+    |> then(fn hex ->
+      "#{String.slice(hex, 0, 8)}-#{String.slice(hex, 8, 4)}-#{String.slice(hex, 12, 4)}-#{String.slice(hex, 16, 4)}-#{String.slice(hex, 20, 12)}"
+    end)
   end
 
   @impl true
@@ -392,13 +391,22 @@ defmodule El.Session do
   end
 
   @impl true
-  def terminate(:normal, _state), do: :ok
+  def terminate(:normal, state) do
+    El.Application.delete_session_messages(state.name)
+    :ok
+  end
 
   @impl true
-  def terminate(:shutdown, _state), do: :ok
+  def terminate(:shutdown, state) do
+    El.Application.delete_session_messages(state.name)
+    :ok
+  end
 
   @impl true
-  def terminate({:shutdown, _}, _state), do: :ok
+  def terminate({:shutdown, _}, state) do
+    El.Application.delete_session_messages(state.name)
+    :ok
+  end
 
   @impl true
   def terminate(reason, state) do
@@ -406,6 +414,8 @@ defmodule El.Session do
       state.name,
       {"crash", "Session crashed", inspect(reason), %{}}
     )
+
+    El.Application.delete_session_messages(state.name)
 
     :ok
   end
@@ -433,10 +443,14 @@ defmodule El.Session do
   end
 
   defp safe_stream_claude(claude_pid, message) do
-    claude_pid
-    |> El.ClaudeCode.stream(message)
-    |> ClaudeCode.Stream.text_content()
-    |> Enum.join()
+    stream = El.ClaudeCode.stream(claude_pid, message)
+    events = Enum.to_list(stream)
+    Logger.info("STREAM EVENTS: #{inspect(events, limit: :infinity)}")
+    result = Enum.find_value(events, fn
+      %ClaudeCode.Message.ResultMessage{result: result} -> result
+      _ -> nil
+    end)
+    result || ""
   end
 
   defp store_ask_immediate(state, message, []) do
