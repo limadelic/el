@@ -97,10 +97,14 @@ defmodule El.Spec do
   describe "exit/1 with :all" do
     test "terminates all sessions" do
       Mimic.stub(Registry, :select, fn El.Registry, _pattern -> [:kent, :lisa] end)
-      Mimic.stub(Registry, :lookup, fn El.Registry, :kent -> [{:pid1, :meta}] end)
-      Mimic.stub(Registry, :lookup, fn El.Registry, :lisa -> [{:pid2, :meta}] end)
+      Mimic.stub(Registry, :lookup, fn
+        El.Registry, :kent -> [{:pid1, :meta}]
+        El.Registry, :lisa -> [{:pid2, :meta}]
+      end)
       Mimic.expect(DynamicSupervisor, :terminate_child, fn El.SessionSupervisor, :pid1 -> :ok end)
       Mimic.expect(DynamicSupervisor, :terminate_child, fn El.SessionSupervisor, :pid2 -> :ok end)
+      Mimic.expect(El.Application, :delete_session_messages, fn :kent -> :ok end)
+      Mimic.expect(El.Application, :delete_session_messages, fn :lisa -> :ok end)
 
       El.exit(:all)
       Mimic.verify!()
