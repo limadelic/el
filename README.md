@@ -30,12 +30,12 @@ brew install limadelic/tap/el
 
 ```
 > el
-el -v                      version
-el ls                      list sessions
-el <name> [-m <model>]     start or status
-el <name> tell <message>   fire-and-forget
-el <name> ask <message>    wait for response
-el <name> log              view log
-el <name> kill             kill session
-el kill all                kill all sessions
+el -v                        version
+el ls                        list sessions
+el <name> [-m <model>]       start or status
+el <name> <msg>              send a msg
+el <name|glob> log [n|all]   view log (default: last 1)
+el <name|glob> clear         clear log
+el <name|glob> exit          exit session
+el exit                      exit all sessions
 ```
