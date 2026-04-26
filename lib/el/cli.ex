@@ -116,6 +116,7 @@ defmodule El.CLI do
 
   def execute(:log_n, [name, "log", n]) do
     count = parse_log_count(n)
+
     if String.contains?(name, ["*", "?"]) do
       result = El.log_pattern(name, count)
       handle_log_result(result, name)
