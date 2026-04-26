@@ -198,7 +198,10 @@ defmodule El.Session.Spec do
         :ok
       end)
 
-      El.Session.handle_cast({:store_tell, ref, "msg", "response"}, pending_state)
+      {:noreply, returned_state} =
+        El.Session.handle_cast({:store_tell, ref, "msg", "response"}, pending_state)
+
+      assert [{"tell", "msg", "response", %{}}] = returned_state.messages
     end
   end
 
@@ -351,12 +354,16 @@ defmodule El.Session.Spec do
     test "deletes pending entry from DETS on completion", %{state: state} do
       from = {self(), make_ref()}
       ref = make_ref()
+      pending_state = %{state | messages: [{"ask", "question", "", %{ref: ref}}]}
 
       Mimic.expect(El.MessageStore, :delete_entry, fn :test_session, {"ask", "question", "", %{ref: ^ref}} ->
         :ok
       end)
 
-      El.Session.handle_cast({:complete_ask, from, "question", "answer", ref}, state)
+      {:noreply, returned_state} =
+        El.Session.handle_cast({:complete_ask, from, "question", "answer", ref}, pending_state)
+
+      assert [{"ask", "question", "answer", %{}}] = returned_state.messages
     end
   end
 

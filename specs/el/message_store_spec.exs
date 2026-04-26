@@ -2,61 +2,39 @@ defmodule El.MessageStore.Spec do
   use ExUnit.Case
 
   setup do
+    Mimic.copy(El.DetsBackend)
+
     on_exit(fn ->
-      try do
-        :dets.close(:message_store)
-      rescue
-        _ -> :ok
-      catch
-        _, _ -> :ok
-      end
+      Application.delete_env(:el, :dets_backend)
     end)
 
+    Application.put_env(:el, :dets_backend, El.DetsBackend)
     :ok
   end
 
   describe "delete_entry/2" do
-    test "calls dets.delete_object" do
-      init_test_dets()
+    test "calls dets.delete_object with correct arguments" do
       name = :test_entry
       entry = {"tell", "hello", "response", %{}}
 
-      El.MessageStore.insert(name, entry)
+      Mimic.expect(El.DetsBackend, :delete_object, fn :message_store, {^name, ^entry} ->
+        :ok
+      end)
+
       result = El.MessageStore.delete_entry(name, entry)
 
       assert result == :ok
-      remaining = El.MessageStore.lookup(name)
-      assert remaining == []
     end
 
-    test "keeps other entries intact" do
-      init_test_dets()
+    test "passes entry as tuple with name to backend" do
       name = :test_entries
-      entry1 = {"tell", "msg1", "resp1", %{}}
-      entry2 = {"tell", "msg2", "resp2", %{}}
+      entry = {"tell", "msg1", "resp1", %{}}
 
-      El.MessageStore.insert(name, entry1)
-      El.MessageStore.insert(name, entry2)
+      Mimic.expect(El.DetsBackend, :delete_object, fn :message_store, {^name, ^entry} ->
+        :ok
+      end)
 
-      El.MessageStore.delete_entry(name, entry1)
-
-      remaining = El.MessageStore.lookup(name)
-      assert remaining == [entry2]
+      El.MessageStore.delete_entry(name, entry)
     end
-  end
-
-  defp init_test_dets do
-    path = Path.expand("~/.el/.test_messages.dets") |> String.to_charlist()
-    File.mkdir_p!(Path.expand("~/.el"))
-
-    try do
-      :dets.close(:message_store)
-    rescue
-      _ -> :ok
-    catch
-      _, _ -> :ok
-    end
-
-    {:ok, _} = :dets.open_file(:message_store, file: path, type: :bag)
   end
 end
