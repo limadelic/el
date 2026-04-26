@@ -6,8 +6,16 @@ defmodule El.CLI do
     end
   end
 
-  def main(args) do
+  def main(["--daemon" | _] = args) do
+    start_daemon_node()
     dispatch(args)
+  end
+
+  def main(args) do
+    case connect_to_daemon() do
+      {:ok, node} -> :rpc.call(node, El.CLI, :dispatch, [args])
+      :local -> dispatch(args)
+    end
     System.halt(0)
   end
 
@@ -18,6 +26,7 @@ defmodule El.CLI do
   def parse_route([]), do: :usage
   def parse_route(["-v"]), do: :version
   def parse_route(["ls"]), do: :ls
+  def parse_route(["--daemon"]), do: :daemon_hub
   def parse_route(["--daemon", _name]), do: :daemon
   def parse_route(["--daemon", _name, "-m", _model]), do: :daemon
   def parse_route(["exit", "all"]), do: :exit_all
@@ -28,9 +37,9 @@ defmodule El.CLI do
   def parse_route([_name, "clear"]), do: :clear
   def parse_route([_name, "tell", "ask", "@" <> _target | _words]), do: :tell_ask
   def parse_route([_name, "ask", "tell", "@" <> _target | _words]), do: :ask_tell
-  def parse_route([_name]), do: :start
-  def parse_route([_name, "-m", _model | _rest]), do: :start
-  def parse_route([_name, _word | _more_words]), do: :msg
+  def parse_route([<<c, _::binary>>]) when c != ?-, do: :start
+  def parse_route([<<c, _::binary>>, "-m", _model | _rest]) when c != ?-, do: :start
+  def parse_route([<<c, _::binary>>, _word | _more_words]) when c != ?-, do: :msg
   def parse_route(_), do: :usage
 
   def execute(:usage, _args) do
@@ -43,6 +52,10 @@ defmodule El.CLI do
 
   def execute(:ls, _args) do
     handle_ls()
+  end
+
+  def execute(:daemon_hub, _args) do
+    Process.sleep(:infinity)
   end
 
   def execute(:daemon, ["--daemon", name]) do
@@ -233,5 +246,51 @@ defmodule El.CLI do
 
   defp format_line(cmd, desc, pad) do
     String.pad_trailing(cmd, pad) <> "  " <> desc
+  end
+
+  defp daemon_node, do: :"el@127.0.0.1"
+
+  defp start_daemon_node do
+    :net_kernel.start([daemon_node(), :longnames])
+    Node.set_cookie(:el)
+  end
+
+  defp connect_to_daemon do
+    with {:ok, _} <- start_client_node(),
+         :ok <- ensure_daemon() do
+      {:ok, daemon_node()}
+    else
+      _ -> :local
+    end
+  end
+
+  defp start_client_node do
+    id = System.unique_integer([:positive])
+    :net_kernel.start([:"el-cli-#{id}@127.0.0.1", :longnames])
+    |> case do
+      {:ok, _} -> Node.set_cookie(:el); {:ok, :started}
+      error -> error
+    end
+  end
+
+  defp ensure_daemon do
+    if Node.connect(daemon_node()) do
+      :ok
+    else
+      spawn_daemon()
+      wait_for_daemon(30)
+    end
+  end
+
+  defp spawn_daemon do
+    script = :escript.script_name() |> to_string()
+    System.cmd("sh", ["-c", "#{script} --daemon &"])
+  end
+
+  defp wait_for_daemon(0), do: {:error, :timeout}
+
+  defp wait_for_daemon(n) do
+    :timer.sleep(100)
+    if Node.connect(daemon_node()), do: :ok, else: wait_for_daemon(n - 1)
   end
 end
