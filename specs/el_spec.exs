@@ -50,6 +50,14 @@ defmodule El.Spec do
     end
   end
 
+  describe "clear/1" do
+    test "delegates to El.Session.clear" do
+      Mimic.expect(El.Session, :clear, fn :kent -> :ok end)
+
+      assert El.clear(:kent) == :ok
+    end
+  end
+
   describe "kill/1" do
     test "returns ok when session found and terminated" do
       Mimic.stub(Registry, :lookup, fn El.Registry, :kent -> [{:pid, :meta}] end)

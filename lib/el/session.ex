@@ -23,6 +23,10 @@ defmodule El.Session do
     GenServer.call(via_tuple(name), {:log, count}, :infinity)
   end
 
+  def clear(name) do
+    GenServer.call(via_tuple(name), :clear)
+  end
+
   def tell_ask(name, target, message) do
     GenServer.cast(via_tuple(name), {:tell_ask, target, message})
   end
