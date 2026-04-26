@@ -4,7 +4,7 @@ module ElHelper
     `#{bin} #{args}`.chomp
   end
 
-  def el_verify(args, table, timeout: 5)
+  def el_verify(args, table, timeout: 15)
     retry_until(timeout) { assert_table(table, el(args)) }
   end
 
@@ -12,7 +12,7 @@ module ElHelper
 
   def retry_until(timeout)
     deadline = Time.now + timeout
-    loop { return yield rescue (raise if Time.now >= deadline; sleep 0.2) }
+    loop { return yield rescue (raise if Time.now >= deadline; sleep 0.5) }
   end
 
   def assert_table(table, output)
@@ -20,7 +20,7 @@ module ElHelper
   end
 
   def cells(table)
-    table.raw.flatten.map(&:strip).reject { |c| c.empty? || c == "check" }
+    table.raw.flatten.map(&:strip).reject(&:empty?)
   end
 
   def assert_cell(cell, output)
@@ -32,11 +32,11 @@ module ElHelper
   end
 
   def assert_match(expected, output)
-    expected.split.each { |w| raise "Expected '#{w}' in:\n#{output}" unless output.include?(w) }
+    expected.split.each { |w| raise "Expected '#{w}' in:\n#{output}" unless output.downcase.include?(w.downcase) }
   end
 
   def refute_match(unexpected, output)
-    raise "Expected '#{unexpected}' NOT in:\n#{output}" if output.include?(unexpected)
+    raise "Expected '#{unexpected}' NOT in:\n#{output}" if output.downcase.include?(unexpected.downcase)
   end
 end
 

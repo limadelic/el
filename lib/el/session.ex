@@ -83,12 +83,22 @@ defmodule El.Session do
          %{claude_pid: nil, opts: opts, session_id: session_id, claude_module: claude_module} =
            state
        ) do
-    opts_with_session_id = Keyword.put(opts, :session_id, session_id)
-    pid = safe_start_claude(claude_module, opts_with_session_id)
+    opts_with_resume =
+      opts
+      |> Keyword.put(:session_id, session_id)
+      |> Keyword.put(:resume, session_id)
+
+    pid = safe_start_claude(claude_module, opts_with_resume)
     %{state | claude_pid: pid}
   end
 
-  defp maybe_respawn_claude(state), do: state
+  defp maybe_respawn_claude(%{claude_pid: pid} = state) when is_pid(pid) do
+    if Process.alive?(pid) do
+      state
+    else
+      maybe_respawn_claude(%{state | claude_pid: nil})
+    end
+  end
 
   defp safe_start_claude(claude_module, opts) do
     case claude_module.start_link(opts) do
@@ -291,14 +301,14 @@ defmodule El.Session do
 
     new_session_id = generate_session_id()
     claude_opts = Keyword.put(state.opts, :session_id, new_session_id)
-
-    {:ok, new_claude_pid} = state.claude_module.start_link(claude_opts)
+    new_claude_pid = safe_start_claude(state.claude_module, claude_opts)
 
     El.Application.delete_session_messages(state.name)
 
     new_state = %{
       state
       | claude_pid: new_claude_pid,
+        claude_opts: claude_opts,
         session_id: new_session_id,
         messages: []
     }
@@ -358,11 +368,7 @@ defmodule El.Session do
 
   @impl true
   def handle_info({:EXIT, pid, :normal}, %{claude_pid: pid} = state) do
-    Enum.each(state.pending_calls, fn from ->
-      safe_reply(from, "(error)")
-    end)
-
-    {:noreply, %{state | claude_pid: nil, pending_calls: []}}
+    {:noreply, %{state | claude_pid: nil}}
   end
 
   @impl true
@@ -391,22 +397,13 @@ defmodule El.Session do
   end
 
   @impl true
-  def terminate(:normal, state) do
-    El.Application.delete_session_messages(state.name)
-    :ok
-  end
+  def terminate(:normal, _state), do: :ok
 
   @impl true
-  def terminate(:shutdown, state) do
-    El.Application.delete_session_messages(state.name)
-    :ok
-  end
+  def terminate(:shutdown, _state), do: :ok
 
   @impl true
-  def terminate({:shutdown, _}, state) do
-    El.Application.delete_session_messages(state.name)
-    :ok
-  end
+  def terminate({:shutdown, _}, _state), do: :ok
 
   @impl true
   def terminate(reason, state) do
@@ -414,8 +411,6 @@ defmodule El.Session do
       state.name,
       {"crash", "Session crashed", inspect(reason), %{}}
     )
-
-    El.Application.delete_session_messages(state.name)
 
     :ok
   end
@@ -443,14 +438,13 @@ defmodule El.Session do
   end
 
   defp safe_stream_claude(claude_pid, message) do
-    stream = El.ClaudeCode.stream(claude_pid, message)
-    events = Enum.to_list(stream)
-    Logger.info("STREAM EVENTS: #{inspect(events, limit: :infinity)}")
-    result = Enum.find_value(events, fn
+    claude_pid
+    |> El.ClaudeCode.stream(message)
+    |> Enum.to_list()
+    |> Enum.find_value(fn
       %ClaudeCode.Message.ResultMessage{result: result} -> result
       _ -> nil
-    end)
-    result || ""
+    end) || ""
   end
 
   defp store_ask_immediate(state, message, []) do

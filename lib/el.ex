@@ -92,7 +92,8 @@ defmodule El do
     end
   end
 
-  defp exit_if_found(_name, []) do
+  defp exit_if_found(name, []) do
+    El.Application.delete_session_messages(name)
     :not_found
   end
 

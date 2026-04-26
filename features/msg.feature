@@ -1,7 +1,22 @@
 @el_dude
-Feature: Knock Knock
+Feature: Msg
 
   Scenario: Msg
-    * > el dude knock knock
+    * > el dude 1 + 1:
+      | 2 |
     * > el dude log:
-      | knock knock |
+      | 1 + 1 |
+      | 2     |
+
+  Scenario: Convo
+    * > el dude knock knock:
+      | who |
+    * > el dude the dude:
+      | dude |
+    * > el dude abides
+    * > el dude log:
+      | abides |
+    * > el dude log all:
+      | knock |
+      | dude  |
+      | abides |

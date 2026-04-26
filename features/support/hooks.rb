@@ -1,5 +1,13 @@
+require 'timeout'
+
+Around do |scenario, block|
+  Timeout.timeout(60) { block.call }
+rescue Timeout::Error
+  raise "Scenario '#{scenario.name}' timed out after 60s"
+end
+
 Before do |scenario|
-  scenario.tags.map(&:name).grep(/^@el_(.+)$/) { el($1) }
+  scenario.tags.map(&:name).grep(/^@el_(.+)$/) { el("#{$1} -m haiku") }
 end
 
 After do |scenario|
