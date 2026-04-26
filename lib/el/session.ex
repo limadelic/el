@@ -271,6 +271,26 @@ defmodule El.Session do
     {:reply, response, new_state}
   end
 
+  @impl true
+  def handle_call(:clear, _from, state) do
+    Process.exit(state.claude_pid, :kill)
+    new_session_id = generate_session_id()
+    claude_opts = Keyword.put(state.opts, :session_id, new_session_id)
+
+    {:ok, new_claude_pid} = state.claude_module.start_link(claude_opts)
+
+    El.Application.delete_session_messages(state.name)
+
+    new_state = %{
+      state
+      | claude_pid: new_claude_pid,
+        session_id: new_session_id,
+        messages: []
+    }
+
+    {:reply, :ok, new_state}
+  end
+
   defp spawn_ask(state, from, message, valid_routes, ref) do
     server_pid = self()
 
