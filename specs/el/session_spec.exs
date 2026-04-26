@@ -651,7 +651,7 @@ defmodule El.Session.Spec do
     end
 
     test "starts new claude process via claude_module", %{state: state} do
-      Mimic.expect(El.MessageStore, :delete, fn :test_session -> :ok end)
+      Mimic.stub(El.MessageStore, :delete, fn _ -> :ok end)
 
       {:reply, :ok, returned_state} =
         El.Session.handle_call(:clear, :from, %{

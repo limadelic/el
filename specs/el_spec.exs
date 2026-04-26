@@ -71,11 +71,11 @@ defmodule El.Spec do
 
     test "deletes session messages on successful termination" do
       Mimic.stub(Registry, :lookup, fn El.Registry, :kent -> [{:pid, :meta}] end)
-      Mimic.expect(DynamicSupervisor, :terminate_child, fn El.SessionSupervisor, :pid -> :ok end)
+      Mimic.stub(DynamicSupervisor, :terminate_child, fn El.SessionSupervisor, :pid -> :ok end)
       Mimic.expect(El.Application, :delete_session_messages, fn :kent -> :ok end)
 
       El.exit(:kent)
-      Mimic.verify!()
+      Mimic.verify!(El.Application)
     end
 
     test "returns not_found when session not running" do

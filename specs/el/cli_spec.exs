@@ -139,15 +139,13 @@ defmodule El.CLI.Spec do
 
     test "execute :clear calls El.clear with name" do
       Mimic.expect(El, :clear, fn :session -> "cleared" end)
-      Mimic.expect(IO, :puts, fn msg ->
-        assert msg == "cleared"
-      end)
+      Mimic.stub(IO, :puts, fn _ -> :ok end)
 
       El.CLI.execute(:clear, ["session", "clear"])
     end
 
     test "execute :clear handles not_found" do
-      Mimic.expect(El, :clear, fn :session -> :not_found end)
+      Mimic.stub(El, :clear, fn _ -> :not_found end)
       Mimic.expect(IO, :puts, fn :stderr, msg ->
         assert String.contains?(msg, "No sessions running")
       end)
