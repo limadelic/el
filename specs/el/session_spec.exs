@@ -11,6 +11,7 @@ defmodule El.Session.Spec do
     Application.put_env(:el, :message_store, El.MessageStore)
     Mimic.stub(El.MessageStore, :lookup, fn _ -> [] end)
     Mimic.stub(El.MessageStore, :insert, fn _, _ -> :ok end)
+    Mimic.stub(El.MessageStore, :delete_entry, fn _, _ -> :ok end)
 
     state = %{
       name: :test_session,
@@ -188,6 +189,17 @@ defmodule El.Session.Spec do
 
       assert [{"tell", "msg", "response", %{}}] = returned_state.messages
     end
+
+    test "deletes pending entry from DETS on completion", %{state: state} do
+      ref = make_ref()
+      pending_state = %{state | messages: [{"tell", "msg", "", %{ref: ref}}]}
+
+      Mimic.expect(El.MessageStore, :delete_entry, fn :test_session, {"tell", "msg", "", %{ref: ^ref}} ->
+        :ok
+      end)
+
+      El.Session.handle_cast({:store_tell, ref, "msg", "response"}, pending_state)
+    end
   end
 
   describe "handle_cast/2 :cast_store_relay" do
@@ -334,6 +346,17 @@ defmodule El.Session.Spec do
 
       assert [{"ask", "question", "answer first", %{}}, {"ask", "question", "", %{ref: ^ref2}}] =
                returned_state.messages
+    end
+
+    test "deletes pending entry from DETS on completion", %{state: state} do
+      from = {self(), make_ref()}
+      ref = make_ref()
+
+      Mimic.expect(El.MessageStore, :delete_entry, fn :test_session, {"ask", "question", "", %{ref: ^ref}} ->
+        :ok
+      end)
+
+      El.Session.handle_cast({:complete_ask, from, "question", "answer", ref}, state)
     end
   end
 

@@ -124,6 +124,7 @@ defmodule El.Session do
   def handle_cast({:store_tell, ref, message, response}, state) do
     new_messages = replace_tell(state.messages, ref, message, response)
     new_state = %{state | messages: new_messages}
+    El.Application.delete_message(state.name, {"tell", message, "", %{ref: ref}})
     El.Application.store_message(state.name, {"tell", message, response, %{}})
     routes = detect_routes(response)
     process_tell_response(state, response, routes)
@@ -134,6 +135,7 @@ defmodule El.Session do
   def handle_cast({:complete_ask, from, message, response, ref}, state) do
     entry = {"ask", message, response, %{}}
     new_messages = replace_ask(state.messages, ref, message, response)
+    El.Application.delete_message(state.name, {"ask", message, "", %{ref: ref}})
     El.Application.store_message(state.name, entry)
     safe_reply(from, response)
     new_pending = List.delete(state.pending_calls, from)

@@ -4,6 +4,11 @@ defmodule El.MessageStore do
     :ok
   end
 
+  def delete_entry(name, entry) do
+    :dets.delete_object(:message_store, {name, entry})
+    :ok
+  end
+
   def insert(name, message_entry) do
     :dets.insert(:message_store, {name, message_entry})
     :ok

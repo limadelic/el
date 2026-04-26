@@ -39,4 +39,9 @@ defmodule El.Application do
     message_store = Application.get_env(:el, :message_store, El.MessageStore)
     message_store.lookup(name)
   end
+
+  def delete_message(name, entry) do
+    message_store = Application.get_env(:el, :message_store, El.MessageStore)
+    message_store.delete_entry(name, entry)
+  end
 end
