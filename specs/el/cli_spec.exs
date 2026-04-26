@@ -46,16 +46,16 @@ defmodule El.CLI.Spec do
       assert El.CLI.parse_route(["session", "exit"]) == :exit
     end
 
+    test "returns exit for * exit" do
+      assert El.CLI.parse_route(["*", "exit"]) == :exit
+    end
+
+    test "returns exit for dud* exit" do
+      assert El.CLI.parse_route(["dud*", "exit"]) == :exit
+    end
+
     test "returns clear for name clear" do
       assert El.CLI.parse_route(["session", "clear"]) == :clear
-    end
-
-    test "returns exit_all for exit all" do
-      assert El.CLI.parse_route(["exit", "all"]) == :exit_all
-    end
-
-    test "returns exit_pattern for exit with glob pattern" do
-      assert El.CLI.parse_route(["exit", "dud*"]) == :exit_pattern
     end
 
     test "returns tell_ask for name tell ask @target message" do
@@ -165,10 +165,29 @@ defmodule El.CLI.Spec do
       El.CLI.execute(:clear, ["session", "clear"])
     end
 
-    test "execute :exit_pattern calls El.exit_pattern" do
-      Mimic.expect(El, :exit_pattern, fn "dud*" -> :ok end)
+    test "execute :exit with * calls El.exit(:all)" do
+      Mimic.expect(El, :exit, fn :all -> :ok end)
+      Mimic.expect(IO, :puts, fn msg ->
+        assert msg == "exited all"
+      end)
 
-      El.CLI.execute(:exit_pattern, ["exit", "dud*"])
+      El.CLI.execute(:exit, ["*", "exit"])
+    end
+
+    test "execute :exit with glob pattern calls El.exit_pattern" do
+      Mimic.expect(El, :exit_pattern, fn "dud*" -> :ok end)
+      Mimic.expect(IO, :puts, fn msg ->
+        assert msg == "exited sessions matching dud*"
+      end)
+
+      El.CLI.execute(:exit, ["dud*", "exit"])
+    end
+
+    test "execute :exit with session name calls El.exit" do
+      Mimic.expect(El, :exit, fn :session -> :ok end)
+      Mimic.stub(IO, :puts, fn _ -> :ok end)
+
+      El.CLI.execute(:exit, ["session", "exit"])
     end
   end
 
