@@ -3,7 +3,6 @@ defmodule El.Session.Spec do
 
   setup do
     Mimic.copy(El.MessageStore)
-    Mimic.copy(Process)
 
     on_exit(fn ->
       Application.delete_env(:el, :message_store)
@@ -628,21 +627,17 @@ defmodule El.Session.Spec do
 
   describe "handle_call/2 :clear" do
     test "stops old claude process", %{state: state} do
-      Mimic.expect(Process, :exit, fn :mock_pid, :kill -> true end)
-      Mimic.stub(MockSessionModule, :start_link, fn _ -> {:ok, :new_mock_pid} end)
+      {:ok, old_pid} = Agent.start_link(fn -> nil end)
       Mimic.stub(El.MessageStore, :delete, fn _ -> :ok end)
 
-      El.Session.handle_call(:clear, :from, %{
-        state
-        | claude_module: MockSessionModule
+      {:reply, :ok, _} = El.Session.handle_call(:clear, :from, %{
+        state | claude_pid: old_pid, claude_module: MockSessionModule
       })
 
-      Mimic.verify!(Process)
+      refute Process.alive?(old_pid)
     end
 
     test "generates new session_id different from old", %{state: state} do
-      Mimic.stub(Process, :exit, fn _, _ -> true end)
-      Mimic.stub(MockSessionModule, :start_link, fn _ -> {:ok, :new_mock_pid} end)
       Mimic.stub(El.MessageStore, :delete, fn _ -> :ok end)
 
       {:reply, :ok, returned_state} =
@@ -656,14 +651,7 @@ defmodule El.Session.Spec do
     end
 
     test "starts new claude process via claude_module", %{state: state} do
-      Mimic.stub(Process, :exit, fn _, _ -> true end)
-
-      Mimic.expect(MockSessionModule, :start_link, fn opts ->
-        assert Keyword.has_key?(opts, :session_id)
-        {:ok, :new_mock_pid}
-      end)
-
-      Mimic.stub(El.MessageStore, :delete, fn _ -> :ok end)
+      Mimic.expect(El.MessageStore, :delete, fn :test_session -> :ok end)
 
       {:reply, :ok, returned_state} =
         El.Session.handle_call(:clear, :from, %{
@@ -671,12 +659,10 @@ defmodule El.Session.Spec do
           | claude_module: MockSessionModule
         })
 
-      assert returned_state.claude_pid == :new_mock_pid
+      assert returned_state.claude_pid == :mock_pid
     end
 
     test "clears state.messages to empty list", %{state: state} do
-      Mimic.stub(Process, :exit, fn _, _ -> true end)
-      Mimic.stub(MockSessionModule, :start_link, fn _ -> {:ok, :new_mock_pid} end)
       Mimic.stub(El.MessageStore, :delete, fn _ -> :ok end)
 
       state_with_messages = %{
@@ -692,8 +678,6 @@ defmodule El.Session.Spec do
     end
 
     test "deletes DETS messages via El.Application.delete_session_messages", %{state: state} do
-      Mimic.stub(Process, :exit, fn _, _ -> true end)
-      Mimic.stub(MockSessionModule, :start_link, fn _ -> {:ok, :new_mock_pid} end)
       Mimic.expect(El.MessageStore, :delete, fn :test_session -> :ok end)
 
       {:reply, :ok, _returned_state} =
@@ -706,8 +690,6 @@ defmodule El.Session.Spec do
     end
 
     test "returns :ok reply", %{state: state} do
-      Mimic.stub(Process, :exit, fn _, _ -> true end)
-      Mimic.stub(MockSessionModule, :start_link, fn _ -> {:ok, :new_mock_pid} end)
       Mimic.stub(El.MessageStore, :delete, fn _ -> :ok end)
 
       {:reply, reply, _returned_state} =

@@ -273,7 +273,8 @@ defmodule El.Session do
 
   @impl true
   def handle_call(:clear, _from, state) do
-    Process.exit(state.claude_pid, :kill)
+    stop_claude(state.claude_pid)
+
     new_session_id = generate_session_id()
     claude_opts = Keyword.put(state.opts, :session_id, new_session_id)
 
@@ -290,6 +291,12 @@ defmodule El.Session do
 
     {:reply, :ok, new_state}
   end
+
+  defp stop_claude(pid) when is_pid(pid) do
+    GenServer.stop(pid)
+  end
+
+  defp stop_claude(_), do: :ok
 
   defp spawn_ask(state, from, message, valid_routes, ref) do
     server_pid = self()

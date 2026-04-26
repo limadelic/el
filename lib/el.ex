@@ -28,6 +28,10 @@ defmodule El do
     El.Session.log(name, count)
   end
 
+  def clear(name) do
+    El.Session.clear(name)
+  end
+
   def tell_ask(name, target, message) do
     El.Session.tell_ask(name, target, message)
   end
