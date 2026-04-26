@@ -46,6 +46,10 @@ defmodule El.CLI.Spec do
       assert El.CLI.parse_route(["session", "kill"]) == :kill
     end
 
+    test "returns clear for name clear" do
+      assert El.CLI.parse_route(["session", "clear"]) == :clear
+    end
+
     test "returns kill_all for kill all" do
       assert El.CLI.parse_route(["kill", "all"]) == :kill_all
     end
@@ -132,6 +136,24 @@ defmodule El.CLI.Spec do
 
       El.CLI.execute(:log, ["session", "log"])
     end
+
+    test "execute :clear calls El.clear with name" do
+      Mimic.expect(El, :clear, fn :session -> "cleared" end)
+      Mimic.expect(IO, :puts, fn msg ->
+        assert msg == "cleared"
+      end)
+
+      El.CLI.execute(:clear, ["session", "clear"])
+    end
+
+    test "execute :clear handles not_found" do
+      Mimic.expect(El, :clear, fn :session -> :not_found end)
+      Mimic.expect(IO, :puts, fn :stderr, msg ->
+        assert String.contains?(msg, "No sessions running")
+      end)
+
+      El.CLI.execute(:clear, ["session", "clear"])
+    end
   end
 
   describe "main/1" do
@@ -162,6 +184,15 @@ defmodule El.CLI.Spec do
     test "usage message contains el -v" do
       Mimic.expect(IO, :puts, fn msg ->
         assert String.contains?(msg, "el -v")
+      end)
+      Mimic.expect(System, :halt, fn 0 -> :ok end)
+
+      El.CLI.main([])
+    end
+
+    test "usage message contains el <name> clear" do
+      Mimic.expect(IO, :puts, fn msg ->
+        assert String.contains?(msg, "el <name> clear")
       end)
       Mimic.expect(System, :halt, fn 0 -> :ok end)
 

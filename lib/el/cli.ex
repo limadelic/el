@@ -24,6 +24,7 @@ defmodule El.CLI do
   def parse_route([_name, "log", _n]), do: :log_n
   def parse_route([_name, "log"]), do: :log
   def parse_route([_name, "kill"]), do: :kill
+  def parse_route([_name, "clear"]), do: :clear
   def parse_route([_name, "tell", "ask", "@" <> _target | _words]), do: :tell_ask
   def parse_route([_name, "ask", "tell", "@" <> _target | _words]), do: :ask_tell
   def parse_route([_name]), do: :start
@@ -104,6 +105,12 @@ defmodule El.CLI do
   def execute(:kill, [name, "kill"]) do
     name_atom = String.to_atom(name)
     handle_kill(name_atom, name)
+  end
+
+  def execute(:clear, [name, "clear"]) do
+    name_atom = String.to_atom(name)
+    result = El.clear(name_atom)
+    handle_result(result, name)
   end
 
   def execute(:kill_all, ["kill", "all"]) do
@@ -203,6 +210,7 @@ defmodule El.CLI do
       {"el <name> [-m <model>]", "start or status"},
       {"el <name> <msg>", "send a msg"},
       {"el <name> log [N|all]", "view log (default: last 1)"},
+      {"el <name> clear", "clear log"},
       {"el <name> kill", "kill session"},
       {"el kill all", "kill all sessions"}
     ]
