@@ -189,6 +189,48 @@ defmodule El.CLI.Spec do
 
       El.CLI.execute(:exit, ["session", "exit"])
     end
+
+    test "execute :clear with glob pattern calls El.clear_pattern" do
+      Mimic.expect(El, :clear_pattern, fn "dud*" -> :ok end)
+      Mimic.expect(IO, :puts, fn msg ->
+        assert msg == "cleared sessions matching dud*"
+      end)
+
+      El.CLI.execute(:clear, ["dud*", "clear"])
+    end
+
+    test "execute :clear with session name calls El.clear" do
+      Mimic.expect(El, :clear, fn :session -> "cleared" end)
+      Mimic.stub(IO, :puts, fn _ -> :ok end)
+
+      El.CLI.execute(:clear, ["session", "clear"])
+    end
+
+    test "execute :log with glob pattern calls El.log_pattern" do
+      Mimic.expect(El, :log_pattern, fn "dud*", 1 -> [] end)
+      Mimic.stub(IO, :puts, fn _ -> :ok end)
+
+      El.CLI.execute(:log, ["dud*", "log"])
+    end
+
+    test "execute :log with session name calls El.log" do
+      Mimic.expect(El, :log, fn :session, 1 -> [] end)
+
+      El.CLI.execute(:log, ["session", "log"])
+    end
+
+    test "execute :log_n with glob pattern calls El.log_pattern" do
+      Mimic.expect(El, :log_pattern, fn "dud*", 5 -> [] end)
+      Mimic.stub(IO, :puts, fn _ -> :ok end)
+
+      El.CLI.execute(:log_n, ["dud*", "log", "5"])
+    end
+
+    test "execute :log_n with session name calls El.log" do
+      Mimic.expect(El, :log, fn :session, 5 -> [] end)
+
+      El.CLI.execute(:log_n, ["session", "log", "5"])
+    end
   end
 
   describe "main/1" do
@@ -234,9 +276,9 @@ defmodule El.CLI.Spec do
       El.CLI.main([])
     end
 
-    test "usage message contains el <name> exit" do
+    test "usage message contains el <name|glob> exit" do
       Mimic.expect(IO, :puts, fn msg ->
-        assert String.contains?(msg, "el <name> exit")
+        assert String.contains?(msg, "el <name|glob> exit")
       end)
       Mimic.expect(System, :halt, fn 0 -> :ok end)
 

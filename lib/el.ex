@@ -56,6 +56,21 @@ defmodule El do
     |> Enum.each(&El.exit/1)
   end
 
+  def clear_pattern(pattern) do
+    ls() |> Enum.filter(&match_pattern?(&1, pattern)) |> Enum.each(&El.clear/1)
+  end
+
+  def log_pattern(pattern, count) do
+    ls()
+    |> Enum.filter(&match_pattern?(&1, pattern))
+    |> Enum.flat_map(fn name ->
+      case El.log(name, count) do
+        :not_found -> []
+        entries -> entries
+      end
+    end)
+  end
+
   defp match_pattern?(name, pattern) do
     name_str = Atom.to_string(name)
     regex_pattern = pattern |> String.replace("*", ".*") |> String.replace("?", ".")

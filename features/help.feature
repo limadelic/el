@@ -7,9 +7,9 @@ Feature: Help
       | el ls                  | list sessions              |
       | el <name> [-m <model>] | start or status            |
       | el <name> <msg>        | send a msg                 |
-      | el <name> log [n\|all] | view log (default: last 1) |
-      | el <name> clear        | clear log                  |
-      | el <name> exit         | exit session               |
+      | el <name\|glob> log [n\|all] | view log (default: last 1) |
+      | el <name\|glob> clear        | clear log                  |
+      | el <name\|glob> exit         | exit session               |
       | el exit                | exit all sessions          |
 
     Examples:

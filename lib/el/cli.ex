@@ -104,16 +104,26 @@ defmodule El.CLI do
   end
 
   def execute(:log, [name, "log"]) do
-    name_atom = String.to_atom(name)
-    result = El.log(name_atom, 1)
-    handle_log_result(result, name)
+    if String.contains?(name, ["*", "?"]) do
+      result = El.log_pattern(name, 1)
+      handle_log_result(result, name)
+    else
+      name_atom = String.to_atom(name)
+      result = El.log(name_atom, 1)
+      handle_log_result(result, name)
+    end
   end
 
   def execute(:log_n, [name, "log", n]) do
-    name_atom = String.to_atom(name)
     count = parse_log_count(n)
-    result = El.log(name_atom, count)
-    handle_log_result(result, name)
+    if String.contains?(name, ["*", "?"]) do
+      result = El.log_pattern(name, count)
+      handle_log_result(result, name)
+    else
+      name_atom = String.to_atom(name)
+      result = El.log(name_atom, count)
+      handle_log_result(result, name)
+    end
   end
 
   def execute(:exit, [name, "exit"]) do
@@ -129,9 +139,14 @@ defmodule El.CLI do
   end
 
   def execute(:clear, [name, "clear"]) do
-    name_atom = String.to_atom(name)
-    result = El.clear(name_atom)
-    handle_result(result, name)
+    if String.contains?(name, ["*", "?"]) do
+      El.clear_pattern(name)
+      IO.puts("cleared sessions matching #{name}")
+    else
+      name_atom = String.to_atom(name)
+      result = El.clear(name_atom)
+      handle_result(result, name)
+    end
   end
 
   def execute(:exit_all, ["exit"]) do
@@ -230,9 +245,9 @@ defmodule El.CLI do
       {"el ls", "list sessions"},
       {"el <name> [-m <model>]", "start or status"},
       {"el <name> <msg>", "send a msg"},
-      {"el <name> log [n|all]", "view log (default: last 1)"},
-      {"el <name> clear", "clear log"},
-      {"el <name> exit", "exit session"},
+      {"el <name|glob> log [n|all]", "view log (default: last 1)"},
+      {"el <name|glob> clear", "clear log"},
+      {"el <name|glob> exit", "exit session"},
       {"el exit", "exit all sessions"}
     ]
 

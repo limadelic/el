@@ -135,6 +135,52 @@ defmodule El.Spec do
     end
   end
 
+  describe "clear_pattern/1" do
+    test "clears sessions matching glob pattern" do
+      Mimic.stub(Registry, :select, fn El.Registry, _pattern -> [:dude1, :dude2, :lisa] end)
+      Mimic.expect(El.Session, :clear, fn :dude1 -> :ok end)
+      Mimic.expect(El.Session, :clear, fn :dude2 -> :ok end)
+
+      El.clear_pattern("dude*")
+      Mimic.verify!()
+    end
+
+    test "clears no sessions when pattern matches nothing" do
+      Mimic.stub(Registry, :select, fn El.Registry, _pattern -> [:alice, :bob] end)
+
+      result = El.clear_pattern("charlie*")
+      assert result == :ok
+    end
+  end
+
+  describe "log_pattern/2" do
+    test "returns logs from sessions matching glob pattern" do
+      Mimic.stub(Registry, :select, fn El.Registry, _pattern -> [:dude1, :dude2, :lisa] end)
+      Mimic.expect(El.Session, :log, fn :dude1, 1 -> [{"ask", "hi", "reply", %{}}] end)
+      Mimic.expect(El.Session, :log, fn :dude2, 1 -> [{"tell", "hello", "world", %{}}] end)
+      Mimic.stub(El.Session, :log, fn :lisa, 1 -> :not_found end)
+
+      result = El.log_pattern("dude*", 1)
+      assert length(result) == 2
+    end
+
+    test "returns empty list when pattern matches nothing" do
+      Mimic.stub(Registry, :select, fn El.Registry, _pattern -> [:alice, :bob] end)
+      Mimic.stub(El.Session, :log, fn _, 1 -> :not_found end)
+
+      result = El.log_pattern("charlie*", 1)
+      assert result == []
+    end
+
+    test "skips sessions with :not_found" do
+      Mimic.stub(Registry, :select, fn El.Registry, _pattern -> [:dude1] end)
+      Mimic.stub(El.Session, :log, fn :dude1, 1 -> :not_found end)
+
+      result = El.log_pattern("dude*", 1)
+      assert result == []
+    end
+  end
+
   describe "ls/0" do
     test "returns sorted list from Registry.select" do
       Mimic.stub(Registry, :select, fn El.Registry, _pattern -> [:zeta, :alpha, :beta] end)
