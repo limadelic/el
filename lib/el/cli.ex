@@ -20,10 +20,10 @@ defmodule El.CLI do
   def parse_route(["ls"]), do: :ls
   def parse_route(["--daemon", _name]), do: :daemon
   def parse_route(["--daemon", _name, "-m", _model]), do: :daemon
-  def parse_route(["kill", "all"]), do: :kill_all
+  def parse_route(["exit", "all"]), do: :exit_all
   def parse_route([_name, "log", _n]), do: :log_n
   def parse_route([_name, "log"]), do: :log
-  def parse_route([_name, "kill"]), do: :kill
+  def parse_route([_name, "exit"]), do: :exit
   def parse_route([_name, "clear"]), do: :clear
   def parse_route([_name, "tell", "ask", "@" <> _target | _words]), do: :tell_ask
   def parse_route([_name, "ask", "tell", "@" <> _target | _words]), do: :ask_tell
@@ -102,9 +102,9 @@ defmodule El.CLI do
     handle_log_result(result, name)
   end
 
-  def execute(:kill, [name, "kill"]) do
+  def execute(:exit, [name, "exit"]) do
     name_atom = String.to_atom(name)
-    handle_kill(name_atom, name)
+    handle_exit(name_atom, name)
   end
 
   def execute(:clear, [name, "clear"]) do
@@ -113,9 +113,9 @@ defmodule El.CLI do
     handle_result(result, name)
   end
 
-  def execute(:kill_all, ["kill", "all"]) do
-    El.kill(:all)
-    IO.puts("killed all")
+  def execute(:exit_all, ["exit", "all"]) do
+    El.exit(:all)
+    IO.puts("exited all")
   end
 
   defp parse_log_count("all"), do: :all
@@ -174,8 +174,8 @@ defmodule El.CLI do
     handle_result(result, name)
   end
 
-  defp handle_kill(name_atom, name) do
-    result = El.kill(name_atom)
+  defp handle_exit(name_atom, name) do
+    result = El.exit(name_atom)
     handle_result(result, name)
   end
 
@@ -211,8 +211,8 @@ defmodule El.CLI do
       {"el <name> <msg>", "send a msg"},
       {"el <name> log [N|all]", "view log (default: last 1)"},
       {"el <name> clear", "clear log"},
-      {"el <name> kill", "kill session"},
-      {"el kill all", "kill all sessions"}
+      {"el <name> exit", "exit session"},
+      {"el exit all", "exit all sessions"}
     ]
 
     pad = cmds |> Enum.map(fn {cmd, _} -> String.length(cmd) end) |> Enum.max()

@@ -40,17 +40,17 @@ defmodule El do
     El.Session.ask_tell(name, target, message)
   end
 
-  def kill(:all) do
-    local_ls() |> Enum.each(&kill/1)
+  def exit(:all) do
+    local_ls() |> Enum.each(&El.exit/1)
   end
 
-  def kill(name) do
-    kill_if_found(local_lookup(name))
+  def exit(name) do
+    exit_if_found(local_lookup(name))
   rescue
     _ -> :ok
   end
 
-  defp kill_if_found([{pid, _}]) do
+  defp exit_if_found([{pid, _}]) do
     ref = Process.monitor(pid)
     DynamicSupervisor.terminate_child(El.SessionSupervisor, pid)
 
@@ -61,7 +61,7 @@ defmodule El do
     end
   end
 
-  defp kill_if_found([]) do
+  defp exit_if_found([]) do
     :not_found
   end
 

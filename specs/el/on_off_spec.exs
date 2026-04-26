@@ -44,11 +44,11 @@ defmodule El.Features.OnOffSpec do
     end
   end
 
-  describe "El.kill/1" do
+  describe "El.exit/1" do
     test "looks up session in registry" do
       Mimic.expect(Registry, :lookup, fn El.Registry, :dude -> [] end)
 
-      El.kill(:dude)
+      El.exit(:dude)
     end
 
     test "terminates child when session found" do
@@ -58,14 +58,14 @@ defmodule El.Features.OnOffSpec do
         :ok
       end)
 
-      El.kill(:dude)
+      El.exit(:dude)
     end
 
     test "monitors process and waits for DOWN" do
       Mimic.expect(Registry, :lookup, fn El.Registry, :dude -> [{:mock_pid, :meta}] end)
       Mimic.stub(DynamicSupervisor, :terminate_child, fn _, _ -> :ok end)
 
-      El.kill(:dude)
+      El.exit(:dude)
     end
   end
 

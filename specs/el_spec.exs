@@ -58,31 +58,31 @@ defmodule El.Spec do
     end
   end
 
-  describe "kill/1" do
+  describe "exit/1" do
     test "returns ok when session found and terminated" do
       Mimic.stub(Registry, :lookup, fn El.Registry, :kent -> [{:pid, :meta}] end)
       Mimic.expect(DynamicSupervisor, :terminate_child, fn El.SessionSupervisor, :pid -> :ok end)
 
-      result = El.kill(:kent)
+      result = El.exit(:kent)
       assert result == :ok
     end
 
     test "returns not_found when session not running" do
       Mimic.stub(Registry, :lookup, fn El.Registry, :unknown -> [] end)
 
-      assert El.kill(:unknown) == :not_found
+      assert El.exit(:unknown) == :not_found
     end
 
     test "rescues errors and returns ok" do
       Mimic.stub(Registry, :lookup, fn El.Registry, _name -> [{:pid, :meta}] end)
       Mimic.stub(DynamicSupervisor, :terminate_child, fn _, _ -> raise "error" end)
 
-      result = El.kill(:kent)
+      result = El.exit(:kent)
       assert result == :ok
     end
   end
 
-  describe "kill/1 with :all" do
+  describe "exit/1 with :all" do
     test "terminates all sessions" do
       Mimic.stub(Registry, :select, fn El.Registry, _pattern -> [:kent, :lisa] end)
       Mimic.stub(Registry, :lookup, fn El.Registry, :kent -> [{:pid1, :meta}] end)
@@ -90,7 +90,7 @@ defmodule El.Spec do
       Mimic.expect(DynamicSupervisor, :terminate_child, fn El.SessionSupervisor, :pid1 -> :ok end)
       Mimic.expect(DynamicSupervisor, :terminate_child, fn El.SessionSupervisor, :pid2 -> :ok end)
 
-      El.kill(:all)
+      El.exit(:all)
       Mimic.verify!()
     end
   end

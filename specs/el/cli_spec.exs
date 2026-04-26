@@ -42,16 +42,16 @@ defmodule El.CLI.Spec do
       assert El.CLI.parse_route(["session", "log", "all"]) == :log_n
     end
 
-    test "returns kill for name kill" do
-      assert El.CLI.parse_route(["session", "kill"]) == :kill
+    test "returns exit for name exit" do
+      assert El.CLI.parse_route(["session", "exit"]) == :exit
     end
 
     test "returns clear for name clear" do
       assert El.CLI.parse_route(["session", "clear"]) == :clear
     end
 
-    test "returns kill_all for kill all" do
-      assert El.CLI.parse_route(["kill", "all"]) == :kill_all
+    test "returns exit_all for exit all" do
+      assert El.CLI.parse_route(["exit", "all"]) == :exit_all
     end
 
     test "returns tell_ask for name tell ask @target message" do
@@ -190,9 +190,9 @@ defmodule El.CLI.Spec do
       El.CLI.main([])
     end
 
-    test "usage message contains el <name> clear" do
+    test "usage message contains el <name> exit" do
       Mimic.expect(IO, :puts, fn msg ->
-        assert String.contains?(msg, "el <name> clear")
+        assert String.contains?(msg, "el <name> exit")
       end)
       Mimic.expect(System, :halt, fn 0 -> :ok end)
 
