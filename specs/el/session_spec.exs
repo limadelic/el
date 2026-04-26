@@ -66,53 +66,80 @@ defmodule El.Session.Spec do
 
   describe "init/1" do
     test "stores session name in state" do
-      {:ok, state} = El.Session.init({:my_session, [claude_module: MockSessionModule]})
+      {:ok, state, {:continue, :start_claude}} = El.Session.init({:my_session, [claude_module: MockSessionModule]})
 
       assert state.name == :my_session
     end
 
     test "initializes messages as empty list" do
-      {:ok, state} = El.Session.init({:test_session, [claude_module: MockSessionModule]})
+      {:ok, state, {:continue, :start_claude}} = El.Session.init({:test_session, [claude_module: MockSessionModule]})
 
       assert state.messages == []
     end
 
-    test "passes model to claude start_link" do
-      {:ok, state} =
+    test "stores claude_opts for continue phase" do
+      {:ok, state, {:continue, :start_claude}} =
         El.Session.init({:test_session, [model: "test-model", claude_module: ModelCaptureModule]})
 
-      assert state.claude_pid == :mock_pid
+      assert Keyword.get(state.claude_opts, :model) == "test-model"
     end
 
     test "generates and stores session_id" do
-      {:ok, state} = El.Session.init({:test_session, [claude_module: MockSessionModule]})
+      {:ok, state, {:continue, :start_claude}} = El.Session.init({:test_session, [claude_module: MockSessionModule]})
 
       assert is_binary(state.session_id)
     end
 
-    test "stores claude_pid from successful start" do
-      {:ok, state} = El.Session.init({:test_session, [claude_module: MockSessionModule]})
+    test "stores nil claude_pid before continue" do
+      {:ok, state, {:continue, :start_claude}} = El.Session.init({:test_session, [claude_module: MockSessionModule]})
 
-      assert state.claude_pid == :mock_pid
-    end
-
-    test "stops on claude start failure" do
-      assert {:stop, _reason} = El.Session.init({:test_session, [claude_module: FailingModule]})
+      assert state.claude_pid == nil
     end
 
     test "stores default task_module" do
-      {:ok, state} = El.Session.init({:test_session, [claude_module: MockSessionModule]})
+      {:ok, state, {:continue, :start_claude}} = El.Session.init({:test_session, [claude_module: MockSessionModule]})
 
       assert state.task_module == Task
     end
 
     test "stores provided task_module" do
-      {:ok, state} =
+      {:ok, state, {:continue, :start_claude}} =
         El.Session.init(
           {:test_session, [claude_module: MockSessionModule, task_module: MockSessionModule]}
         )
 
       assert state.task_module == MockSessionModule
+    end
+  end
+
+  describe "handle_continue/2 :start_claude" do
+    test "calls claude_module.start_link with claude_opts" do
+      {:ok, state, {:continue, :start_claude}} =
+        El.Session.init({:test_session, [claude_module: MockSessionModule]})
+
+      {:noreply, result_state} = El.Session.handle_continue(:start_claude, state)
+
+      assert result_state.claude_pid == :mock_pid
+    end
+
+    test "loads messages from El.Application" do
+      {:ok, state, {:continue, :start_claude}} =
+        El.Session.init({:test_session, [claude_module: MockSessionModule]})
+
+      Mimic.expect(El.MessageStore, :lookup, fn :test_session ->
+        [{"tell", "old_message", "old_response", %{}}]
+      end)
+
+      {:noreply, result_state} = El.Session.handle_continue(:start_claude, state)
+
+      assert [{"tell", "old_message", "old_response", %{}}] == result_state.messages
+    end
+
+    test "stops on claude start failure" do
+      {:ok, state, {:continue, :start_claude}} =
+        El.Session.init({:test_session, [claude_module: FailingModule]})
+
+      assert {:stop, _reason} = El.Session.handle_continue(:start_claude, state)
     end
   end
 

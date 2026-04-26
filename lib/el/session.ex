@@ -56,25 +56,36 @@ defmodule El.Session do
     {session_id, opts_without_resume} = extract_resume_or_generate_session_id(opts)
     claude_opts = Keyword.put(opts_without_resume, :session_id, session_id)
 
-    case claude_module.start_link(claude_opts) do
+    {:ok,
+     %{
+       name: name,
+       claude_pid: nil,
+       session_id: session_id,
+       messages: [],
+       pending_calls: [],
+       claude_module: claude_module,
+       task_module: task_module,
+       alive_fn: alive_fn,
+       registry_module: registry_module,
+       opts: opts,
+       claude_opts: claude_opts
+     }, {:continue, :start_claude}}
+  end
+
+  @impl true
+  def handle_continue(:start_claude, state) do
+    case state.claude_module.start_link(state.claude_opts) do
       {:error, reason} ->
         {:stop, reason}
 
       {:ok, claude_pid} ->
-        messages = El.Application.load_messages(name)
+        messages = El.Application.load_messages(state.name)
 
-        {:ok,
+        {:noreply,
          %{
-           name: name,
-           claude_pid: claude_pid,
-           session_id: session_id,
-           messages: messages,
-           pending_calls: [],
-           claude_module: claude_module,
-           task_module: task_module,
-           alive_fn: alive_fn,
-           registry_module: registry_module,
-           opts: opts
+           state
+           | claude_pid: claude_pid,
+             messages: messages
          }}
     end
   end
