@@ -46,8 +46,8 @@ defmodule El.CLI.Spec do
       assert El.CLI.parse_route(["session", "exit"]) == :exit
     end
 
-    test "returns exit for * exit" do
-      assert El.CLI.parse_route(["*", "exit"]) == :exit
+    test "returns exit_all for exit" do
+      assert El.CLI.parse_route(["exit"]) == :exit_all
     end
 
     test "returns exit for dud* exit" do
@@ -165,13 +165,13 @@ defmodule El.CLI.Spec do
       El.CLI.execute(:clear, ["session", "clear"])
     end
 
-    test "execute :exit with * calls El.exit(:all)" do
+    test "execute :exit_all calls El.exit(:all)" do
       Mimic.expect(El, :exit, fn :all -> :ok end)
       Mimic.expect(IO, :puts, fn msg ->
         assert msg == "exited all"
       end)
 
-      El.CLI.execute(:exit, ["*", "exit"])
+      El.CLI.execute(:exit_all, ["exit"])
     end
 
     test "execute :exit with glob pattern calls El.exit_pattern" do
@@ -219,6 +219,15 @@ defmodule El.CLI.Spec do
     test "usage message contains el -v" do
       Mimic.expect(IO, :puts, fn msg ->
         assert String.contains?(msg, "el -v")
+      end)
+      Mimic.expect(System, :halt, fn 0 -> :ok end)
+
+      El.CLI.main([])
+    end
+
+    test "usage message contains el exit" do
+      Mimic.expect(IO, :puts, fn msg ->
+        assert String.contains?(msg, "el exit")
       end)
       Mimic.expect(System, :halt, fn 0 -> :ok end)
 

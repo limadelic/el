@@ -27,6 +27,7 @@ defmodule El.CLI do
   def parse_route([]), do: :usage
   def parse_route(["-v"]), do: :version
   def parse_route(["ls"]), do: :ls
+  def parse_route(["exit"]), do: :exit_all
   def parse_route(["--daemon"]), do: :daemon_hub
   def parse_route(["--daemon", _name]), do: :daemon
   def parse_route(["--daemon", _name, "-m", _model]), do: :daemon
@@ -117,9 +118,6 @@ defmodule El.CLI do
 
   def execute(:exit, [name, "exit"]) do
     cond do
-      name == "*" ->
-        El.exit(:all)
-        IO.puts("exited all")
       String.contains?(name, ["*", "?"]) ->
         El.exit_pattern(name)
         IO.puts("exited sessions matching #{name}")
@@ -133,6 +131,11 @@ defmodule El.CLI do
     name_atom = String.to_atom(name)
     result = El.clear(name_atom)
     handle_result(result, name)
+  end
+
+  def execute(:exit_all, ["exit"]) do
+    El.exit(:all)
+    IO.puts("exited all")
   end
 
   defp parse_log_count("all"), do: :all
@@ -228,8 +231,9 @@ defmodule El.CLI do
       {"el <name> <msg>", "send a msg"},
       {"el <name> log [N|all]", "view log (default: last 1)"},
       {"el <name> clear", "clear log"},
+      {"el exit", "exit all sessions"},
       {"el <name> exit", "exit session"},
-      {"el <pattern> exit", "exit matching sessions (* for all)"}
+      {"el <pattern> exit", "exit matching sessions"}
     ]
 
     pad = cmds |> Enum.map(fn {cmd, _} -> String.length(cmd) end) |> Enum.max()
