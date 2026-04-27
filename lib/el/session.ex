@@ -1,3 +1,4 @@
+# credo:disable-for-this-file El.Credo.MaxModuleLines
 defmodule El.Session do
   use GenServer
 
