@@ -6,6 +6,7 @@ defmodule El.Session do
   alias El.Session.Registry
   alias El.Session.Claude
   alias El.Session.Router
+  alias El.Session.Store
 
   def start_link({name, session_opts}) do
     opts = [name: Registry.via_tuple(name)]
@@ -101,38 +102,17 @@ defmodule El.Session do
   defp tell_impl(state, message) do
     routes = Router.detect_routes(message)
     ref = make_ref()
-    new_state = store_tell_immediate(state, message, ref, routes)
+    new_state = Store.store_tell_immediate(state, message, ref, routes)
     process_tell(new_state, message, ref, routes)
     {:noreply, new_state}
   end
 
   @impl true
   def handle_cast({:store_tell, ref, message, response}, state) do
-    new_state = complete_tell_entry(state, ref, message, response)
+    new_state = Store.complete_tell_entry(state, ref, message, response)
     routes = Router.detect_routes(response)
     Router.process_tell_response(state, response, routes)
     {:noreply, new_state}
-  end
-
-  defp complete_tell_entry(state, ref, message, response) do
-    new_messages = replace_tell(state.messages, ref, message, response)
-    delete_tell_entry(state, message, ref)
-    store_tell_entry(state, message, response)
-    %{state | messages: new_messages}
-  end
-
-  defp delete_tell_entry(state, message, ref) do
-    state.store_module.delete_message(
-      state.name,
-      {"tell", message, "", %{ref: ref}}
-    )
-  end
-
-  defp store_tell_entry(state, message, response) do
-    state.store_module.store_message(
-      state.name,
-      {"tell", message, response, %{}}
-    )
   end
 
   @impl true
@@ -142,27 +122,16 @@ defmodule El.Session do
   end
 
   defp finalize_ask(state, from, ref, message, response) do
-    delete_ask_entry(state, message, ref)
-    store_ask_entry(state, {"ask", message, response, %{}})
+    Store.delete_ask_entry(state, message, ref)
+    Store.store_ask_entry(state, {"ask", message, response, %{}})
     safe_reply(from, response)
     finalize_ask_state(state, from, ref, message, response)
   end
 
   defp finalize_ask_state(state, from, ref, message, response) do
-    new_messages = replace_ask(state.messages, ref, message, response)
+    new_messages = Store.replace_ask(state.messages, ref, message, response)
     new_pending = List.delete(state.pending_calls, from)
     %{state | messages: new_messages, pending_calls: new_pending}
-  end
-
-  defp delete_ask_entry(state, message, ref) do
-    state.store_module.delete_message(
-      state.name,
-      {"ask", message, "", %{ref: ref}}
-    )
-  end
-
-  defp store_ask_entry(state, entry) do
-    state.store_module.store_message(state.name, entry)
   end
 
   @impl true
@@ -212,7 +181,7 @@ defmodule El.Session do
   defp prepare_ask(state, from, message) do
     valid_routes = Router.filter_self_routes(Router.detect_routes(message), state)
     new_state = %{state | pending_calls: [from | state.pending_calls]}
-    store_ask_immediate(new_state, message, valid_routes)
+    Store.store_ask_immediate(new_state, message, valid_routes)
   end
 
   @impl true
@@ -233,17 +202,8 @@ defmodule El.Session do
   @impl true
   def handle_call({:ask_tell, target, message}, _from, state) do
     response = Router.process_ask_tell(state, target, message)
-    entry = build_relay_entry(message, response, state)
-    {:reply, response, store_relay_entry(state, entry)}
-  end
-
-  defp build_relay_entry(message, response, state) do
-    {"relay", message, response, %{from: state.name}}
-  end
-
-  defp store_relay_entry(state, entry) do
-    state.store_module.store_message(state.name, entry)
-    %{state | messages: state.messages ++ [entry]}
+    entry = Store.build_relay_entry(message, response, state)
+    {:reply, response, Store.store_relay_entry(state, entry)}
   end
 
   @impl true
@@ -351,55 +311,5 @@ defmodule El.Session do
 
   defp safe_reply(from, response) do
     spawn(fn -> GenServer.reply(from, response) end)
-  end
-
-  defp store_ask_immediate(state, message, []) do
-    ref = make_ref()
-    entry = {"ask", message, "", %{ref: ref}}
-    state.store_module.store_message(state.name, entry)
-    new_state = %{state | messages: state.messages ++ [entry]}
-    {ref, new_state}
-  end
-
-  defp store_ask_immediate(state, _message, _routes) do
-    ref = make_ref()
-    {ref, state}
-  end
-
-  defp store_tell_immediate(state, message, ref, []) do
-    entry = {"tell", message, "", %{ref: ref}}
-    state.store_module.store_message(state.name, entry)
-    %{state | messages: state.messages ++ [entry]}
-  end
-
-  defp store_tell_immediate(state, _message, _ref, _routes), do: state
-
-  defp replace_tell(messages, ref, message, response) do
-    split_and_complete(messages, ref, "tell", message, response)
-  end
-
-  defp replace_ask(messages, ref, message, response) do
-    split_and_complete(messages, ref, "ask", message, response)
-  end
-
-  defp split_and_complete(messages, ref, type, message, response) do
-    messages
-    |> Enum.split_while(&match_pending_entry(&1, type, ref))
-    |> complete_entry(type, message, response)
-  end
-
-  defp match_pending_entry({t, _, "", %{ref: r}}, type, ref) do
-    r != ref or t != type
-  end
-
-  defp match_pending_entry(_, _, _), do: true
-
-  defp complete_entry({before, [{_, _, _, _} | rest]}, type, message, response) do
-    entry = {type, message, response, %{}}
-    before ++ [entry | rest]
-  end
-
-  defp complete_entry({messages, []}, type, message, response) do
-    messages ++ [{type, message, response, %{}}]
   end
 end
