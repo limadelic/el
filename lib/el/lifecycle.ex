@@ -24,8 +24,8 @@ defmodule El.Lifecycle do
   end
 
   defp terminate(pid, name) do
-    ref = El.monitor().monitor(pid)
-    El.supervisor().terminate_child(El.Supervisor, pid)
+    ref = Process.monitor(pid)
+    El.supervisor().terminate_child(El.SessionSupervisor, pid)
     El.monitor().wait_for_down(ref, name)
   end
 end
