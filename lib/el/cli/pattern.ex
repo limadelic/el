@@ -17,7 +17,7 @@ defmodule El.CLI.Pattern do
   end
 
   defp exit_single(el_module, name) do
-    result = el_module.exit(String.to_atom(name))
+    result = el_module.exit(String.to_existing_atom(name))
     Output.handle_result(result, name)
   end
 
@@ -27,7 +27,7 @@ defmodule El.CLI.Pattern do
   end
 
   defp clear_single(el_module, name) do
-    result = el_module.clear(String.to_atom(name))
+    result = el_module.clear(String.to_existing_atom(name))
     Output.handle_result(result, name)
   end
 end
