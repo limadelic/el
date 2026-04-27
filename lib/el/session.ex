@@ -4,6 +4,7 @@ defmodule El.Session do
   require Logger
 
   alias El.Session.Registry
+  alias El.Session.Claude
 
   def start_link({name, session_opts}) do
     opts = [name: Registry.via_tuple(name)]
@@ -76,38 +77,19 @@ defmodule El.Session do
   @impl true
   def handle_continue(:start_claude, state) do
     messages = state.store_module.load_messages(state.name)
-    claude_pid = safe_start_claude(state.claude_module, state.claude_opts)
+    claude_pid = Claude.start(state.claude_module, state.claude_opts)
     {:noreply, %{state | claude_pid: claude_pid, messages: messages}}
   end
 
   defp maybe_respawn_claude(%{claude_pid: nil} = state) do
-    opts_with_resume = resume_opts(state.opts, state.session_id)
-    pid = safe_start_claude(state.claude_module, opts_with_resume)
+    opts = Claude.resume_options(state.opts, state.session_id)
+    pid = Claude.start(state.claude_module, opts)
     %{state | claude_pid: pid}
   end
 
   defp maybe_respawn_claude(%{claude_pid: pid} = state) when is_pid(pid) do
-    handle_claude_pid_state(state, Process.alive?(pid))
+    if Process.alive?(pid), do: state, else: maybe_respawn_claude(%{state | claude_pid: nil})
   end
-
-  defp resume_opts(opts, session_id) do
-    opts
-    |> Keyword.put(:session_id, session_id)
-    |> Keyword.put(:resume, session_id)
-  end
-
-  defp handle_claude_pid_state(state, true), do: state
-
-  defp handle_claude_pid_state(state, false) do
-    maybe_respawn_claude(%{state | claude_pid: nil})
-  end
-
-  defp safe_start_claude(claude_module, opts) do
-    start_claude_safe(claude_module.start_link(opts))
-  end
-
-  defp start_claude_safe({:ok, pid}), do: pid
-  defp start_claude_safe(_), do: nil
 
   defp envelope(name, payload) do
     "[from #{name}] #{payload}"
@@ -218,7 +200,7 @@ defmodule El.Session do
   end
 
   defp process_tell_task(state, message, ref, server_pid) do
-    response = ask_claude(state.claude_pid, message)
+    response = Claude.ask(state.claude_pid, message)
     GenServer.cast(server_pid, {:store_tell, ref, message, response})
   end
 
@@ -359,7 +341,7 @@ defmodule El.Session do
   defp start_new_session(state) do
     session_id = El.Session.Id.generate_session_id()
     opts = Keyword.put(state.opts, :session_id, session_id)
-    pid = safe_start_claude(state.claude_module, opts)
+    pid = Claude.start(state.claude_module, opts)
     %{state | claude_pid: pid, claude_opts: opts, session_id: session_id}
   end
 
@@ -378,32 +360,8 @@ defmodule El.Session do
   end
 
   defp spawn_ask_task(state, from, message, valid_routes, ref, server_pid) do
-    response = protected_ask_work(state, message, valid_routes)
+    response = Claude.ask_work(state.claude_pid, message, valid_routes)
     GenServer.cast(server_pid, {:complete_ask, from, message, response, ref})
-  end
-
-  defp protected_ask_work(state, message, routes) do
-    do_ask_work(state, message, routes)
-  end
-
-  defp do_ask_work(state, message, []) do
-    ask_claude(state.claude_pid, message)
-  end
-
-  defp do_ask_work(state, message, [{target, payload}]) do
-    process_ask_single_route(state, message, target, payload)
-  end
-
-  defp do_ask_work(state, message, _multiple_routes) do
-    ask_claude(state.claude_pid, message)
-  end
-
-  defp process_ask_single_route(state, message, target, payload) do
-    route_if_alive(state, target, fn ->
-      relay_msg = envelope(state.name, payload)
-      GenServer.cast(Registry.via_tuple(target), {:cast_store_relay, relay_msg, ""})
-      cast_store_relay(state.name, message, "-> #{target}")
-    end)
   end
 
   defp process_ask_tell(state, target, message) do
@@ -474,35 +432,6 @@ defmodule El.Session do
   defp safe_reply(from, response) do
     spawn(fn -> GenServer.reply(from, response) end)
   end
-
-  defp ask_claude(nil, _message) do
-    "(ClaudeCode unavailable)"
-  end
-
-  defp ask_claude(claude_pid, message) do
-    protected_stream(claude_pid, message)
-  end
-
-  defp protected_stream(claude_pid, message) do
-    safe_stream_claude(claude_pid, message)
-  end
-
-  defp safe_stream_claude(claude_pid, message) do
-    stream_to_result(claude_pid, message) || ""
-  end
-
-  defp stream_to_result(claude_pid, message) do
-    claude_pid
-    |> El.ClaudeCode.stream(message)
-    |> Enum.to_list()
-    |> Enum.find_value(&extract_result/1)
-  end
-
-  defp extract_result(%ClaudeCode.Message.ResultMessage{result: result}) do
-    result
-  end
-
-  defp extract_result(_), do: nil
 
   defp store_ask_immediate(state, message, []) do
     ref = make_ref()
