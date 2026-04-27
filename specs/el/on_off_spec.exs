@@ -2,7 +2,6 @@ defmodule El.Features.OnOffSpec do
   use ExUnit.Case, async: false
 
   import Mox
-  setup :set_mox_global
   setup :verify_on_exit!
 
   describe "El.start/2" do
@@ -56,7 +55,6 @@ defmodule El.Features.OnOffSpec do
       stub(El.MockSupervisor, :terminate_child, term_fn)
       stub(El.MockMonitor, :wait_for_down, fn _, _ -> :ok end)
       El.exit(:dude)
-      Process.sleep(10)
     end
 
     test "monitors process and waits for DOWN" do
@@ -66,7 +64,6 @@ defmodule El.Features.OnOffSpec do
       stub(El.MockSupervisor, :terminate_child, stub_fn)
       stub(El.MockMonitor, :wait_for_down, fn _ref, :dude -> :ok end)
       El.exit(:dude)
-      Process.sleep(10)
     end
   end
 

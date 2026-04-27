@@ -14,8 +14,7 @@ defmodule El.Lifecycle do
   end
 
   defp exit_found([{pid, _}], name) do
-    spawn(fn -> terminate(pid, name) end)
-    :ok
+    terminate(pid, name)
   end
 
   defp exit_found([], name) do
