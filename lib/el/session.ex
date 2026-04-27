@@ -9,6 +9,7 @@ defmodule El.Session do
   alias El.Session.Router
   alias El.Session.Store
   alias El.Session.Tell
+  alias El.Session.Ask
 
   def start_link({name, session_opts}) do
     opts = [name: Registry.via_tuple(name)]
@@ -98,21 +99,8 @@ defmodule El.Session do
 
   @impl true
   def handle_cast({:complete_ask, from, message, response, ref}, state) do
-    new_state = finalize_ask(state, from, ref, message, response)
+    new_state = Ask.finalize_ask(state, from, ref, message, response)
     {:noreply, new_state}
-  end
-
-  defp finalize_ask(state, from, ref, message, response) do
-    Store.delete_ask_entry(state, message, ref)
-    Store.store_ask_entry(state, {"ask", message, response, %{}})
-    Claude.safe_reply(from, response)
-    finalize_ask_state(state, from, ref, message, response)
-  end
-
-  defp finalize_ask_state(state, from, ref, message, response) do
-    new_messages = Store.replace_ask(state.messages, ref, message, response)
-    new_pending = List.delete(state.pending_calls, from)
-    %{state | messages: new_messages, pending_calls: new_pending}
   end
 
   @impl true
@@ -133,15 +121,9 @@ defmodule El.Session do
   @impl true
   def handle_call({:ask, message}, from, state) do
     state = Claude.maybe_respawn_claude(state)
-    {ref, ask_state} = prepare_ask(state, from, message)
-    spawn_ask(ask_state, from, message, Router.detect_routes(message), ref)
+    {ref, ask_state} = Ask.prepare_ask(state, from, message)
+    Ask.spawn_ask(ask_state, from, message, Router.detect_routes(message), ref)
     {:noreply, ask_state}
-  end
-
-  defp prepare_ask(state, from, message) do
-    valid_routes = Router.filter_self_routes(Router.detect_routes(message), state)
-    new_state = %{state | pending_calls: [from | state.pending_calls]}
-    Store.store_ask_immediate(new_state, message, valid_routes)
   end
 
   @impl true
@@ -169,39 +151,8 @@ defmodule El.Session do
   @impl true
   def handle_call(:clear, _from, state) do
     Claude.stop_claude(state.claude_pid)
-    new_state = reset_session(state)
+    new_state = Ask.reset_session(state)
     {:reply, :ok, new_state}
-  end
-
-  defp reset_session(state) do
-    state
-    |> clear_messages()
-    |> start_new_session()
-  end
-
-  defp clear_messages(state) do
-    state.store_module.delete_session_messages(state.name)
-    %{state | messages: []}
-  end
-
-  defp start_new_session(state) do
-    session_id = El.Session.Id.generate_session_id()
-    opts = Keyword.put(state.opts, :session_id, session_id)
-    pid = Claude.start(state.claude_module, opts)
-    %{state | claude_pid: pid, claude_opts: opts, session_id: session_id}
-  end
-
-  defp spawn_ask(state, from, message, valid_routes, ref) do
-    server_pid = self()
-
-    state.task_module.start(fn ->
-      spawn_ask_task(state, from, message, valid_routes, ref, server_pid)
-    end)
-  end
-
-  defp spawn_ask_task(state, from, message, valid_routes, ref, server_pid) do
-    response = Claude.ask_work(state.claude_pid, message, valid_routes)
-    GenServer.cast(server_pid, {:complete_ask, from, message, response, ref})
   end
 
   @impl true
