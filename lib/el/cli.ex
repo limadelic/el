@@ -266,7 +266,9 @@ defmodule El.CLI do
     String.pad_trailing(cmd, pad) <> "  " <> desc
   end
 
-  defp daemon_node, do: :"el@127.0.0.1"
+  defp daemon_node do
+    if System.get_env("DEV"), do: :"el_dev@127.0.0.1", else: :"el@127.0.0.1"
+  end
 
   defp start_daemon_node do
     start_epmd()
@@ -313,7 +315,7 @@ defmodule El.CLI do
   end
 
   defp spawn_daemon do
-    script = :escript.script_name() |> to_string()
+    script = :escript.script_name() |> to_string() |> Path.expand()
     System.cmd("sh", ["-c", "#{script} --daemon > /dev/null 2>&1 &"])
   end
 
