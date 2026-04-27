@@ -11,8 +11,11 @@ defmodule El.Session.Claude do
   end
 
   def respawn(pid, _claude_module, _opts) when is_pid(pid) do
-    if Process.alive?(pid), do: pid, else: nil
+    check_alive(Process.alive?(pid), pid)
   end
+
+  defp check_alive(true, pid), do: pid
+  defp check_alive(false, _pid), do: nil
 
   def resume_options(opts, session_id) do
     opts
@@ -33,8 +36,11 @@ defmodule El.Session.Claude do
   end
 
   defp safe_stream(pid, message) do
-    stream_to_result(pid, message) || ""
+    pid |> stream_to_result(message) |> nil_to_empty()
   end
+
+  defp nil_to_empty(nil), do: ""
+  defp nil_to_empty(result), do: result
 
   defp stream_to_result(pid, message) do
     pid
