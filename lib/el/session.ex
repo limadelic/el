@@ -369,18 +369,21 @@ defmodule El.Session do
   end
 
   defp reset_session(state) do
-    new_session_id = generate_session_id()
-    claude_opts = Keyword.put(state.opts, :session_id, new_session_id)
-    state.store_module.delete_session_messages(state.name)
-    new_claude_pid = safe_start_claude(state.claude_module, claude_opts)
+    state
+    |> clear_messages()
+    |> start_new_session()
+  end
 
-    %{
-      state
-      | claude_pid: new_claude_pid,
-        claude_opts: claude_opts,
-        session_id: new_session_id,
-        messages: []
-    }
+  defp clear_messages(state) do
+    state.store_module.delete_session_messages(state.name)
+    %{state | messages: []}
+  end
+
+  defp start_new_session(state) do
+    session_id = generate_session_id()
+    opts = Keyword.put(state.opts, :session_id, session_id)
+    pid = safe_start_claude(state.claude_module, opts)
+    %{state | claude_pid: pid, claude_opts: opts, session_id: session_id}
   end
 
   defp stop_claude(pid) when is_pid(pid) do
