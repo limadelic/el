@@ -186,11 +186,14 @@ defmodule El.Session do
   end
 
   defp finalize_ask(state, from, ref, message, response) do
-    entry = {"ask", message, response, %{}}
-    new_messages = replace_ask(state.messages, ref, message, response)
     delete_ask_entry(state, message, ref)
-    store_ask_entry(state, entry)
+    store_ask_entry(state, {"ask", message, response, %{}})
     safe_reply(from, response)
+    finalize_ask_state(state, from, ref, message, response)
+  end
+
+  defp finalize_ask_state(state, from, ref, message, response) do
+    new_messages = replace_ask(state.messages, ref, message, response)
     new_pending = List.delete(state.pending_calls, from)
     %{state | messages: new_messages, pending_calls: new_pending}
   end
@@ -231,11 +234,14 @@ defmodule El.Session do
 
   defp spawn_tell_task(state, message, ref) do
     server_pid = self()
-
     state.task_module.start(fn ->
-      response = ask_claude(state.claude_pid, message)
-      GenServer.cast(server_pid, {:store_tell, ref, message, response})
+      process_tell_task(state, message, ref, server_pid)
     end)
+  end
+
+  defp process_tell_task(state, message, ref, server_pid) do
+    response = ask_claude(state.claude_pid, message)
+    GenServer.cast(server_pid, {:store_tell, ref, message, response})
   end
 
   defp route_all_tells(state, message, routes) do
@@ -251,15 +257,14 @@ defmodule El.Session do
 
   defp process_tell_route(state, message, target, payload) do
     route_if_alive(state, target, fn ->
-      relay_payload = envelope(state.name, payload)
-
-      GenServer.cast(
-        via_tuple(target),
-        {:cast_store_relay, relay_payload, ""}
-      )
-
-      cast_store_relay(state.name, message, "-> #{target}")
+      tell_route_target(state, message, target, payload)
     end)
+  end
+
+  defp tell_route_target(state, message, target, payload) do
+    relay_payload = envelope(state.name, payload)
+    GenServer.cast(via_tuple(target), {:cast_store_relay, relay_payload, ""})
+    cast_store_relay(state.name, message, "-> #{target}")
   end
 
   defp process_tell_response(state, response, routes) do
