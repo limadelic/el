@@ -6,14 +6,8 @@ defmodule El.Session.Id do
   end
 
   def format_uuid(hex) do
-    [
-      String.slice(hex, 0, 8),
-      String.slice(hex, 8, 4),
-      String.slice(hex, 12, 4),
-      String.slice(hex, 16, 4),
-      String.slice(hex, 20, 12)
-    ]
-    |> Enum.join("-")
+    <<a::binary-8, b::binary-4, c::binary-4, d::binary-4, e::binary-12>> = hex
+    Enum.join([a, b, c, d, e], "-")
   end
 
   def session_id(nil), do: generate_session_id()
