@@ -407,11 +407,6 @@ defmodule El.Session do
 
   defp protected_ask_work(state, message, routes) do
     do_ask_work(state, message, routes)
-  rescue
-    _ -> "(error)"
-  catch
-    :exit, _ -> "(error)"
-    _, _ -> "(error)"
   end
 
   defp do_ask_work(state, message, []) do
@@ -500,12 +495,7 @@ defmodule El.Session do
   end
 
   defp safe_reply(from, response) do
-    GenServer.reply(from, response)
-  rescue
-    _ -> :ok
-  catch
-    :exit, _ -> :ok
-    _, _ -> :ok
+    spawn(fn -> GenServer.reply(from, response) end)
   end
 
   defp ask_claude(nil, _message) do
@@ -518,11 +508,6 @@ defmodule El.Session do
 
   defp protected_stream(claude_pid, message) do
     safe_stream_claude(claude_pid, message)
-  rescue
-    _ -> "(ClaudeCode unavailable)"
-  catch
-    :exit, _ -> "(ClaudeCode unavailable)"
-    _, _ -> "(ClaudeCode unavailable)"
   end
 
   defp safe_stream_claude(claude_pid, message) do
