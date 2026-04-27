@@ -20,16 +20,24 @@ defmodule El.Application do
   end
 
   def supervisor_opts do
-    [strategy: :one_for_one, name: El.Supervisor,
-     max_restarts: 100, max_seconds: 60]
+    [
+      strategy: :one_for_one,
+      name: El.Supervisor,
+      max_restarts: 100,
+      max_seconds: 60
+    ]
   end
 
   def init_message_store do
-    dir = if El.CLI.dev?(), do: "~/.el/dev", else: "~/.el"
+    dir = store_dir()
     path = Path.expand("#{dir}/messages.dets") |> String.to_charlist()
     File.mkdir_p!(Path.expand(dir))
     {:ok, _} = :dets.open_file(:message_store, file: path, type: :bag)
   end
+
+  defp store_dir, do: store_dir(El.CLI.dev?())
+  defp store_dir(true), do: "~/.el/dev"
+  defp store_dir(false), do: "~/.el"
 
   def delete_session_messages(name) do
     message_store = Application.get_env(:el, :message_store, El.MessageStore)
