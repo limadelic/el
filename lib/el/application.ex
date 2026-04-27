@@ -20,8 +20,9 @@ defmodule El.Application do
   end
 
   def init_message_store do
-    path = Path.expand("~/.el/messages.dets") |> String.to_charlist()
-    File.mkdir_p!(Path.expand("~/.el"))
+    dir = if System.get_env("DEV"), do: "~/.el/dev", else: "~/.el"
+    path = Path.expand("#{dir}/messages.dets") |> String.to_charlist()
+    File.mkdir_p!(Path.expand(dir))
     {:ok, _} = :dets.open_file(:message_store, file: path, type: :bag)
   end
 
