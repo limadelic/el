@@ -88,8 +88,11 @@ defmodule El.Session do
   end
 
   defp maybe_respawn_claude(%{claude_pid: pid} = state) when is_pid(pid) do
-    if Process.alive?(pid), do: state, else: maybe_respawn_claude(%{state | claude_pid: nil})
+    check_claude_alive(Process.alive?(pid), state)
   end
+
+  defp check_claude_alive(true, state), do: state
+  defp check_claude_alive(false, state), do: maybe_respawn_claude(%{state | claude_pid: nil})
 
   defp envelope(name, payload) do
     "[from #{name}] #{payload}"
