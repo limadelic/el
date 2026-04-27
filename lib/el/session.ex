@@ -315,18 +315,19 @@ defmodule El.Session do
   @impl true
   def handle_call({:ask, message}, from, state) do
     state = maybe_respawn_claude(state)
-    routes = detect_routes(message)
+    {ref, ask_state} = prepare_ask(state, from, message)
+    spawn_ask(ask_state, from, message, detect_routes(message), ref)
+    {:noreply, ask_state}
+  end
 
-    valid_routes =
-      Enum.filter(routes, fn {target, _} -> target != state.name end)
-
+  defp prepare_ask(state, from, message) do
+    valid_routes = filter_self_routes(detect_routes(message), state)
     new_state = %{state | pending_calls: [from | state.pending_calls]}
+    store_ask_immediate(new_state, message, valid_routes)
+  end
 
-    {ref, state_with_pending} =
-      store_ask_immediate(new_state, message, valid_routes)
-
-    spawn_ask(state_with_pending, from, message, valid_routes, ref)
-    {:noreply, state_with_pending}
+  defp filter_self_routes(routes, state) do
+    Enum.filter(routes, fn {target, _} -> target != state.name end)
   end
 
   @impl true
@@ -347,33 +348,39 @@ defmodule El.Session do
   @impl true
   def handle_call({:ask_tell, target, message}, _from, state) do
     response = process_ask_tell(state, target, message)
-    entry = {"relay", message, response, %{from: state.name}}
+    entry = build_relay_entry(message, response, state)
+    {:reply, response, store_relay_entry(state, entry)}
+  end
+
+  defp build_relay_entry(message, response, state) do
+    {"relay", message, response, %{from: state.name}}
+  end
+
+  defp store_relay_entry(state, entry) do
     state.store_module.store_message(state.name, entry)
-
-    new_state = %{state | messages: state.messages ++ [entry]}
-
-    {:reply, response, new_state}
+    %{state | messages: state.messages ++ [entry]}
   end
 
   @impl true
   def handle_call(:clear, _from, state) do
     stop_claude(state.claude_pid)
+    new_state = reset_session(state)
+    {:reply, :ok, new_state}
+  end
 
+  defp reset_session(state) do
     new_session_id = generate_session_id()
     claude_opts = Keyword.put(state.opts, :session_id, new_session_id)
+    state.store_module.delete_session_messages(state.name)
     new_claude_pid = safe_start_claude(state.claude_module, claude_opts)
 
-    state.store_module.delete_session_messages(state.name)
-
-    new_state = %{
+    %{
       state
       | claude_pid: new_claude_pid,
         claude_opts: claude_opts,
         session_id: new_session_id,
         messages: []
     }
-
-    {:reply, :ok, new_state}
   end
 
   defp stop_claude(pid) when is_pid(pid) do
