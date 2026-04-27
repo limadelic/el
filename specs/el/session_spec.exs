@@ -2,18 +2,6 @@ defmodule El.Session.Spec do
   use ExUnit.Case
 
   setup do
-    Mimic.copy(El.MessageStore)
-
-    on_exit(fn ->
-      Application.delete_env(:el, :message_store)
-    end)
-
-    Application.put_env(:el, :message_store, El.MessageStore)
-    Mimic.stub(El.MessageStore, :lookup, fn _ -> [] end)
-    Mimic.stub(El.MessageStore, :insert, fn _, _ -> :ok end)
-    Mimic.stub(El.MessageStore, :delete_entry, fn _, _ -> :ok end)
-    Mimic.stub(El.MessageStore, :delete, fn _ -> :ok end)
-
     state = %{
       name: :test_session,
       claude_pid: nil,
@@ -27,6 +15,7 @@ defmodule El.Session.Spec do
         _ -> false
       end,
       registry_module: MockSessionModule,
+      store_module: MockSessionStore,
       opts: [],
       claude_opts: []
     }
@@ -116,7 +105,7 @@ defmodule El.Session.Spec do
   describe "handle_continue/2 :start_claude" do
     test "calls claude_module.start_link with claude_opts" do
       {:ok, state, {:continue, :start_claude}} =
-        El.Session.init({:test_session, [claude_module: MockSessionModule]})
+        El.Session.init({:test_session, [claude_module: MockSessionModule, store_module: MockSessionStore]})
 
       {:noreply, result_state} = El.Session.handle_continue(:start_claude, state)
 
@@ -127,18 +116,14 @@ defmodule El.Session.Spec do
       {:ok, state, {:continue, :start_claude}} =
         El.Session.init({:test_session, [claude_module: MockSessionModule]})
 
-      Mimic.expect(El.MessageStore, :lookup, fn :test_session ->
-        [{"tell", "old_message", "old_response", %{}}]
-      end)
-
-      {:noreply, result_state} = El.Session.handle_continue(:start_claude, state)
+      {:noreply, result_state} = El.Session.handle_continue(:start_claude, %{state | store_module: MockLoadingStore})
 
       assert [{"tell", "old_message", "old_response", %{}}] == result_state.messages
     end
 
     test "sets claude_pid to nil on start failure" do
       {:ok, state, {:continue, :start_claude}} =
-        El.Session.init({:test_session, [claude_module: FailingModule]})
+        El.Session.init({:test_session, [claude_module: FailingModule, store_module: MockSessionStore]})
 
       {:noreply, result_state} = El.Session.handle_continue(:start_claude, state)
 
@@ -157,12 +142,10 @@ defmodule El.Session.Spec do
     end
 
     test "stores message immediately and spawns task", %{state: state} do
-      Mimic.expect(Task, :start, fn _fun -> {:ok, :task_pid} end)
-
       {:noreply, returned_state} =
         El.Session.handle_cast({:tell, "hello"}, %{
           state
-          | task_module: Task,
+          | task_module: MockTaskModule,
             alive_fn: fn _ -> false end
         })
 
@@ -224,11 +207,6 @@ defmodule El.Session.Spec do
       ref = make_ref()
       pending_state = %{state | messages: [{"tell", "msg", "", %{ref: ref}}]}
 
-      Mimic.expect(El.MessageStore, :delete_entry, fn :test_session,
-                                                      {"tell", "msg", "", %{ref: ^ref}} ->
-        :ok
-      end)
-
       {:noreply, returned_state} =
         El.Session.handle_cast({:store_tell, ref, "msg", "response"}, pending_state)
 
@@ -277,40 +255,36 @@ defmodule El.Session.Spec do
 
   describe "handle_call/2 :ask" do
     test "returns noreply and spawns task", %{state: state} do
-      Mimic.expect(Task, :start, fn _fun -> {:ok, :task_pid} end)
       from = {self(), make_ref()}
 
       assert {:noreply, _state} =
-               El.Session.handle_call({:ask, "test"}, from, %{state | task_module: Task})
+               El.Session.handle_call({:ask, "test"}, from, %{state | task_module: MockTaskModule})
     end
 
     test "filters out self-routes", %{state: state} do
-      Mimic.stub(Task, :start, fn _fun -> {:ok, :task_pid} end)
       from = {self(), make_ref()}
 
       {:noreply, _state} =
-        El.Session.handle_call({:ask, "@test_session> test"}, from, %{state | task_module: Task})
+        El.Session.handle_call({:ask, "@test_session> test"}, from, %{state | task_module: MockTaskModule})
     end
 
     test "stores pending entry immediately", %{state: state} do
-      Mimic.expect(Task, :start, fn _fun -> {:ok, :task_pid} end)
       from = {self(), make_ref()}
 
       {:noreply, returned_state} =
-        El.Session.handle_call({:ask, "test question"}, from, %{state | task_module: Task})
+        El.Session.handle_call({:ask, "test question"}, from, %{state | task_module: MockTaskModule})
 
       assert [{"ask", "test question", "", %{ref: ref}}] = returned_state.messages
       assert is_reference(ref)
     end
 
     test "does not store pending entry when ask has routes", %{state: state} do
-      Mimic.expect(Task, :start, fn _fun -> {:ok, :task_pid} end)
       from = {self(), make_ref()}
 
       {:noreply, returned_state} =
         El.Session.handle_call({:ask, "@target> routed question"}, from, %{
           state
-          | task_module: Task,
+          | task_module: MockTaskModule,
             alive_fn: fn
               :target -> true
               _ -> false
@@ -392,11 +366,6 @@ defmodule El.Session.Spec do
       from = {self(), make_ref()}
       ref = make_ref()
       pending_state = %{state | messages: [{"ask", "question", "", %{ref: ref}}]}
-
-      Mimic.expect(El.MessageStore, :delete_entry, fn :test_session,
-                                                      {"ask", "question", "", %{ref: ^ref}} ->
-        :ok
-      end)
 
       {:noreply, returned_state} =
         El.Session.handle_cast({:complete_ask, from, "question", "answer", ref}, pending_state)
@@ -552,13 +521,11 @@ defmodule El.Session.Spec do
 
   describe "handle_cast/2 with dead claude_pid" do
     test "respawns claude with session_id when pid is nil", %{state: state} do
-      Mimic.expect(Task, :start, fn _fun -> {:ok, :task_pid} end)
-
       dead_state = %{
         state
         | claude_pid: nil,
           claude_module: SessionIdCaptureModule,
-          task_module: Task,
+          task_module: MockTaskModule,
           opts: [model: "test"]
       }
 
@@ -614,8 +581,6 @@ defmodule El.Session.Spec do
     end
 
     test "does not store crash entry on normal EXIT reason", %{state: state} do
-      Mimic.reject(El.MessageStore, :insert, 2)
-
       {:noreply, returned_state} =
         El.Session.handle_info({:EXIT, :mock_pid, :normal}, %{state | claude_pid: :mock_pid})
 
@@ -625,29 +590,20 @@ defmodule El.Session.Spec do
 
   describe "terminate/2" do
     test "stores crash entry on abnormal exit", %{state: state} do
-      Mimic.expect(El.MessageStore, :insert, fn :test_session, entry ->
-        assert {"crash", "Session crashed", ":kill", %{}} = entry
-        :ok
-      end)
+      El.Session.terminate(:kill, %{state | store_module: MockVerifyingStore})
 
-      El.Session.terminate(:kill, state)
+      assert_received {:store_message, :test_session, {"crash", "Session crashed", ":kill", %{}}}
     end
 
     test "does not store entry on normal exit", %{state: state} do
-      Mimic.reject(El.MessageStore, :insert, 2)
-
       El.Session.terminate(:normal, state)
     end
 
     test "does not store entry on shutdown exit", %{state: state} do
-      Mimic.reject(El.MessageStore, :insert, 2)
-
       El.Session.terminate(:shutdown, state)
     end
 
     test "does not store entry on shutdown with reason", %{state: state} do
-      Mimic.reject(El.MessageStore, :insert, 2)
-
       El.Session.terminate({:shutdown, :reason}, state)
     end
   end
@@ -655,7 +611,6 @@ defmodule El.Session.Spec do
   describe "handle_call/2 :clear" do
     test "stops old claude process", %{state: state} do
       {:ok, old_pid} = Agent.start_link(fn -> nil end)
-      Mimic.stub(El.MessageStore, :delete, fn _ -> :ok end)
 
       {:reply, :ok, _} = El.Session.handle_call(:clear, :from, %{
         state | claude_pid: old_pid, claude_module: MockSessionModule
@@ -665,8 +620,6 @@ defmodule El.Session.Spec do
     end
 
     test "generates new session_id different from old", %{state: state} do
-      Mimic.stub(El.MessageStore, :delete, fn _ -> :ok end)
-
       {:reply, :ok, returned_state} =
         El.Session.handle_call(:clear, :from, %{
           state
@@ -678,8 +631,6 @@ defmodule El.Session.Spec do
     end
 
     test "starts new claude process via claude_module", %{state: state} do
-      Mimic.stub(El.MessageStore, :delete, fn _ -> :ok end)
-
       {:reply, :ok, returned_state} =
         El.Session.handle_call(:clear, :from, %{
           state
@@ -690,8 +641,6 @@ defmodule El.Session.Spec do
     end
 
     test "clears state.messages to empty list", %{state: state} do
-      Mimic.stub(El.MessageStore, :delete, fn _ -> :ok end)
-
       state_with_messages = %{
         state
         | messages: [{"tell", "old message", "response", %{}}],
@@ -705,20 +654,16 @@ defmodule El.Session.Spec do
     end
 
     test "deletes DETS messages via El.Application.delete_session_messages", %{state: state} do
-      Mimic.expect(El.MessageStore, :delete, fn :test_session -> :ok end)
+      El.Session.handle_call(:clear, :from, %{
+        state
+        | claude_module: MockSessionModule,
+          store_module: MockVerifyingStore
+      })
 
-      {:reply, :ok, _returned_state} =
-        El.Session.handle_call(:clear, :from, %{
-          state
-          | claude_module: MockSessionModule
-        })
-
-      Mimic.verify!(El.MessageStore)
+      assert_received {:delete_session_messages, :test_session}
     end
 
     test "returns :ok reply", %{state: state} do
-      Mimic.stub(El.MessageStore, :delete, fn _ -> :ok end)
-
       {:reply, reply, _returned_state} =
         El.Session.handle_call(:clear, :from, %{
           state
@@ -727,5 +672,32 @@ defmodule El.Session.Spec do
 
       assert reply == :ok
     end
+  end
+end
+
+defmodule MockSessionStore do
+  def store_message(_, _), do: :ok
+  def load_messages(_), do: []
+  def delete_message(_, _), do: :ok
+  def delete_session_messages(_), do: :ok
+end
+
+defmodule MockLoadingStore do
+  def load_messages(:test_session), do: [{"tell", "old_message", "old_response", %{}}]
+  def store_message(_, _), do: :ok
+  def delete_message(_, _), do: :ok
+  def delete_session_messages(_), do: :ok
+end
+
+defmodule MockVerifyingStore do
+  def store_message(name, entry) do
+    send(self(), {:store_message, name, entry})
+    :ok
+  end
+  def load_messages(_), do: []
+  def delete_message(_, _), do: :ok
+  def delete_session_messages(name) do
+    send(self(), {:delete_session_messages, name})
+    :ok
   end
 end

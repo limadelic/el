@@ -53,6 +53,7 @@ defmodule El.Session do
     task_module = Keyword.get(opts, :task_module, Task)
     alive_fn = Keyword.get(opts, :alive_fn, &El.Session.alive?/1)
     registry_module = Keyword.get(opts, :registry_module, Registry)
+    store_module = Keyword.get(opts, :store_module, El.Application)
     {session_id, opts_without_resume} = extract_resume_or_generate_session_id(opts)
     claude_opts = Keyword.put(opts_without_resume, :session_id, session_id)
 
@@ -67,6 +68,7 @@ defmodule El.Session do
        task_module: task_module,
        alive_fn: alive_fn,
        registry_module: registry_module,
+       store_module: store_module,
        opts: opts,
        claude_opts: claude_opts
      }, {:continue, :start_claude}}
@@ -74,7 +76,7 @@ defmodule El.Session do
 
   @impl true
   def handle_continue(:start_claude, state) do
-    messages = El.Application.load_messages(state.name)
+    messages = state.store_module.load_messages(state.name)
     claude_pid = safe_start_claude(state.claude_module, state.claude_opts)
     {:noreply, %{state | claude_pid: claude_pid, messages: messages}}
   end
@@ -148,8 +150,8 @@ defmodule El.Session do
   def handle_cast({:store_tell, ref, message, response}, state) do
     new_messages = replace_tell(state.messages, ref, message, response)
     new_state = %{state | messages: new_messages}
-    El.Application.delete_message(state.name, {"tell", message, "", %{ref: ref}})
-    El.Application.store_message(state.name, {"tell", message, response, %{}})
+    state.store_module.delete_message(state.name, {"tell", message, "", %{ref: ref}})
+    state.store_module.store_message(state.name, {"tell", message, response, %{}})
     routes = detect_routes(response)
     process_tell_response(state, response, routes)
     {:noreply, new_state}
@@ -159,8 +161,8 @@ defmodule El.Session do
   def handle_cast({:complete_ask, from, message, response, ref}, state) do
     entry = {"ask", message, response, %{}}
     new_messages = replace_ask(state.messages, ref, message, response)
-    El.Application.delete_message(state.name, {"ask", message, "", %{ref: ref}})
-    El.Application.store_message(state.name, entry)
+    state.store_module.delete_message(state.name, {"ask", message, "", %{ref: ref}})
+    state.store_module.store_message(state.name, entry)
     safe_reply(from, response)
     new_pending = List.delete(state.pending_calls, from)
     {:noreply, %{state | messages: new_messages, pending_calls: new_pending}}
@@ -169,7 +171,7 @@ defmodule El.Session do
   @impl true
   def handle_cast({:cast_store_relay, message, response}, state) do
     entry = {"relay", message, response, %{from: state.name}}
-    El.Application.store_message(state.name, entry)
+    state.store_module.store_message(state.name, entry)
     {:noreply, %{state | messages: state.messages ++ [entry]}}
   end
 
@@ -177,7 +179,7 @@ defmodule El.Session do
   def handle_cast({:tell_ask, target, message}, state) do
     response = process_tell_ask(state, target, message)
     entry = {"relay", message, response, %{from: state.name}}
-    El.Application.store_message(state.name, entry)
+    state.store_module.store_message(state.name, entry)
 
     new_state = %{state | messages: state.messages ++ [entry]}
 
@@ -288,7 +290,7 @@ defmodule El.Session do
   def handle_call({:ask_tell, target, message}, _from, state) do
     response = process_ask_tell(state, target, message)
     entry = {"relay", message, response, %{from: state.name}}
-    El.Application.store_message(state.name, entry)
+    state.store_module.store_message(state.name, entry)
 
     new_state = %{state | messages: state.messages ++ [entry]}
 
@@ -303,7 +305,7 @@ defmodule El.Session do
     claude_opts = Keyword.put(state.opts, :session_id, new_session_id)
     new_claude_pid = safe_start_claude(state.claude_module, claude_opts)
 
-    El.Application.delete_session_messages(state.name)
+    state.store_module.delete_session_messages(state.name)
 
     new_state = %{
       state
@@ -379,7 +381,7 @@ defmodule El.Session do
   def handle_info({:EXIT, pid, reason}, %{claude_pid: pid} = state) do
     Logger.error("Session #{state.name} - Claude process died: #{inspect(reason)}")
     entry = {"crash", "session died", inspect(reason), %{}}
-    El.Application.store_message(state.name, entry)
+    state.store_module.store_message(state.name, entry)
 
     Enum.each(state.pending_calls, fn from ->
       safe_reply(from, "(error)")
@@ -411,7 +413,7 @@ defmodule El.Session do
 
   @impl true
   def terminate(reason, state) do
-    El.Application.store_message(
+    state.store_module.store_message(
       state.name,
       {"crash", "Session crashed", inspect(reason), %{}}
     )
@@ -454,7 +456,7 @@ defmodule El.Session do
   defp store_ask_immediate(state, message, []) do
     ref = make_ref()
     entry = {"ask", message, "", %{ref: ref}}
-    El.Application.store_message(state.name, entry)
+    state.store_module.store_message(state.name, entry)
     new_state = %{state | messages: state.messages ++ [entry]}
     {ref, new_state}
   end
@@ -466,7 +468,7 @@ defmodule El.Session do
 
   defp store_tell_immediate(state, message, ref, []) do
     entry = {"tell", message, "", %{ref: ref}}
-    El.Application.store_message(state.name, entry)
+    state.store_module.store_message(state.name, entry)
     %{state | messages: state.messages ++ [entry]}
   end
 
