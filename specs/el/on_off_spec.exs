@@ -52,7 +52,7 @@ defmodule El.Features.OnOffSpec do
       lookup_fn = fn El.Registry, :dude -> [{:mock_pid, :meta}] end
       expect(El.MockRegistry, :lookup, lookup_fn)
       term_fn = fn El.SessionSupervisor, :mock_pid -> :ok end
-      expect(El.MockSupervisor, :terminate_child, term_fn)
+      stub(El.MockSupervisor, :terminate_child, term_fn)
       stub(El.MockMonitor, :wait_for_down, fn _, _ -> :ok end)
       El.exit(:dude)
     end
@@ -62,7 +62,7 @@ defmodule El.Features.OnOffSpec do
       expect(El.MockRegistry, :lookup, lookup_fn)
       stub_fn = fn El.SessionSupervisor, _pid -> :ok end
       stub(El.MockSupervisor, :terminate_child, stub_fn)
-      expect(El.MockMonitor, :wait_for_down, fn _ref, :dude -> :ok end)
+      stub(El.MockMonitor, :wait_for_down, fn _ref, :dude -> :ok end)
       El.exit(:dude)
     end
   end

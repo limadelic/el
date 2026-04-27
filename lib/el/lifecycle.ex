@@ -8,19 +8,19 @@ defmodule El.Lifecycle do
   end
 
   defp do_exit(name) do
-    exit_if_found(name, El.registry().lookup(El.Registry, name))
-  rescue
-    _ -> :ok
-  end
+    case El.registry().lookup(El.Registry, name) do
+      [{pid, _}] ->
+        spawn(fn ->
+          ref = Process.monitor(pid)
+          El.supervisor().terminate_child(El.SessionSupervisor, pid)
+          El.monitor().wait_for_down(ref, name)
+        end)
 
-  defp exit_if_found(name, [{pid, _}]) do
-    ref = Process.monitor(pid)
-    El.supervisor().terminate_child(El.SessionSupervisor, pid)
-    El.monitor().wait_for_down(ref, name)
-  end
+        :ok
 
-  defp exit_if_found(name, []) do
-    El.app().delete_session_messages(name)
-    :not_found
+      [] ->
+        El.app().delete_session_messages(name)
+        :not_found
+    end
   end
 end
