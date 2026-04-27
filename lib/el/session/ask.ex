@@ -11,13 +11,15 @@ defmodule El.Session.Ask do
 
   def spawn_ask(state, from, message, valid_routes, ref) do
     server_pid = self()
+    ask_info = {from, message, ref}
 
     state.task_module.start(fn ->
-      spawn_ask_task(state, from, message, valid_routes, ref, server_pid)
+      spawn_ask_task(state, ask_info, valid_routes, server_pid)
     end)
   end
 
-  defp spawn_ask_task(state, from, message, valid_routes, ref, server_pid) do
+  defp spawn_ask_task(state, ask_info, valid_routes, server_pid) do
+    {from, message, ref} = ask_info
     response = Claude.ask_work(state.claude_pid, message, valid_routes)
     GenServer.cast(server_pid, {:complete_ask, from, message, response, ref})
   end
