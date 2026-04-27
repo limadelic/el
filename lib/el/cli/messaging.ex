@@ -15,4 +15,24 @@ defmodule El.CLI.Messaging do
     result = el_module.ask(name_atom, msg)
     Output.handle_result(result, name)
   end
+
+  def execute_tell_ask(name, target, words, el_module) do
+    target_atom = String.to_atom(target)
+    msg = Enum.join(words, " ")
+    name_atom = String.to_atom(name)
+    handle_tell_ask(name_atom, target_atom, msg, name, el_module)
+  end
+
+  def execute_ask_tell(name, target, words, el_module) do
+    target_atom = String.to_atom(target)
+    msg = Enum.join(words, " ")
+    name_atom = String.to_atom(name)
+    handle_ask_tell(name_atom, target_atom, msg, name, el_module)
+  end
+
+  def execute_msg(name, words, el_module) do
+    msg = Enum.join(words, " ")
+    name_atom = String.to_atom(name)
+    handle_msg(name_atom, msg, name, el_module)
+  end
 end
