@@ -1,5 +1,6 @@
 defmodule El.Session.Spec do
   use ExUnit.Case
+  import Mox
 
   setup do
     state = %{
@@ -495,6 +496,7 @@ defmodule El.Session.Spec do
     end
 
     test "returns route message when target running", %{state: state, alive_fn_target: alive_fn} do
+      Mox.stub(El.MockSession, :tell, fn _, _ -> :ok end)
       {:reply, response, _returned_state} =
         El.Session.handle_call({:ask_tell, :target, "message"}, :from, %{
           state
@@ -505,6 +507,7 @@ defmodule El.Session.Spec do
     end
 
     test "stores message when target running", %{state: state, alive_fn_target: alive_fn} do
+      Mox.stub(El.MockSession, :tell, fn _, _ -> :ok end)
       {:reply, _response, returned_state} =
         El.Session.handle_call({:ask_tell, :target, "message"}, :from, %{
           state
@@ -525,6 +528,7 @@ defmodule El.Session.Spec do
     end
 
     test "stores relay message", %{state: state, alive_fn_target: alive_fn} do
+      Mox.stub(El.MockSession, :tell, fn _, _ -> :ok end)
       {:reply, _response, returned_state} =
         El.Session.handle_call({:ask_tell, :target, "message"}, :from, %{
           state
