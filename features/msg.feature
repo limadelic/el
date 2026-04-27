@@ -14,9 +14,7 @@ Feature: Msg
     * > el dude the dude:
       | dude |
     * > el dude abides
-    * > el dude log:
-      | abides |
     * > el dude log all:
-      | knock |
-      | dude  |
+      | knock  |
+      | dude   |
       | abides |
