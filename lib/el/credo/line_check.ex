@@ -24,14 +24,17 @@ defmodule El.Credo.LineCheck do
 
   def issue_for(check, name, lines, max, meta) do
     msg = "#{name} is too long (#{lines} lines, max is #{max})."
+    build_issue(check, msg, meta, calc_priority(lines - max))
+  end
 
+  defp build_issue(check, msg, meta, pri) do
     %{
       @base_issue
       | check: check,
         message: msg,
         line_no: meta[:line],
         column: meta[:column],
-        priority: calc_priority(lines - max)
+        priority: pri
     }
   end
 
