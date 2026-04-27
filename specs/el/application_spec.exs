@@ -71,14 +71,14 @@ defmodule El.Application.Spec do
 
   test "uses dev DETS path when DEV is set" do
     System.put_env("DEV", "1")
-    dir = if System.get_env("DEV"), do: "~/.el/dev", else: "~/.el"
+    dir = if El.CLI.dev?(), do: "~/.el/dev", else: "~/.el"
     assert dir == "~/.el/dev"
     System.delete_env("DEV")
   end
 
   test "uses prod DETS path when DEV is not set" do
     System.delete_env("DEV")
-    dir = if System.get_env("DEV"), do: "~/.el/dev", else: "~/.el"
+    dir = if El.CLI.dev?(), do: "~/.el/dev", else: "~/.el"
     assert dir == "~/.el"
   end
 end

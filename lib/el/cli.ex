@@ -8,6 +8,10 @@ defmodule El.CLI do
 
   defp el, do: Application.get_env(:el, :el_module, El)
 
+  def dev? do
+    System.get_env("DEV") != nil or Path.type(to_string(:escript.script_name())) == :relative
+  end
+
   def daemon_script do
     :escript.script_name() |> to_string() |> Path.expand()
   end
@@ -273,7 +277,7 @@ defmodule El.CLI do
   end
 
   def daemon_node do
-    if System.get_env("DEV"), do: :"el_dev@127.0.0.1", else: :"el@127.0.0.1"
+    if dev?(), do: :"el_dev@127.0.0.1", else: :"el@127.0.0.1"
   end
 
   defp start_daemon_node do

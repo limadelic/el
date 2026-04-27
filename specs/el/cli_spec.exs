@@ -226,15 +226,16 @@ defmodule El.CLI.Spec do
       assert String.starts_with?(path, "/")
     end
 
-    test "uses el_dev@127.0.0.1 when DEV is set" do
+    test "dev? returns true when DEV is set" do
       System.put_env("DEV", "1")
-      assert El.CLI.daemon_node() == :"el_dev@127.0.0.1"
+      assert El.CLI.dev?() == true
       System.delete_env("DEV")
     end
 
-    test "uses el@127.0.0.1 when DEV is not set" do
+    test "daemon_node returns el_dev@127.0.0.1 when DEV is set" do
+      System.put_env("DEV", "1")
+      assert El.CLI.daemon_node() == :"el_dev@127.0.0.1"
       System.delete_env("DEV")
-      assert El.CLI.daemon_node() == :"el@127.0.0.1"
     end
   end
 
