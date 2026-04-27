@@ -83,33 +83,6 @@ defmodule El.Session.Claude do
 
   def stop_claude(_), do: :ok
 
-  def clear_pending_calls(pending) do
-    Enum.each(pending, &safe_reply(&1, "(error)"))
-  end
-
-  def handle_claude_crash(state, reason) do
-    log_claude_death(state.name, reason)
-    entry = crash_entry(reason)
-    store_crash(state, entry)
-    crash_state(state, entry)
-  end
-
-  defp crash_entry(reason), do: {"crash", "session died", inspect(reason), %{}}
-
-  defp store_crash(state, entry) do
-    state.store_module.store_message(state.name, entry)
-  end
-
-  defp crash_state(state, entry) do
-    clear_pending_calls(state.pending_calls)
-    %{state | claude_pid: nil, pending_calls: [], messages: state.messages ++ [entry]}
-  end
-
-  defp log_claude_death(name, reason) do
-    msg = "Session #{name} - Claude process died: #{inspect(reason)}"
-    Logger.error(msg)
-  end
-
   def safe_reply(from, response) do
     spawn(fn -> GenServer.reply(from, response) end)
   end

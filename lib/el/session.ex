@@ -5,6 +5,7 @@ defmodule El.Session do
 
   alias El.Session.Registry
   alias El.Session.Claude
+  alias El.Session.Crash
   alias El.Session.Router
   alias El.Session.Store
 
@@ -233,13 +234,13 @@ defmodule El.Session do
 
   @impl true
   def handle_info({:EXIT, pid, :normal}, %{claude_pid: pid} = state) do
-    Claude.clear_pending_calls(state.pending_calls)
+    Crash.clear_pending_calls(state.pending_calls)
     {:noreply, %{state | claude_pid: nil, pending_calls: []}}
   end
 
   @impl true
   def handle_info({:EXIT, pid, reason}, %{claude_pid: pid} = state) do
-    {:noreply, Claude.handle_claude_crash(state, reason)}
+    {:noreply, Crash.handle_claude_crash(state, reason)}
   end
 
   @impl true
