@@ -56,8 +56,8 @@ defmodule El.Application.Spec do
 
   test "load_messages returns entries from store" do
     name = :test_session
-    entry1 = {"tell", "msg1", "resp1", %{}}
-    entry2 = {"tell", "msg2", "resp2", %{}}
+    _entry1 = {"tell", "msg1", "resp1", %{}}
+    _entry2 = {"tell", "msg2", "resp2", %{}}
 
     messages = El.Application.load_messages(name)
     assert messages == []
