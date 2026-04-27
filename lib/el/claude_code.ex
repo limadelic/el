@@ -3,13 +3,21 @@ defmodule El.ClaudeCode do
 
   def start_link(opts) do
     session_module = extract_session_module(opts[:session_module])
-    cli_path = Application.get_env(:claude_code, :cli_path, :global)
-
     {session_id, remaining_opts} = extract_session_id(opts)
+    build_and_start(session_module, session_id, remaining_opts, opts)
+  end
+
+  defp build_and_start(session_module, session_id, remaining_opts, opts) do
+    cli_path = Application.get_env(:claude_code, :cli_path, :global)
     session_opts = base_session_opts(session_id, cli_path)
-    final_opts = add_model(session_opts, remaining_opts[:model])
-    final_opts = add_resume_if_present(final_opts, opts)
+    final_opts = build_final_opts(session_opts, remaining_opts, opts)
     session_module.start_link(final_opts)
+  end
+
+  defp build_final_opts(session_opts, remaining_opts, opts) do
+    session_opts
+    |> add_model(remaining_opts[:model])
+    |> add_resume_if_present(opts)
   end
 
   defp extract_session_module(nil) do
