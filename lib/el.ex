@@ -14,14 +14,13 @@ defmodule El do
   end
 
   defp start_if_needed(name, opts, []) do
-    supervisor().start_child(El.SessionSupervisor, {El.Session, {name, opts}})
+    filtered_opts = Keyword.drop(opts, [:registry, :supervisor, :monitor, :app])
+    supervisor().start_child(El.SessionSupervisor, {El.Session, {name, filtered_opts}})
     name
   end
 
   def tell(name, message) do
-    s = session()
-    IO.warn("session() returned #{inspect(s)}")
-    s.tell(name, message)
+    session().tell(name, message)
   end
 
   def ask(name, message) do

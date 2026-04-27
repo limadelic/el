@@ -52,6 +52,7 @@ defmodule El.MixProject do
     [
       {:claude_code, "~> 0.36"},
       {:mimic, "~> 1.7", only: :test},
+      {:mox, "~> 1.0", only: :test},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
