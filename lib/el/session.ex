@@ -8,6 +8,7 @@ defmodule El.Session do
   alias El.Session.Crash
   alias El.Session.Router
   alias El.Session.Store
+  alias El.Session.Tell
 
   def start_link({name, session_opts}) do
     opts = [name: Registry.via_tuple(name)]
@@ -84,15 +85,7 @@ defmodule El.Session do
   @impl true
   def handle_cast({:tell, message}, state) do
     state = Claude.maybe_respawn_claude(state)
-    tell_impl(state, message)
-  end
-
-  defp tell_impl(state, message) do
-    routes = Router.detect_routes(message)
-    ref = make_ref()
-    new_state = Store.store_tell_immediate(state, message, ref, routes)
-    process_tell(new_state, message, ref, routes)
-    {:noreply, new_state}
+    Tell.tell_impl(state, message)
   end
 
   @impl true
@@ -135,27 +128,6 @@ defmodule El.Session do
     entry = {"relay", message, response, %{from: state.name}}
     state.store_module.store_message(state.name, entry)
     {:noreply, %{state | messages: state.messages ++ [entry]}}
-  end
-
-  defp process_tell(state, message, ref, []) do
-    spawn_tell_task(state, message, ref)
-  end
-
-  defp process_tell(state, message, _ref, routes) do
-    Router.route_all_tells(state, message, routes)
-  end
-
-  defp spawn_tell_task(state, message, ref) do
-    server_pid = self()
-
-    state.task_module.start(fn ->
-      process_tell_task(state, message, ref, server_pid)
-    end)
-  end
-
-  defp process_tell_task(state, message, ref, server_pid) do
-    response = Claude.ask(state.claude_pid, message)
-    GenServer.cast(server_pid, {:store_tell, ref, message, response})
   end
 
   @impl true
