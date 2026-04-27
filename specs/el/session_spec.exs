@@ -1,6 +1,5 @@
 defmodule El.Session.Spec do
   use ExUnit.Case
-  import Mox
 
   setup do
     state = %{
