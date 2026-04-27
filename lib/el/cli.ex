@@ -1,5 +1,5 @@
 defmodule El.CLI do
-  alias El.CLI.{Daemon, Router}
+  alias El.CLI.{Daemon, Router, Output}
 
   defp version(vsn) when is_list(vsn), do: "v" <> List.to_string(vsn)
   defp version(_), do: "v0.1.0"
@@ -7,20 +7,6 @@ defmodule El.CLI do
   defp version do
     Application.spec(:el, :vsn) |> version()
   end
-
-  @usage_cmds [
-    {"el v0.1.0", ""},
-    {"el -v", "version"},
-    {"el ls", "list sessions"},
-    {"el <name> [-m <model>]", "start or status"},
-    {"el <name> <msg>", "send a msg"},
-    {"el <name|glob> log [n|all]", "view log (default: last 1)"},
-    {"el <name|glob> clear", "clear log"},
-    {"el <name|glob> exit", "exit session"},
-    {"el exit", "exit all sessions"}
-  ]
-
-  defp usage_cmds, do: @usage_cmds
 
   defp el, do: Application.get_env(:el, :el_module, El)
 
@@ -51,7 +37,7 @@ defmodule El.CLI do
   end
 
   def execute(:usage, _args) do
-    IO.puts(usage_message())
+    IO.puts(Output.usage_message())
   end
 
   def execute(:version, _args) do
@@ -123,7 +109,7 @@ defmodule El.CLI do
 
   defp execute_log(name, count) when is_binary(name) do
     result = log_for_name(name, count)
-    handle_log_result(result, name)
+    Output.handle_log_result(result, name)
   end
 
   defp log_for_name(name, count) when is_binary(name) do
@@ -166,7 +152,7 @@ defmodule El.CLI do
 
   defp clear_single(name) do
     result = el().clear(String.to_atom(name))
-    handle_result(result, name)
+    Output.handle_result(result, name)
   end
 
   defp pattern?(name) do
@@ -193,15 +179,7 @@ defmodule El.CLI do
   end
 
   defp handle_ls do
-    el().ls() |> show_sessions()
-  end
-
-  defp show_sessions([]) do
-    IO.puts("No sessions running. Start one: el <name>")
-  end
-
-  defp show_sessions(names) do
-    Enum.each(names, &IO.puts/1)
+    el().ls() |> Output.show_sessions()
   end
 
   defp handle_find_daemon_for_start(name, opts) do
@@ -226,60 +204,21 @@ defmodule El.CLI do
 
   defp handle_tell_ask(name_atom, target_atom, msg, name) do
     result = el().tell_ask(name_atom, target_atom, msg)
-    handle_result(result, name)
+    Output.handle_result(result, name)
   end
 
   defp handle_ask_tell(name_atom, target_atom, msg, name) do
     result = el().ask_tell(name_atom, target_atom, msg)
-    handle_result(result, name)
+    Output.handle_result(result, name)
   end
 
   defp handle_msg(name_atom, msg, name) do
     result = el().ask(name_atom, msg)
-    handle_result(result, name)
+    Output.handle_result(result, name)
   end
 
   defp handle_exit(name_atom, name) do
     result = el().exit(name_atom)
-    handle_result(result, name)
-  end
-
-  defp handle_log_result(:not_found, name) do
-    handle_not_found(name)
-  end
-
-  defp handle_log_result(log, _name) do
-    Enum.each(log, fn {type, message, response, _metadata} ->
-      IO.puts("[#{type}] #{message}")
-      IO.puts(response)
-    end)
-  end
-
-  defp handle_result(:not_found, name) do
-    handle_not_found(name)
-  end
-
-  defp handle_result(response, _name) do
-    IO.puts(response)
-  end
-
-  defp handle_not_found(name) do
-    IO.puts("No sessions running. Start one: el #{name}")
-  end
-
-  defp usage_message do
-    cmds = usage_cmds()
-    pad = max_cmd_length(cmds)
-    Enum.map_join(cmds, "\n", &format_line(&1, pad))
-  end
-
-  defp max_cmd_length(cmds) do
-    cmds |> Enum.map(fn {cmd, _} -> String.length(cmd) end) |> Enum.max()
-  end
-
-  defp format_line({cmd, ""}, _pad), do: cmd
-
-  defp format_line({cmd, desc}, pad) do
-    String.pad_trailing(cmd, pad) <> "  " <> desc
+    Output.handle_result(result, name)
   end
 end
