@@ -1,7 +1,8 @@
 defmodule El.Spec do
-  use ExUnit.Case
+  use ExUnit.Case, async: false
   import Mox
 
+  setup :set_mox_global
   setup :verify_on_exit!
 
   describe "start/2" do
@@ -69,6 +70,7 @@ defmodule El.Spec do
       stub(El.MockSupervisor, :terminate_child, terminate_stub)
       stub(El.MockMonitor, :wait_for_down, fn _ref, _name -> :ok end)
       result = El.exit(:kent)
+      Process.sleep(10)
       assert result == :ok
     end
 
@@ -95,6 +97,7 @@ defmodule El.Spec do
 
       stub(El.MockMonitor, :wait_for_down, fn _, _ -> :ok end)
       result = El.exit(:kent)
+      Process.sleep(10)
       assert result == :ok
     end
   end
@@ -117,6 +120,7 @@ defmodule El.Spec do
       stub(El.MockSupervisor, :terminate_child, terminate_stub)
       stub(El.MockMonitor, :wait_for_down, fn _ref, _name -> :ok end)
       El.exit(:all)
+      Process.sleep(10)
     end
   end
 
@@ -138,6 +142,7 @@ defmodule El.Spec do
       stub(El.MockSupervisor, :terminate_child, terminate_stub)
       stub(El.MockMonitor, :wait_for_down, fn _ref, _name -> :ok end)
       El.exit_pattern("dude*")
+      Process.sleep(10)
     end
 
     test "exits no sessions when pattern matches nothing" do
