@@ -77,8 +77,10 @@ defmodule El.CLI do
   end
 
   defp setup_and_handle_tell_ask(name, target, words, el_module) do
+    # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
     target_atom = String.to_atom(target)
     msg = Enum.join(words, " ")
+    # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
     name_atom = String.to_atom(name)
     Messaging.handle_tell_ask(name_atom, target_atom, msg, name, el_module)
   end
@@ -88,8 +90,10 @@ defmodule El.CLI do
   end
 
   defp setup_and_handle_ask_tell(name, target, words, el_module) do
+    # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
     target_atom = String.to_atom(target)
     msg = Enum.join(words, " ")
+    # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
     name_atom = String.to_atom(name)
     Messaging.handle_ask_tell(name_atom, target_atom, msg, name, el_module)
   end

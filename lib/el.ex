@@ -28,32 +28,34 @@ defmodule El do
   end
 
   def tell(name, message) do
-    session().tell(name, message)
+    session_api().tell(name, message)
   end
 
   def ask(name, message) do
-    session().ask(name, message)
+    session_api().ask(name, message)
   end
 
   def log(name) do
-    session().log(name)
+    session_api().log(name)
   end
 
   def log(name, count) do
-    session().log(name, count)
+    session_api().log(name, count)
   end
 
   def clear(name) do
-    session().clear(name)
+    session_api().clear(name)
   end
 
   def tell_ask(name, target, message) do
-    session().tell_ask(name, target, message)
+    session_api().tell_ask(name, target, message)
   end
 
   def ask_tell(name, target, message) do
-    session().ask_tell(name, target, message)
+    session_api().ask_tell(name, target, message)
   end
+
+  defp session_api, do: Application.get_env(:el, :session_api, El.Session.Api)
 
   def exit(name) do
     El.Lifecycle.exit(name)
@@ -76,7 +78,7 @@ defmodule El do
   end
 
   defp log_entries(name, count) do
-    name |> session().log(count) |> filter_found()
+    name |> session_api().log(count) |> filter_found()
   end
 
   defp filter_found(:not_found), do: []

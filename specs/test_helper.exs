@@ -26,10 +26,12 @@ defmodule El.MessageStoreStub do
   def delete(_name), do: :ok
 end
 
+Mox.defmock(El.MockSessionApi, for: El.Behaviours.Session)
 
 Application.put_env(:el, :registry, El.MockRegistry)
 Application.put_env(:el, :supervisor, El.MockSupervisor)
 Application.put_env(:el, :session, El.MockSession)
+Application.put_env(:el, :session_api, El.MockSessionApi)
 Application.put_env(:el, :app, El.MockApp)
 Application.put_env(:el, :monitor, El.MockMonitor)
 Application.put_env(:el, :el_module, El.MockEl)

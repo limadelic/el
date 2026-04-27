@@ -25,17 +25,17 @@ defmodule El.Session.Spec do
 
   describe "detect_routes/1" do
     test "returns empty list for text without routes" do
-      assert El.Session.detect_routes("hello") == []
+      assert El.Session.Api.detect_routes("hello") == []
     end
 
     test "returns empty list for bare @name without >" do
-      result = El.Session.detect_routes("talk to @donnie about it")
+      result = El.Session.Api.detect_routes("talk to @donnie about it")
       assert result == []
     end
 
     test "detects single route" do
       text = "@donnie> you are out of your element"
-      result = El.Session.detect_routes(text)
+      result = El.Session.Api.detect_routes(text)
 
       assert result == [
                {:donnie, "you are out of your element"}
@@ -43,18 +43,18 @@ defmodule El.Session.Spec do
     end
 
     test "detects multiple routes on different lines" do
-      assert El.Session.detect_routes("@donnie> hey\n@walter> sup") == [
+      assert El.Session.Api.detect_routes("@donnie> hey\n@walter> sup") == [
                {:donnie, "hey"},
                {:walter, "sup"}
              ]
     end
 
     test "detects route with empty payload" do
-      assert El.Session.detect_routes("@donnie>") == [{:donnie, ""}]
+      assert El.Session.Api.detect_routes("@donnie>") == [{:donnie, ""}]
     end
 
     test "ignores routes not at start of line" do
-      assert El.Session.detect_routes("some text @donnie> payload") == []
+      assert El.Session.Api.detect_routes("some text @donnie> payload") == []
     end
   end
 
@@ -596,7 +596,7 @@ defmodule El.Session.Spec do
 
     test "returns route message when target running",
          %{state: state, alive_fn_target: alive_fn} do
-      Mox.stub(El.MockSession, :tell, fn _, _ -> :ok end)
+      Mox.stub(El.MockSessionApi, :tell, fn _, _ -> :ok end)
 
       {:reply, response, _returned_state} =
         El.Session.handle_call({:ask_tell, :target, "message"}, :from, %{
@@ -609,7 +609,7 @@ defmodule El.Session.Spec do
 
     test "stores message when target running",
          %{state: state, alive_fn_target: alive_fn} do
-      Mox.stub(El.MockSession, :tell, fn _, _ -> :ok end)
+      Mox.stub(El.MockSessionApi, :tell, fn _, _ -> :ok end)
 
       {:reply, _response, returned_state} =
         El.Session.handle_call({:ask_tell, :target, "message"}, :from, %{
@@ -633,7 +633,7 @@ defmodule El.Session.Spec do
 
     test "stores relay message",
          %{state: state, alive_fn_target: alive_fn} do
-      Mox.stub(El.MockSession, :tell, fn _, _ -> :ok end)
+      Mox.stub(El.MockSessionApi, :tell, fn _, _ -> :ok end)
 
       {:reply, _response, returned_state} =
         El.Session.handle_call({:ask_tell, :target, "message"}, :from, %{
