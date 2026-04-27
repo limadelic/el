@@ -1,5 +1,5 @@
 defmodule El.CLI do
-  alias El.CLI.{Daemon, Router, Output, Log, Pattern, Messaging}
+  alias El.CLI.{Daemon, Router, Output, Log, Pattern, Messaging, Start}
 
   defp version(vsn) when is_list(vsn), do: "v" <> List.to_string(vsn)
   defp version(_), do: "v0.1.0"
@@ -57,26 +57,18 @@ defmodule El.CLI do
   end
 
   def execute(:daemon, ["--daemon", name, "-m", model]) do
-    start_daemon_node_for(name, model)
-  end
-
-  defp start_daemon_node_for(name, model) do
-    name_atom = String.to_atom(name)
-    opts = start_opts(normalize_model(model))
-    el().start(name_atom, opts)
-    IO.puts("el: #{name} is up on #{Node.self()}")
-    Process.sleep(:infinity)
+    Start.start_daemon_node_for(name, model, el())
   end
 
   def execute(:start, [name]) do
-    opts = start_opts(nil)
+    opts = Start.start_opts(nil)
 
-    handle_find_daemon_for_start(name, opts)
+    Start.handle_find_daemon_for_start(name, opts, el())
   end
 
   def execute(:start, [name, "-m", model | rest]) do
-    opts = start_opts(model)
-    handle_find_daemon_with_rest(name, opts, rest)
+    opts = Start.start_opts(model)
+    Start.handle_find_daemon_with_rest(name, opts, rest, el())
   end
 
   def execute(:tell_ask, [name, "tell", "ask", "@" <> target | words]) do
@@ -120,38 +112,7 @@ defmodule El.CLI do
     IO.puts("exited all")
   end
 
-  defp start_opts(nil), do: []
-  defp start_opts(model), do: [model: model]
-
-  defp normalize_model("") do
-    nil
-  end
-
-  defp normalize_model(model) do
-    model
-  end
-
   defp handle_ls do
     el().ls() |> Output.show_sessions()
-  end
-
-  defp handle_find_daemon_for_start(name, opts) do
-    name_atom = String.to_atom(name)
-    el().start(name_atom, opts)
-    IO.puts("el: #{name} is up")
-  end
-
-  defp handle_find_daemon_with_rest(name, opts, rest) do
-    name_atom = String.to_atom(name)
-    el().start(name_atom, opts)
-    dispatch_rest(rest, name)
-  end
-
-  defp dispatch_rest([], _name) do
-    :ok
-  end
-
-  defp dispatch_rest(rest, name) do
-    dispatch([name | rest])
   end
 end
