@@ -2,13 +2,8 @@ defmodule El.CLI.Start do
   def start_opts(nil), do: []
   def start_opts(model), do: [model: model]
 
-  def normalize_model("") do
-    nil
-  end
-
-  def normalize_model(model) do
-    model
-  end
+  def normalize_model(""), do: nil
+  def normalize_model(model), do: model
 
   def handle_find_daemon_for_start(name, opts, el) do
     name_atom = String.to_atom(name)
@@ -34,7 +29,15 @@ defmodule El.CLI.Start do
     name_atom = String.to_atom(name)
     opts = start_opts(normalize_model(model))
     el.start(name_atom, opts)
+    report_daemon_up(name)
+    hold_forever()
+  end
+
+  defp report_daemon_up(name) do
     IO.puts("el: #{name} is up on #{Node.self()}")
+  end
+
+  defp hold_forever do
     Process.sleep(:infinity)
   end
 end
