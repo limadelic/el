@@ -9,13 +9,11 @@ defmodule El.Credo.MaxModuleLines do
     [max_lines: 100]
   end
 
+  @check_desc "Modules should be reasonably sized and focused."
+  @param_desc "The maximum number of lines a module body can have."
+
   def explanations do
-    [
-      check: "Modules should be reasonably sized and focused.",
-      params: [
-        max_lines: "The maximum number of lines a module body can have."
-      ]
-    ]
+    [check: @check_desc, params: [max_lines: @param_desc]]
   end
 
   def run(%SourceFile{} = source_file, params) do
@@ -24,7 +22,7 @@ defmodule El.Credo.MaxModuleLines do
   end
 
   defp check_module(
-         {:defmodule, meta, [_head | _tail]} = ast,
+         {:defmodule, meta, [_ | _]} = ast,
          issues,
          max_lines
        ) do
@@ -36,21 +34,17 @@ defmodule El.Credo.MaxModuleLines do
   end
 
   defp maybe_add_issue(max_lines, meta, issues) do
-    case LineCheck.find_body_lines(meta) do
-      {:ok, body_lines} ->
-        add_if_over_limit(body_lines, max_lines, meta, issues)
-      :error ->
-        issues
-    end
+    meta
+    |> LineCheck.find_body_lines()
+    |> add_issue(max_lines, meta, issues)
   end
 
-  defp add_if_over_limit(body_lines, max_lines, meta, issues) do
-    if body_lines > max_lines do
-      [create_issue(body_lines, max_lines, meta) | issues]
-    else
-      issues
-    end
+  defp add_issue({:ok, lines}, max, meta, issues)
+       when lines > max do
+    [create_issue(lines, max, meta) | issues]
   end
+
+  defp add_issue(_, _, _, issues), do: issues
 
   defp create_issue(body_lines, max_lines, meta) do
     LineCheck.issue_for(__MODULE__, "Module", body_lines, max_lines, meta)
