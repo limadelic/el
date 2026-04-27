@@ -1,5 +1,5 @@
 defmodule El.Session.Terminator do
-  def handle(reason, state) when reason in [:normal, :shutdown] do
+  def handle(reason, _state) when reason in [:normal, :shutdown] do
     :ok
   end
 

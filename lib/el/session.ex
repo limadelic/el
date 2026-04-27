@@ -5,9 +5,6 @@ defmodule El.Session do
 
   alias El.Session.Registry
   alias El.Session.Claude
-  alias El.Session.Ask
-  alias El.Session.Router
-  alias El.Session.Crash
   alias El.Session.Terminator
   alias El.Session.LogHandler
   alias El.Session.InfoHandler
