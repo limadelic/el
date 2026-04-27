@@ -5,17 +5,11 @@ defmodule El.CLI.Pattern do
     String.contains?(name, ["*", "?"])
   end
 
-  def exit_by_kind(el_module, is_pattern, name) do
-    if is_pattern,
-      do: exit_pattern(el_module, name),
-      else: exit_single(el_module, name)
-  end
+  def exit_by_kind(el_module, true, name), do: exit_pattern(el_module, name)
+  def exit_by_kind(el_module, false, name), do: exit_single(el_module, name)
 
-  def clear_by_kind(el_module, is_pattern, name) do
-    if is_pattern,
-      do: clear_pattern(el_module, name),
-      else: clear_single(el_module, name)
-  end
+  def clear_by_kind(el_module, true, name), do: clear_pattern(el_module, name)
+  def clear_by_kind(el_module, false, name), do: clear_single(el_module, name)
 
   defp exit_pattern(el_module, name) do
     el_module.exit_pattern(name)
