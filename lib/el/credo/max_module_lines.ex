@@ -23,7 +23,11 @@ defmodule El.Credo.MaxModuleLines do
     Code.prewalk(source_file, &check_module(&1, &2, max_lines))
   end
 
-  defp check_module({:defmodule, meta, [_head | _tail]} = ast, issues, max_lines) do
+  defp check_module(
+         {:defmodule, meta, [_head | _tail]} = ast,
+         issues,
+         max_lines
+       ) do
     {ast, maybe_add_issue(max_lines, meta, issues)}
   end
 
@@ -33,8 +37,10 @@ defmodule El.Credo.MaxModuleLines do
 
   defp maybe_add_issue(max_lines, meta, issues) do
     case LineCheck.find_body_lines(meta) do
-      {:ok, body_lines} -> add_if_over_limit(body_lines, max_lines, meta, issues)
-      :error -> issues
+      {:ok, body_lines} ->
+        add_if_over_limit(body_lines, max_lines, meta, issues)
+      :error ->
+        issues
     end
   end
 

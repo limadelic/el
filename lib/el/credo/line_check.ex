@@ -1,4 +1,6 @@
 defmodule El.Credo.LineCheck do
+  @default_threshold 50
+
   def find_body_lines(meta) do
     case extract_end_line(meta) do
       nil -> :error
@@ -20,13 +22,13 @@ defmodule El.Credo.LineCheck do
     end
   end
 
-  def issue_for(check_module, name, body_lines, max_lines, meta, threshold \\ 50) do
+  def issue_for(check_module, name, body_lines, max_lines, meta) do
     new_issue(
       check_module,
       format_message(name, body_lines, max_lines),
       meta,
       name,
-      calc_priority(body_lines - max_lines, threshold)
+      calc_priority(body_lines - max_lines, @default_threshold)
     )
   end
 

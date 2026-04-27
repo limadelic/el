@@ -34,8 +34,10 @@ defmodule El.Credo.MaxFunctionLines do
 
   defp maybe_add_issue(max_lines, meta, issues) do
     case LineCheck.find_body_lines(meta) do
-      {:ok, body_lines} -> add_if_over_limit(body_lines, max_lines, meta, issues)
-      :error -> issues
+      {:ok, body_lines} ->
+        add_if_over_limit(body_lines, max_lines, meta, issues)
+      :error ->
+        issues
     end
   end
 
@@ -48,6 +50,6 @@ defmodule El.Credo.MaxFunctionLines do
   end
 
   defp create_issue(body_lines, max_lines, meta) do
-    LineCheck.issue_for(__MODULE__, "Function", body_lines, max_lines, meta, 10)
+    LineCheck.issue_for(__MODULE__, "Function", body_lines, max_lines, meta)
   end
 end
