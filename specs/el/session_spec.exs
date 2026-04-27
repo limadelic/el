@@ -16,7 +16,7 @@ defmodule El.Session.Spec do
 
     state = %{
       name: :test_session,
-      claude_pid: :mock_pid,
+      claude_pid: nil,
       session_id: "test-session-id",
       messages: [],
       pending_calls: [],
@@ -27,7 +27,8 @@ defmodule El.Session.Spec do
         _ -> false
       end,
       registry_module: MockSessionModule,
-      opts: []
+      opts: [],
+      claude_opts: []
     }
 
     {:ok, state: state}
@@ -135,11 +136,13 @@ defmodule El.Session.Spec do
       assert [{"tell", "old_message", "old_response", %{}}] == result_state.messages
     end
 
-    test "stops on claude start failure" do
+    test "sets claude_pid to nil on start failure" do
       {:ok, state, {:continue, :start_claude}} =
         El.Session.init({:test_session, [claude_module: FailingModule]})
 
-      assert {:stop, _reason} = El.Session.handle_continue(:start_claude, state)
+      {:noreply, result_state} = El.Session.handle_continue(:start_claude, state)
+
+      assert result_state.claude_pid == nil
     end
   end
 
@@ -568,16 +571,22 @@ defmodule El.Session.Spec do
   describe "handle_info/2" do
     test "clears claude_pid on EXIT from claude process", %{state: state} do
       {:noreply, returned_state} =
-        El.Session.handle_info({:EXIT, :mock_pid, :killed}, state)
+        El.Session.handle_info({:EXIT, :mock_pid, :killed}, %{state | claude_pid: :mock_pid})
 
       assert returned_state.claude_pid == nil
+    end
+
+    test "clears pending_calls on EXIT from claude process", %{state: state} do
+      {:noreply, returned_state} =
+        El.Session.handle_info({:EXIT, :mock_pid, :killed}, %{state | claude_pid: :mock_pid})
+
       assert returned_state.pending_calls == []
     end
 
     test "replies to pending calls on EXIT", %{state: state} do
       ref = make_ref()
       from = {self(), ref}
-      state_with_pending = %{state | pending_calls: [from]}
+      state_with_pending = %{state | pending_calls: [from], claude_pid: :mock_pid}
 
       El.Session.handle_info({:EXIT, :mock_pid, :crash}, state_with_pending)
 
@@ -599,7 +608,7 @@ defmodule El.Session.Spec do
 
     test "adds crash entry to state.messages on abnormal EXIT", %{state: state} do
       {:noreply, returned_state} =
-        El.Session.handle_info({:EXIT, :mock_pid, :killed}, state)
+        El.Session.handle_info({:EXIT, :mock_pid, :killed}, %{state | claude_pid: :mock_pid})
 
       assert [{"crash", "session died", ":killed", %{}}] = returned_state.messages
     end
@@ -608,18 +617,9 @@ defmodule El.Session.Spec do
       Mimic.reject(El.MessageStore, :insert, 2)
 
       {:noreply, returned_state} =
-        El.Session.handle_info({:EXIT, :mock_pid, :normal}, state)
+        El.Session.handle_info({:EXIT, :mock_pid, :normal}, %{state | claude_pid: :mock_pid})
 
       assert returned_state.messages == []
-    end
-
-    test "clears claude_pid on normal EXIT reason", %{state: state} do
-      Mimic.reject(El.MessageStore, :insert, 2)
-
-      {:noreply, returned_state} =
-        El.Session.handle_info({:EXIT, :mock_pid, :normal}, state)
-
-      assert returned_state.claude_pid == nil
     end
   end
 
