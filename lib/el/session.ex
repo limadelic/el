@@ -396,18 +396,22 @@ defmodule El.Session do
     server_pid = self()
 
     state.task_module.start(fn ->
-      response =
-        try do
-          do_ask_work(state, message, valid_routes)
-        rescue
-          _ -> "(error)"
-        catch
-          :exit, _ -> "(error)"
-          _, _ -> "(error)"
-        end
-
-      GenServer.cast(server_pid, {:complete_ask, from, message, response, ref})
+      spawn_ask_task(state, from, message, valid_routes, ref, server_pid)
     end)
+  end
+
+  defp spawn_ask_task(state, from, message, valid_routes, ref, server_pid) do
+    response = protected_ask_work(state, message, valid_routes)
+    GenServer.cast(server_pid, {:complete_ask, from, message, response, ref})
+  end
+
+  defp protected_ask_work(state, message, routes) do
+    do_ask_work(state, message, routes)
+  rescue
+    _ -> "(error)"
+  catch
+    :exit, _ -> "(error)"
+    _, _ -> "(error)"
   end
 
   defp do_ask_work(state, message, []) do
@@ -438,36 +442,36 @@ defmodule El.Session do
 
   @impl true
   def handle_info({:EXIT, pid, :normal}, %{claude_pid: pid} = state) do
-    Enum.each(state.pending_calls, fn from ->
-      safe_reply(from, "(error)")
-    end)
-
+    clear_pending_calls(state.pending_calls)
     {:noreply, %{state | claude_pid: nil, pending_calls: []}}
   end
 
   @impl true
   def handle_info({:EXIT, pid, reason}, %{claude_pid: pid} = state) do
-    log_claude_death(state.name, reason)
-    entry = {"crash", "session died", inspect(reason), %{}}
-    state.store_module.store_message(state.name, entry)
-
-    Enum.each(state.pending_calls, fn from ->
-      safe_reply(from, "(error)")
-    end)
-
-    new_state = %{
-      state
-      | claude_pid: nil,
-        pending_calls: [],
-        messages: state.messages ++ [entry]
-    }
-
-    {:noreply, new_state}
+    {:noreply, handle_claude_crash(state, reason)}
   end
 
   @impl true
   def handle_info(_msg, state) do
     {:noreply, state}
+  end
+
+  defp clear_pending_calls(pending) do
+    Enum.each(pending, &safe_reply(&1, "(error)"))
+  end
+
+  defp handle_claude_crash(state, reason) do
+    log_claude_death(state.name, reason)
+    entry = {"crash", "session died", inspect(reason), %{}}
+    state.store_module.store_message(state.name, entry)
+    clear_pending_calls(state.pending_calls)
+
+    %{
+      state
+      | claude_pid: nil,
+        pending_calls: [],
+        messages: state.messages ++ [entry]
+    }
   end
 
   @impl true
@@ -503,11 +507,10 @@ defmodule El.Session do
     _, _ -> :ok
   end
 
-  defp ask_claude(nil, _message) do
-    "(ClaudeCode unavailable)"
-  end
+  defp ask_claude(nil, _message), do: "(ClaudeCode unavailable)"
+  defp ask_claude(claude_pid, message), do: protected_stream(claude_pid, message)
 
-  defp ask_claude(claude_pid, message) do
+  defp protected_stream(claude_pid, message) do
     safe_stream_claude(claude_pid, message)
   rescue
     _ -> "(ClaudeCode unavailable)"
@@ -517,14 +520,18 @@ defmodule El.Session do
   end
 
   defp safe_stream_claude(claude_pid, message) do
+    stream_to_result(claude_pid, message) || ""
+  end
+
+  defp stream_to_result(claude_pid, message) do
     claude_pid
     |> El.ClaudeCode.stream(message)
     |> Enum.to_list()
-    |> Enum.find_value(fn
-      %ClaudeCode.Message.ResultMessage{result: result} -> result
-      _ -> nil
-    end) || ""
+    |> Enum.find_value(&extract_result/1)
   end
+
+  defp extract_result(%ClaudeCode.Message.ResultMessage{result: result}), do: result
+  defp extract_result(_), do: nil
 
   defp store_ask_immediate(state, message, []) do
     ref = make_ref()
@@ -548,37 +555,28 @@ defmodule El.Session do
   defp store_tell_immediate(state, _message, _ref, _routes), do: state
 
   defp replace_tell(messages, ref, message, response) do
-    messages
-    |> Enum.split_while(fn
-      {"tell", _, "", %{ref: ^ref}} -> false
-      _ -> true
-    end)
-    |> complete_tell(message, response)
-  end
-
-  defp complete_tell({before, [{_, _, _, _} | rest]}, message, response) do
-    before ++ [{"tell", message, response, %{}} | rest]
-  end
-
-  defp complete_tell({messages, []}, message, response) do
-    messages ++ [{"tell", message, response, %{}}]
+    split_and_complete(messages, ref, "tell", message, response)
   end
 
   defp replace_ask(messages, ref, message, response) do
+    split_and_complete(messages, ref, "ask", message, response)
+  end
+
+  defp split_and_complete(messages, ref, type, message, response) do
     messages
-    |> Enum.split_while(fn
-      {"ask", _, "", %{ref: ^ref}} -> false
-      _ -> true
-    end)
-    |> complete_ask(message, response)
+    |> Enum.split_while(&match_pending_entry(&1, type, ref))
+    |> complete_entry(type, message, response)
   end
 
-  defp complete_ask({before, [{_, _, _, _} | rest]}, message, response) do
-    before ++ [{"ask", message, response, %{}} | rest]
+  defp match_pending_entry({t, _, "", %{ref: r}}, type, ref), do: r != ref or t != type
+  defp match_pending_entry(_, _, _), do: true
+
+  defp complete_entry({before, [{_, _, _, _} | rest]}, type, message, response) do
+    before ++ [{type, message, response, %{}} | rest]
   end
 
-  defp complete_ask({messages, []}, message, response) do
-    messages ++ [{"ask", message, response, %{}}]
+  defp complete_entry({messages, []}, type, message, response) do
+    messages ++ [{type, message, response, %{}}]
   end
 
   defp via_tuple(name) do
