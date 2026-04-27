@@ -3,11 +3,17 @@ defmodule MockSessionModule do
   def start(_fun), do: {:ok, :task_pid}
 end
 
-if Code.ensure_loaded?(El.SessionAdapter), do: Mimic.copy(El.SessionAdapter)
-if Code.ensure_loaded?(El.PortAdapter), do: Mimic.copy(El.PortAdapter)
-if Code.ensure_loaded?(El.FileAdapter), do: Mimic.copy(El.FileAdapter)
-Mimic.copy(Task)
-Mimic.copy(MockSessionModule)
+Mox.defmock(El.MockRegistry, for: El.Behaviours.Registry)
+Mox.defmock(El.MockSupervisor, for: El.Behaviours.Supervisor)
+Mox.defmock(El.MockSession, for: El.Behaviours.Session)
+Mox.defmock(El.MockApp, for: El.Behaviours.App)
+Mox.defmock(El.MockMonitor, for: El.Behaviours.Monitor)
+
+Application.put_env(:el, :registry, El.MockRegistry)
+Application.put_env(:el, :supervisor, El.MockSupervisor)
+Application.put_env(:el, :session, El.MockSession)
+Application.put_env(:el, :app, El.MockApp)
+Application.put_env(:el, :monitor, El.MockMonitor)
 
 ExUnit.start()
 
