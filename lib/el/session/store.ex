@@ -77,13 +77,8 @@ defmodule El.Session.Store do
     |> complete_entry(type, message, response)
   end
 
-  defp match_pending_entry({t, _, "", %{ref: r}}, type, ref) do
-    r != ref or t != type
-  end
-
-  defp match_pending_entry(_, _, _) do
-    true
-  end
+  defp match_pending_entry({type, _, "", %{ref: ref}}, type, ref), do: false
+  defp match_pending_entry(_, _, _), do: true
 
   defp complete_entry({before, [{_, _, _, _} | rest]}, type, message, response) do
     entry = {type, message, response, %{}}
