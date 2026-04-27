@@ -1,4 +1,6 @@
 defmodule El.CLI do
+  alias El.CLI.Daemon
+
   defp version(vsn) when is_list(vsn), do: "v" <> List.to_string(vsn)
   defp version(_), do: "v0.1.0"
 
@@ -22,23 +24,12 @@ defmodule El.CLI do
 
   defp el, do: Application.get_env(:el, :el_module, El)
 
-  def dev?, do: dev_check(System.get_env("DEV"))
-  defp dev_check(nil), do: script_is_relative()
-  defp dev_check(_), do: true
-
-  defp script_is_relative do
-    :escript.script_name() |> to_string() |> Path.type() |> is_relative()
-  end
-
-  defp is_relative(:relative), do: true
-  defp is_relative(_), do: false
-
-  def daemon_script do
-    :escript.script_name() |> to_string() |> Path.expand()
-  end
+  def dev?, do: Daemon.dev?()
+  def daemon_script, do: Daemon.daemon_script()
+  def daemon_node, do: Daemon.daemon_node()
 
   def main(["--daemon" | _] = args) do
-    start_daemon_node()
+    Daemon.start_daemon_node()
     dispatch(args)
   end
 
@@ -48,7 +39,7 @@ defmodule El.CLI do
   end
 
   defp connect_and_dispatch(args) do
-    connect_to_daemon() |> run_dispatch(args)
+    Daemon.connect_to_daemon() |> run_dispatch(args)
   end
 
   defp run_dispatch({:ok, node}, args) do
@@ -326,82 +317,4 @@ defmodule El.CLI do
   defp format_line({cmd, desc}, pad) do
     String.pad_trailing(cmd, pad) <> "  " <> desc
   end
-
-  def daemon_node do
-    dev?() |> daemon_node_for()
-  end
-
-  defp daemon_node_for(true), do: :"el_dev@127.0.0.1"
-  defp daemon_node_for(false), do: :"el@127.0.0.1"
-
-  defp start_daemon_node do
-    start_epmd()
-    :net_kernel.start([daemon_node(), :longnames])
-    Node.set_cookie(:el)
-  end
-
-  defp connect_to_daemon do
-    start_epmd()
-    connect_if_ready()
-  end
-
-  defp connect_if_ready do
-    with {:ok, _} <- start_client_node(), :ok <- ensure_daemon() do
-      {:ok, daemon_node()}
-    else
-      _ -> :local
-    end
-  end
-
-  defp start_client_node do
-    id = System.unique_integer([:positive])
-    start_node_with_id(id)
-  end
-
-  defp start_node_with_id(id) do
-    :net_kernel.start([:"el-cli-#{id}@127.0.0.1", :longnames])
-    |> maybe_set_cookie()
-  end
-
-  defp maybe_set_cookie({:ok, _}) do
-    Node.set_cookie(:el)
-    {:ok, :started}
-  end
-
-  defp maybe_set_cookie(error), do: error
-
-  defp ensure_daemon do
-    ensure_daemon_connected(Node.connect(daemon_node()))
-  end
-
-  defp ensure_daemon_connected(true), do: :ok
-  defp ensure_daemon_connected(false), do: spawn_and_wait()
-
-  defp spawn_and_wait do
-    spawn_daemon()
-    wait_for_daemon(30)
-  end
-
-  defp start_epmd do
-    System.cmd("epmd", ["-daemon"])
-  end
-
-  defp spawn_daemon do
-    script = daemon_script()
-    prefix = dev?() |> env_prefix()
-    System.cmd("sh", ["-c", "#{prefix}#{script} --daemon > /dev/null 2>&1 &"])
-  end
-
-  defp env_prefix(true), do: "DEV=1 "
-  defp env_prefix(false), do: ""
-
-  defp wait_for_daemon(0), do: {:error, :timeout}
-
-  defp wait_for_daemon(n) do
-    :timer.sleep(100)
-    daemon_node() |> Node.connect() |> check_connected(n)
-  end
-
-  defp check_connected(true, _n), do: :ok
-  defp check_connected(false, n), do: wait_for_daemon(n - 1)
 end
