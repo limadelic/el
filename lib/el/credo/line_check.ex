@@ -21,14 +21,24 @@ defmodule El.Credo.LineCheck do
   end
 
   def issue_for(check_module, name, body_lines, max_lines, meta, threshold \\ 50) do
+    new_issue(
+      check_module,
+      format_message(name, body_lines, max_lines),
+      meta,
+      name,
+      calc_priority(body_lines - max_lines, threshold)
+    )
+  end
+
+  defp new_issue(check, message, meta, trigger, priority) do
     %Credo.Issue{
-      check: check_module,
-      message: format_message(name, body_lines, max_lines),
+      check: check,
+      message: message,
       filename: nil,
       line_no: meta[:line],
       column: meta[:column],
-      trigger: name,
-      priority: calc_priority(body_lines - max_lines, threshold),
+      trigger: trigger,
+      priority: priority,
       category: :refactor,
       exit_status: 2
     }
