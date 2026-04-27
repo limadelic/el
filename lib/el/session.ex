@@ -50,15 +50,20 @@ defmodule El.Session do
   @impl true
   def init({name, opts}) do
     Process.flag(:trap_exit, true)
-
-    {session_id, opts_without_resume} =
-      extract_resume_or_generate_session_id(opts)
-
-    build_initial_state(name, opts, opts_without_resume, session_id)
+    {session_id, rest} = extract_resume_or_id(opts)
+    {:ok, build_state(name, opts, rest, session_id), {:continue, :start_claude}}
   end
 
-  defp build_initial_state(name, opts, opts_without_resume, session_id) do
-    state = %{
+  defp extract_resume_or_id(opts) do
+    {resume, rest} = Keyword.pop(opts, :resume)
+    {session_id(resume), rest}
+  end
+
+  defp session_id(nil), do: generate_session_id()
+  defp session_id(id), do: id
+
+  defp build_state(name, opts, rest, session_id) do
+    %{
       name: name,
       claude_pid: nil,
       session_id: session_id,
@@ -70,10 +75,8 @@ defmodule El.Session do
       registry_module: Keyword.get(opts, :registry_module, Registry),
       store_module: Keyword.get(opts, :store_module, El.Application),
       opts: opts,
-      claude_opts: Keyword.put(opts_without_resume, :session_id, session_id)
+      claude_opts: Keyword.put(rest, :session_id, session_id)
     }
-
-    {:ok, state, {:continue, :start_claude}}
   end
 
   @impl true
@@ -100,6 +103,7 @@ defmodule El.Session do
   end
 
   defp handle_claude_pid_state(state, true), do: state
+
   defp handle_claude_pid_state(state, false) do
     maybe_respawn_claude(%{state | claude_pid: nil})
   end
@@ -115,16 +119,10 @@ defmodule El.Session do
     "[from #{name}] #{payload}"
   end
 
-  defp extract_resume_or_generate_session_id(opts) do
-    {resume, remaining_opts} = Keyword.pop(opts, :resume)
-    {resume || generate_session_id(), remaining_opts}
-  end
-
   defp generate_session_id do
     <<a::48, _::4, b::12, _::2, c::62>> = :crypto.strong_rand_bytes(16)
     uuid_bytes = <<a::48, 4::4, b::12, 2::2, c::62>>
-    hex = Base.encode16(uuid_bytes, case: :lower)
-    format_uuid(hex)
+    Base.encode16(uuid_bytes, case: :lower) |> format_uuid()
   end
 
   defp format_uuid(hex) do
