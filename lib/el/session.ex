@@ -50,32 +50,30 @@ defmodule El.Session do
   @impl true
   def init({name, opts}) do
     Process.flag(:trap_exit, true)
-    claude_module = Keyword.get(opts, :claude_module, El.ClaudeCode)
-    task_module = Keyword.get(opts, :task_module, Task)
-    alive_fn = Keyword.get(opts, :alive_fn, &El.Session.alive?/1)
-    registry_module = Keyword.get(opts, :registry_module, Registry)
-    store_module = Keyword.get(opts, :store_module, El.Application)
 
     {session_id, opts_without_resume} =
       extract_resume_or_generate_session_id(opts)
 
-    claude_opts = Keyword.put(opts_without_resume, :session_id, session_id)
+    build_initial_state(name, opts, opts_without_resume, session_id)
+  end
 
-    {:ok,
-     %{
-       name: name,
-       claude_pid: nil,
-       session_id: session_id,
-       messages: [],
-       pending_calls: [],
-       claude_module: claude_module,
-       task_module: task_module,
-       alive_fn: alive_fn,
-       registry_module: registry_module,
-       store_module: store_module,
-       opts: opts,
-       claude_opts: claude_opts
-     }, {:continue, :start_claude}}
+  defp build_initial_state(name, opts, opts_without_resume, session_id) do
+    state = %{
+      name: name,
+      claude_pid: nil,
+      session_id: session_id,
+      messages: [],
+      pending_calls: [],
+      claude_module: Keyword.get(opts, :claude_module, El.ClaudeCode),
+      task_module: Keyword.get(opts, :task_module, Task),
+      alive_fn: Keyword.get(opts, :alive_fn, &El.Session.alive?/1),
+      registry_module: Keyword.get(opts, :registry_module, Registry),
+      store_module: Keyword.get(opts, :store_module, El.Application),
+      opts: opts,
+      claude_opts: Keyword.put(opts_without_resume, :session_id, session_id)
+    }
+
+    {:ok, state, {:continue, :start_claude}}
   end
 
   @impl true
@@ -85,54 +83,41 @@ defmodule El.Session do
     {:noreply, %{state | claude_pid: claude_pid, messages: messages}}
   end
 
-  defp maybe_respawn_claude(
-         %{
-           claude_pid: nil,
-           opts: opts,
-           session_id: session_id,
-           claude_module: claude_module
-         } = state
-       ) do
-    opts_with_resume =
-      opts
-      |> Keyword.put(:session_id, session_id)
-      |> Keyword.put(:resume, session_id)
-
-    pid = safe_start_claude(claude_module, opts_with_resume)
+  defp maybe_respawn_claude(%{claude_pid: nil} = state) do
+    opts_with_resume = resume_opts(state.opts, state.session_id)
+    pid = safe_start_claude(state.claude_module, opts_with_resume)
     %{state | claude_pid: pid}
   end
 
   defp maybe_respawn_claude(%{claude_pid: pid} = state) when is_pid(pid) do
-    if Process.alive?(pid) do
-      state
-    else
-      maybe_respawn_claude(%{state | claude_pid: nil})
-    end
+    handle_claude_pid_state(state, Process.alive?(pid))
+  end
+
+  defp resume_opts(opts, session_id) do
+    opts
+    |> Keyword.put(:session_id, session_id)
+    |> Keyword.put(:resume, session_id)
+  end
+
+  defp handle_claude_pid_state(state, true), do: state
+  defp handle_claude_pid_state(state, false) do
+    maybe_respawn_claude(%{state | claude_pid: nil})
   end
 
   defp safe_start_claude(claude_module, opts) do
-    case claude_module.start_link(opts) do
-      {:ok, pid} -> pid
-      _ -> nil
-    end
-  rescue
-    _ -> nil
-  catch
-    _, _ -> nil
+    start_claude_safe(claude_module.start_link(opts))
   end
+
+  defp start_claude_safe({:ok, pid}), do: pid
+  defp start_claude_safe(_), do: nil
 
   defp envelope(name, payload) do
     "[from #{name}] #{payload}"
   end
 
   defp extract_resume_or_generate_session_id(opts) do
-    case Keyword.pop(opts, :resume) do
-      {nil, remaining_opts} ->
-        {generate_session_id(), remaining_opts}
-
-      {session_id, remaining_opts} ->
-        {session_id, remaining_opts}
-    end
+    {resume, remaining_opts} = Keyword.pop(opts, :resume)
+    {resume || generate_session_id(), remaining_opts}
   end
 
   defp generate_session_id do
@@ -143,12 +128,14 @@ defmodule El.Session do
   end
 
   defp format_uuid(hex) do
-    s0 = String.slice(hex, 0, 8)
-    s1 = String.slice(hex, 8, 4)
-    s2 = String.slice(hex, 12, 4)
-    s3 = String.slice(hex, 16, 4)
-    s4 = String.slice(hex, 20, 12)
-    "#{s0}-#{s1}-#{s2}-#{s3}-#{s4}"
+    [
+      String.slice(hex, 0, 8),
+      String.slice(hex, 8, 4),
+      String.slice(hex, 12, 4),
+      String.slice(hex, 16, 4),
+      String.slice(hex, 20, 12)
+    ]
+    |> Enum.join("-")
   end
 
   @impl true
