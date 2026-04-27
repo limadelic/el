@@ -65,7 +65,13 @@ defmodule El.PTY.Spec do
 
   describe "handle_cast/2" do
     setup do
-      state = %{pty: :mock_port, tty_out: :mock_file, file: MockFile, port: MockPort}
+      state = %{
+        pty: :mock_port,
+        tty_out: :mock_file,
+        file: MockFile,
+        port: MockPort
+      }
+
       {:ok, state: state}
     end
 
@@ -87,7 +93,13 @@ defmodule El.PTY.Spec do
 
   describe "handle_info/2" do
     setup do
-      state = %{pty: :mock_port, tty_out: :mock_file, file: MockFile, port: MockPort}
+      state = %{
+        pty: :mock_port,
+        tty_out: :mock_file,
+        file: MockFile,
+        port: MockPort
+      }
+
       {:ok, state: state}
     end
 

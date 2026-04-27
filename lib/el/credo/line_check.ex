@@ -12,10 +12,10 @@ defmodule El.Credo.LineCheck do
     {:ok, end_line - Keyword.get(meta, :line, 0) - 1}
   end
 
-  defp extract_end_line(meta) do
-    Keyword.get(meta, :end_line) ||
-      extract_from_expression(meta)
-  end
+  defp extract_end_line(meta), do: extract_end_line_impl(Keyword.get(meta, :end_line), meta)
+
+  defp extract_end_line_impl(nil, meta), do: extract_from_expression(meta)
+  defp extract_end_line_impl(end_line, _meta), do: end_line
 
   defp extract_from_expression(meta) do
     expr = Keyword.get(meta, :end_of_expression, [])

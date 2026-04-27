@@ -51,7 +51,7 @@ defmodule El.ClaudeCode do
   defp add_resume_if_present(session_opts, opts) do
     case Keyword.get(opts, :resume) do
       nil -> session_opts
-      session_id -> session_opts ++ [resume: session_id]
+      sid -> session_opts ++ [resume: sid]
     end
   end
 

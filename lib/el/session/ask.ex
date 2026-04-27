@@ -4,7 +4,8 @@ defmodule El.Session.Ask do
   alias El.Session.Claude
 
   def prepare_ask(state, from, message) do
-    valid_routes = Router.filter_self_routes(Router.detect_routes(message), state)
+    routes = Router.detect_routes(message)
+    valid_routes = Router.filter_self_routes(routes, state)
     new_state = %{state | pending_calls: [from | state.pending_calls]}
     Store.store_ask_immediate(new_state, message, valid_routes)
   end
