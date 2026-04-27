@@ -222,19 +222,19 @@ defmodule El.CLI.Spec do
 
   describe "daemon spawning" do
     test "daemon_script returns absolute path" do
-      path = El.CLI.daemon_script()
+      path = El.CLI.Daemon.daemon_script()
       assert String.starts_with?(path, "/")
     end
 
     test "dev? returns true when DEV is set" do
       System.put_env("DEV", "1")
-      assert El.CLI.dev?() == true
+      assert El.CLI.Daemon.dev?() == true
       System.delete_env("DEV")
     end
 
     test "daemon_node returns el_dev@127.0.0.1 when DEV is set" do
       System.put_env("DEV", "1")
-      assert El.CLI.daemon_node() == :"el_dev@127.0.0.1"
+      assert El.CLI.Daemon.daemon_node() == :"el_dev@127.0.0.1"
       System.delete_env("DEV")
     end
   end

@@ -35,7 +35,7 @@ defmodule El.Application do
     {:ok, _} = :dets.open_file(:message_store, file: path, type: :bag)
   end
 
-  defp store_dir, do: store_dir(El.CLI.dev?())
+  defp store_dir, do: store_dir(El.CLI.Daemon.dev?())
   defp store_dir(true), do: "~/.el/dev"
   defp store_dir(false), do: "~/.el"
 

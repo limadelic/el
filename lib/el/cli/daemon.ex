@@ -16,17 +16,10 @@ defmodule El.CLI.Daemon do
     ensure_daemon() |> handle_daemon_ready()
   end
 
-  defp handle_client_started(_) do
-    :local
-  end
+  defp handle_client_started(_), do: :local
 
-  defp handle_daemon_ready(:ok) do
-    {:ok, daemon_node()}
-  end
-
-  defp handle_daemon_ready(_) do
-    :local
-  end
+  defp handle_daemon_ready(:ok), do: {:ok, daemon_node()}
+  defp handle_daemon_ready(_), do: :local
 
   def start_daemon_node do
     start_epmd()

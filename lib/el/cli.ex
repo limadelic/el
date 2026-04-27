@@ -24,10 +24,6 @@ defmodule El.CLI do
 
   defp el, do: Application.get_env(:el, :el_module, El)
 
-  def dev?, do: Daemon.dev?()
-  def daemon_script, do: Daemon.daemon_script()
-  def daemon_node, do: Daemon.daemon_node()
-
   def main(["--daemon" | _] = args) do
     Daemon.start_daemon_node()
     dispatch(args)
@@ -135,7 +131,10 @@ defmodule El.CLI do
   end
 
   defp log_by_kind(true, name, count), do: el().log_pattern(name, count)
-  defp log_by_kind(false, name, count), do: el().log(String.to_atom(name), count)
+
+  defp log_by_kind(false, name, count) do
+    el().log(String.to_atom(name), count)
+  end
 
   def execute(:exit, [name, "exit"]) do
     exit_by_kind(pattern?(name), name)
