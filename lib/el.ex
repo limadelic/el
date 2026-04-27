@@ -14,15 +14,13 @@ defmodule El do
   end
 
   defp start_if_needed(name, opts, []) do
-    filtered_opts =
-      Keyword.drop(opts, [:registry, :supervisor, :monitor, :app])
-
-    supervisor().start_child(
-      El.SessionSupervisor,
-      {El.Session, {name, filtered_opts}}
-    )
-
+    filtered_opts = filter_session_opts(opts)
+    supervisor().start_child(El.SessionSupervisor, {El.Session, {name, filtered_opts}})
     name
+  end
+
+  defp filter_session_opts(opts) do
+    Keyword.drop(opts, [:registry, :supervisor, :monitor, :app])
   end
 
   def tell(name, message) do
