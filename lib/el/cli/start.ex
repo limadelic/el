@@ -28,10 +28,8 @@ defmodule El.CLI.Start do
   end
 
   def start_daemon_node_for(name, model, el) do
-    # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
     name_atom = String.to_atom(name)
-    opts = start_opts(normalize_model(model))
-    el.start(name_atom, opts)
+    el.start(name_atom, start_opts(normalize_model(model)))
     report_daemon_up(name)
     hold_forever()
   end

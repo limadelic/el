@@ -19,20 +19,17 @@ defmodule El.Session do
   end
 
   defp build_state(name, opts, rest, session_id) do
-    %{
-      name: name,
-      claude_pid: nil,
-      session_id: session_id,
-      messages: [],
-      pending_calls: [],
-      claude_module: Keyword.get(opts, :claude_module, El.ClaudeCode),
-      task_module: Keyword.get(opts, :task_module, Task),
-      alive_fn: Keyword.get(opts, :alive_fn, &El.Session.Api.alive?/1),
-      registry_module: Keyword.get(opts, :registry_module, Registry),
-      store_module: Keyword.get(opts, :store_module, El.Application),
-      opts: opts,
-      claude_opts: Keyword.put(rest, :session_id, session_id)
-    }
+    base_state(name, session_id, opts)
+    |> Map.merge(modules_and_callbacks(opts))
+    |> Map.put(:claude_opts, Keyword.put(rest, :session_id, session_id))
+  end
+
+  defp base_state(name, session_id, opts) do
+    %{name: name, claude_pid: nil, session_id: session_id, messages: [], pending_calls: [], opts: opts}
+  end
+
+  defp modules_and_callbacks(opts) do
+    %{claude_module: Keyword.get(opts, :claude_module, El.ClaudeCode), task_module: Keyword.get(opts, :task_module, Task), alive_fn: Keyword.get(opts, :alive_fn, &El.Session.Api.alive?/1), registry_module: Keyword.get(opts, :registry_module, Registry), store_module: Keyword.get(opts, :store_module, El.Application)}
   end
 
   @impl true

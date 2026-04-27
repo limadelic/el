@@ -18,32 +18,32 @@ defmodule El.Credo.MaxFunctionLines do
 
   def run(%SourceFile{} = source_file, params) do
     max_lines = Keyword.get(params, :max_lines, 5)
-    Code.prewalk(source_file, &check_function(&1, &2, max_lines))
+    Code.prewalk(source_file, &check_function(&1, &2, max_lines, source_file.filename))
   end
 
-  defp check_function({type, meta, [_head | _tail]} = ast, issues, max_lines)
+  defp check_function({type, meta, [_head | _tail]} = ast, issues, max_lines, filename)
        when type in [:def, :defp, :defmacro] do
-    {ast, maybe_add_issue(max_lines, meta, issues)}
+    {ast, maybe_add_issue(max_lines, meta, issues, filename)}
   end
 
-  defp check_function(ast, issues, _max_lines) do
+  defp check_function(ast, issues, _max_lines, _filename) do
     {ast, issues}
   end
 
-  defp maybe_add_issue(max_lines, meta, issues) do
+  defp maybe_add_issue(max_lines, meta, issues, filename) do
     meta
     |> LineCheck.find_body_lines()
-    |> add_issue(max_lines, meta, issues)
+    |> add_issue(max_lines, meta, issues, filename)
   end
 
-  defp add_issue({:ok, lines}, max, meta, issues)
+  defp add_issue({:ok, lines}, max, meta, issues, filename)
        when lines > max do
-    [create_issue(lines, max, meta) | issues]
+    [create_issue(lines, max, meta, filename) | issues]
   end
 
-  defp add_issue(_, _, _, issues), do: issues
+  defp add_issue(_, _, _, issues, _filename), do: issues
 
-  defp create_issue(body_lines, max_lines, meta) do
-    LineCheck.issue_for(__MODULE__, "Function", body_lines, max_lines, meta)
+  defp create_issue(body_lines, max_lines, meta, filename) do
+    LineCheck.issue_for(__MODULE__, "Function", body_lines, max_lines, meta, filename)
   end
 end

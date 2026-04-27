@@ -25,17 +25,17 @@ defmodule El.Credo.LineCheck do
     Keyword.get(expr, :line)
   end
 
-  def issue_for(check, name, lines, max, meta) do
+  def issue_for(check, name, lines, max, meta, filename) do
     msg = format_message(name, lines, max)
-    build_issue(check, msg, meta, calc_priority(lines - max))
+    build_issue(check, msg, meta, calc_priority(lines - max), filename)
   end
 
   defp format_message(name, lines, max) do
     "#{name} is too long (#{lines} lines, max is #{max})."
   end
 
-  defp build_issue(check, msg, meta, pri) do
-    %{@base_issue | check: check, message: msg, line_no: meta[:line], column: meta[:column], priority: pri}
+  defp build_issue(check, msg, meta, pri, filename) do
+    %{@base_issue | check: check, message: msg, line_no: meta[:line], column: meta[:column], priority: pri, filename: filename}
   end
 
   defp calc_priority(severity)

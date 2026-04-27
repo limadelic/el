@@ -47,12 +47,8 @@ defmodule El do
     session_api().clear(name)
   end
 
-  def tell_ask(name, target, message) do
-    session_api().tell_ask(name, target, message)
-  end
-  def ask_tell(name, target, message) do
-    session_api().ask_tell(name, target, message)
-  end
+  def tell_ask(name, target, message), do: session_api().tell_ask(name, target, message)
+  def ask_tell(name, target, message), do: session_api().ask_tell(name, target, message)
   defp session_api, do: Application.get_env(:el, :session_api, El.Session.Api)
 
   def exit(name) do
@@ -69,11 +65,7 @@ defmodule El do
     ls() |> Enum.filter(&match_pattern?(&1, pattern)) |> Enum.each(&El.clear/1)
   end
 
-  def log_pattern(pattern, count) do
-    ls()
-    |> Enum.filter(&match_pattern?(&1, pattern))
-    |> Enum.flat_map(&log_entries(&1, count))
-  end
+  def log_pattern(pattern, count), do: ls() |> Enum.filter(&match_pattern?(&1, pattern)) |> Enum.flat_map(&log_entries(&1, count))
 
   defp log_entries(name, count) do
     name |> session_api().log(count) |> filter_found()
@@ -88,11 +80,7 @@ defmodule El do
     Regex.match?(~r/^#{regex_pattern}$/, name_str)
   end
 
-  defp pattern_to_regex(pattern) do
-    pattern
-    |> String.replace("*", ".*")
-    |> String.replace("?", ".")
-  end
+  defp pattern_to_regex(pattern), do: pattern |> String.replace("*", ".*") |> String.replace("?", ".")
 
   def ls do
     registry().select(El.Registry, [{{:"$1", :_, :_}, [], [:"$1"]}])

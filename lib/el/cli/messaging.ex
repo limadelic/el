@@ -17,22 +17,24 @@ defmodule El.CLI.Messaging do
   end
 
   def execute_tell_ask(name, target, words, el_module) do
+    # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
     target_atom = String.to_atom(target)
-    msg = Enum.join(words, " ")
+    # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
     name_atom = String.to_atom(name)
-    handle_tell_ask(name_atom, target_atom, msg, name, el_module)
+    handle_tell_ask(name_atom, target_atom, Enum.join(words, " "), name, el_module)
   end
 
   def execute_ask_tell(name, target, words, el_module) do
+    # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
     target_atom = String.to_atom(target)
-    msg = Enum.join(words, " ")
+    # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
     name_atom = String.to_atom(name)
-    handle_ask_tell(name_atom, target_atom, msg, name, el_module)
+    handle_ask_tell(name_atom, target_atom, Enum.join(words, " "), name, el_module)
   end
 
   def execute_msg(name, words, el_module) do
-    msg = Enum.join(words, " ")
+    # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
     name_atom = String.to_atom(name)
-    handle_msg(name_atom, msg, name, el_module)
+    handle_msg(name_atom, Enum.join(words, " "), name, el_module)
   end
 end
