@@ -462,16 +462,20 @@ defmodule El.Session do
 
   defp handle_claude_crash(state, reason) do
     log_claude_death(state.name, reason)
-    entry = {"crash", "session died", inspect(reason), %{}}
-    state.store_module.store_message(state.name, entry)
-    clear_pending_calls(state.pending_calls)
+    entry = crash_entry(reason)
+    store_crash(state, entry)
+    crash_state(state, entry)
+  end
 
-    %{
-      state
-      | claude_pid: nil,
-        pending_calls: [],
-        messages: state.messages ++ [entry]
-    }
+  defp crash_entry(reason), do: {"crash", "session died", inspect(reason), %{}}
+
+  defp store_crash(state, entry) do
+    state.store_module.store_message(state.name, entry)
+  end
+
+  defp crash_state(state, entry) do
+    clear_pending_calls(state.pending_calls)
+    %{state | claude_pid: nil, pending_calls: [], messages: state.messages ++ [entry]}
   end
 
   @impl true
@@ -490,11 +494,8 @@ defmodule El.Session do
 
   @impl true
   def terminate(reason, state) do
-    state.store_module.store_message(
-      state.name,
-      {"crash", "Session crashed", inspect(reason), %{}}
-    )
-
+    entry = {"crash", "Session crashed", inspect(reason), %{}}
+    state.store_module.store_message(state.name, entry)
     :ok
   end
 
@@ -507,8 +508,13 @@ defmodule El.Session do
     _, _ -> :ok
   end
 
-  defp ask_claude(nil, _message), do: "(ClaudeCode unavailable)"
-  defp ask_claude(claude_pid, message), do: protected_stream(claude_pid, message)
+  defp ask_claude(nil, _message) do
+    "(ClaudeCode unavailable)"
+  end
+
+  defp ask_claude(claude_pid, message) do
+    protected_stream(claude_pid, message)
+  end
 
   defp protected_stream(claude_pid, message) do
     safe_stream_claude(claude_pid, message)
@@ -530,7 +536,10 @@ defmodule El.Session do
     |> Enum.find_value(&extract_result/1)
   end
 
-  defp extract_result(%ClaudeCode.Message.ResultMessage{result: result}), do: result
+  defp extract_result(%ClaudeCode.Message.ResultMessage{result: result}) do
+    result
+  end
+
   defp extract_result(_), do: nil
 
   defp store_ask_immediate(state, message, []) do
@@ -568,11 +577,15 @@ defmodule El.Session do
     |> complete_entry(type, message, response)
   end
 
-  defp match_pending_entry({t, _, "", %{ref: r}}, type, ref), do: r != ref or t != type
+  defp match_pending_entry({t, _, "", %{ref: r}}, type, ref) do
+    r != ref or t != type
+  end
+
   defp match_pending_entry(_, _, _), do: true
 
   defp complete_entry({before, [{_, _, _, _} | rest]}, type, message, response) do
-    before ++ [{type, message, response, %{}} | rest]
+    entry = {type, message, response, %{}}
+    before ++ [entry | rest]
   end
 
   defp complete_entry({messages, []}, type, message, response) do
