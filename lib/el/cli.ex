@@ -6,26 +6,32 @@ defmodule El.CLI do
     Application.spec(:el, :vsn) |> version()
   end
 
-  defp usage_cmds do
-    [
-      {"el #{version()}", ""},
-      {"el -v", "version"},
-      {"el ls", "list sessions"},
-      {"el <name> [-m <model>]", "start or status"},
-      {"el <name> <msg>", "send a msg"},
-      {"el <name|glob> log [n|all]", "view log (default: last 1)"},
-      {"el <name|glob> clear", "clear log"},
-      {"el <name|glob> exit", "exit session"},
-      {"el exit", "exit all sessions"}
-    ]
-  end
+  @usage_cmds [
+    {"el v0.1.0", ""},
+    {"el -v", "version"},
+    {"el ls", "list sessions"},
+    {"el <name> [-m <model>]", "start or status"},
+    {"el <name> <msg>", "send a msg"},
+    {"el <name|glob> log [n|all]", "view log (default: last 1)"},
+    {"el <name|glob> clear", "clear log"},
+    {"el <name|glob> exit", "exit session"},
+    {"el exit", "exit all sessions"}
+  ]
+
+  defp usage_cmds, do: @usage_cmds
 
   defp el, do: Application.get_env(:el, :el_module, El)
 
-  def dev? do
-    System.get_env("DEV") != nil or
-      Path.type(to_string(:escript.script_name())) == :relative
+  def dev?, do: dev_check(System.get_env("DEV"))
+  defp dev_check(nil), do: script_is_relative()
+  defp dev_check(_), do: true
+
+  defp script_is_relative do
+    :escript.script_name() |> to_string() |> Path.type() |> is_relative()
   end
+
+  defp is_relative(:relative), do: true
+  defp is_relative(_), do: false
 
   def daemon_script do
     :escript.script_name() |> to_string() |> Path.expand()
@@ -168,13 +174,18 @@ defmodule El.CLI do
   end
 
   defp log_for_name(name, count) when is_binary(name) do
-    (pattern?(name) && el().log_pattern(name, count)) ||
-      el().log(String.to_atom(name), count)
+    log_by_kind(pattern?(name), name, count)
   end
 
+  defp log_by_kind(true, name, count), do: el().log_pattern(name, count)
+  defp log_by_kind(false, name, count), do: el().log(String.to_atom(name), count)
+
   def execute(:exit, [name, "exit"]) do
-    (pattern?(name) && exit_pattern(name)) || exit_single(name)
+    exit_by_kind(pattern?(name), name)
   end
+
+  defp exit_by_kind(true, name), do: exit_pattern(name)
+  defp exit_by_kind(false, name), do: exit_single(name)
 
   defp exit_pattern(name) do
     el().exit_pattern(name)
@@ -186,8 +197,11 @@ defmodule El.CLI do
   end
 
   def execute(:clear, [name, "clear"]) do
-    (pattern?(name) && clear_pattern(name)) || clear_single(name)
+    clear_by_kind(pattern?(name), name)
   end
+
+  defp clear_by_kind(true, name), do: clear_pattern(name)
+  defp clear_by_kind(false, name), do: clear_single(name)
 
   defp clear_pattern(name) do
     el().clear_pattern(name)
@@ -357,8 +371,11 @@ defmodule El.CLI do
   defp maybe_set_cookie(error), do: error
 
   defp ensure_daemon do
-    Node.connect(daemon_node()) || spawn_and_wait()
+    ensure_daemon_connected(Node.connect(daemon_node()))
   end
+
+  defp ensure_daemon_connected(true), do: :ok
+  defp ensure_daemon_connected(false), do: spawn_and_wait()
 
   defp spawn_and_wait do
     spawn_daemon()
