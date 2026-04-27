@@ -3,37 +3,39 @@ defmodule El.Session do
 
   require Logger
 
+  alias El.Session.Registry
+
   def start_link({name, session_opts}) do
-    opts = [name: via_tuple(name)]
+    opts = [name: Registry.via_tuple(name)]
     GenServer.start_link(__MODULE__, {name, session_opts}, opts)
   end
 
   def tell(name, message) do
-    GenServer.cast(via_tuple(name), {:tell, message})
+    GenServer.cast(Registry.via_tuple(name), {:tell, message})
   end
 
   def ask(name, message) do
-    GenServer.call(via_tuple(name), {:ask, message}, :infinity)
+    GenServer.call(Registry.via_tuple(name), {:ask, message}, :infinity)
   end
 
   def log(name) do
-    GenServer.call(via_tuple(name), :log, :infinity)
+    GenServer.call(Registry.via_tuple(name), :log, :infinity)
   end
 
   def log(name, count) do
-    GenServer.call(via_tuple(name), {:log, count}, :infinity)
+    GenServer.call(Registry.via_tuple(name), {:log, count}, :infinity)
   end
 
   def clear(name) do
-    GenServer.call(via_tuple(name), :clear)
+    GenServer.call(Registry.via_tuple(name), :clear)
   end
 
   def tell_ask(name, target, message) do
-    GenServer.cast(via_tuple(name), {:tell_ask, target, message})
+    GenServer.cast(Registry.via_tuple(name), {:tell_ask, target, message})
   end
 
   def ask_tell(name, target, message) do
-    GenServer.call(via_tuple(name), {:ask_tell, target, message}, :infinity)
+    GenServer.call(Registry.via_tuple(name), {:ask_tell, target, message}, :infinity)
   end
 
   def detect_routes(text) do
@@ -44,7 +46,7 @@ defmodule El.Session do
   end
 
   def alive?(name) do
-    match?([{_pid, _}], Registry.lookup(El.Registry, name))
+    Registry.alive?(name)
   end
 
   @impl true
@@ -239,7 +241,7 @@ defmodule El.Session do
 
   defp tell_route_target(state, message, target, payload) do
     relay_payload = envelope(state.name, payload)
-    GenServer.cast(via_tuple(target), {:cast_store_relay, relay_payload, ""})
+    GenServer.cast(Registry.via_tuple(target), {:cast_store_relay, relay_payload, ""})
     cast_store_relay(state.name, message, "-> #{target}")
   end
 
@@ -283,7 +285,7 @@ defmodule El.Session do
   end
 
   defp cast_store_relay(sender_name, message, response) do
-    pid = via_tuple(sender_name)
+    pid = Registry.via_tuple(sender_name)
     GenServer.cast(pid, {:cast_store_relay, message, response})
   end
 
@@ -399,7 +401,7 @@ defmodule El.Session do
   defp process_ask_single_route(state, message, target, payload) do
     route_if_alive(state, target, fn ->
       relay_msg = envelope(state.name, payload)
-      GenServer.cast(via_tuple(target), {:cast_store_relay, relay_msg, ""})
+      GenServer.cast(Registry.via_tuple(target), {:cast_store_relay, relay_msg, ""})
       cast_store_relay(state.name, message, "-> #{target}")
     end)
   end
@@ -550,9 +552,5 @@ defmodule El.Session do
 
   defp complete_entry({messages, []}, type, message, response) do
     messages ++ [{type, message, response, %{}}]
-  end
-
-  defp via_tuple(name) do
-    {:via, Registry, {El.Registry, name}}
   end
 end
