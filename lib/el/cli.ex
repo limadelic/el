@@ -326,7 +326,8 @@ defmodule El.CLI do
 
   defp spawn_daemon do
     script = daemon_script()
-    System.cmd("sh", ["-c", "#{script} --daemon > /dev/null 2>&1 &"])
+    prefix = if dev?(), do: "DEV=1 ", else: ""
+    System.cmd("sh", ["-c", "#{prefix}#{script} --daemon > /dev/null 2>&1 &"])
   end
 
   defp wait_for_daemon(0), do: {:error, :timeout}
