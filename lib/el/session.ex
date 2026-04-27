@@ -129,6 +129,7 @@ defmodule El.Session do
 
   defp generate_session_id do
     <<a::48, _::4, b::12, _::2, c::62>> = :crypto.strong_rand_bytes(16)
+
     <<a::48, 4::4, b::12, 2::2, c::62>>
     |> Base.encode16(case: :lower)
     |> then(fn hex ->

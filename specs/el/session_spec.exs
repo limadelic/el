@@ -56,13 +56,15 @@ defmodule El.Session.Spec do
 
   describe "init/1" do
     test "stores session name in state" do
-      {:ok, state, {:continue, :start_claude}} = El.Session.init({:my_session, [claude_module: MockSessionModule]})
+      {:ok, state, {:continue, :start_claude}} =
+        El.Session.init({:my_session, [claude_module: MockSessionModule]})
 
       assert state.name == :my_session
     end
 
     test "initializes messages as empty list" do
-      {:ok, state, {:continue, :start_claude}} = El.Session.init({:test_session, [claude_module: MockSessionModule]})
+      {:ok, state, {:continue, :start_claude}} =
+        El.Session.init({:test_session, [claude_module: MockSessionModule]})
 
       assert state.messages == []
     end
@@ -75,19 +77,22 @@ defmodule El.Session.Spec do
     end
 
     test "generates and stores session_id" do
-      {:ok, state, {:continue, :start_claude}} = El.Session.init({:test_session, [claude_module: MockSessionModule]})
+      {:ok, state, {:continue, :start_claude}} =
+        El.Session.init({:test_session, [claude_module: MockSessionModule]})
 
       assert is_binary(state.session_id)
     end
 
     test "stores nil claude_pid before continue" do
-      {:ok, state, {:continue, :start_claude}} = El.Session.init({:test_session, [claude_module: MockSessionModule]})
+      {:ok, state, {:continue, :start_claude}} =
+        El.Session.init({:test_session, [claude_module: MockSessionModule]})
 
       assert state.claude_pid == nil
     end
 
     test "stores default task_module" do
-      {:ok, state, {:continue, :start_claude}} = El.Session.init({:test_session, [claude_module: MockSessionModule]})
+      {:ok, state, {:continue, :start_claude}} =
+        El.Session.init({:test_session, [claude_module: MockSessionModule]})
 
       assert state.task_module == Task
     end
@@ -105,7 +110,9 @@ defmodule El.Session.Spec do
   describe "handle_continue/2 :start_claude" do
     test "calls claude_module.start_link with claude_opts" do
       {:ok, state, {:continue, :start_claude}} =
-        El.Session.init({:test_session, [claude_module: MockSessionModule, store_module: MockSessionStore]})
+        El.Session.init(
+          {:test_session, [claude_module: MockSessionModule, store_module: MockSessionStore]}
+        )
 
       {:noreply, result_state} = El.Session.handle_continue(:start_claude, state)
 
@@ -116,14 +123,17 @@ defmodule El.Session.Spec do
       {:ok, state, {:continue, :start_claude}} =
         El.Session.init({:test_session, [claude_module: MockSessionModule]})
 
-      {:noreply, result_state} = El.Session.handle_continue(:start_claude, %{state | store_module: MockLoadingStore})
+      {:noreply, result_state} =
+        El.Session.handle_continue(:start_claude, %{state | store_module: MockLoadingStore})
 
       assert [{"tell", "old_message", "old_response", %{}}] == result_state.messages
     end
 
     test "sets claude_pid to nil on start failure" do
       {:ok, state, {:continue, :start_claude}} =
-        El.Session.init({:test_session, [claude_module: FailingModule, store_module: MockSessionStore]})
+        El.Session.init(
+          {:test_session, [claude_module: FailingModule, store_module: MockSessionStore]}
+        )
 
       {:noreply, result_state} = El.Session.handle_continue(:start_claude, state)
 
@@ -265,14 +275,20 @@ defmodule El.Session.Spec do
       from = {self(), make_ref()}
 
       {:noreply, _state} =
-        El.Session.handle_call({:ask, "@test_session> test"}, from, %{state | task_module: MockTaskModule})
+        El.Session.handle_call({:ask, "@test_session> test"}, from, %{
+          state
+          | task_module: MockTaskModule
+        })
     end
 
     test "stores pending entry immediately", %{state: state} do
       from = {self(), make_ref()}
 
       {:noreply, returned_state} =
-        El.Session.handle_call({:ask, "test question"}, from, %{state | task_module: MockTaskModule})
+        El.Session.handle_call({:ask, "test question"}, from, %{
+          state
+          | task_module: MockTaskModule
+        })
 
       assert [{"ask", "test question", "", %{ref: ref}}] = returned_state.messages
       assert is_reference(ref)
@@ -612,9 +628,12 @@ defmodule El.Session.Spec do
     test "stops old claude process", %{state: state} do
       {:ok, old_pid} = Agent.start_link(fn -> nil end)
 
-      {:reply, :ok, _} = El.Session.handle_call(:clear, :from, %{
-        state | claude_pid: old_pid, claude_module: MockSessionModule
-      })
+      {:reply, :ok, _} =
+        El.Session.handle_call(:clear, :from, %{
+          state
+          | claude_pid: old_pid,
+            claude_module: MockSessionModule
+        })
 
       refute Process.alive?(old_pid)
     end
@@ -694,8 +713,10 @@ defmodule MockVerifyingStore do
     send(self(), {:store_message, name, entry})
     :ok
   end
+
   def load_messages(_), do: []
   def delete_message(_, _), do: :ok
+
   def delete_session_messages(name) do
     send(self(), {:delete_session_messages, name})
     :ok
