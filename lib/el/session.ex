@@ -5,6 +5,7 @@ defmodule El.Session do
 
   alias El.Session.Registry
   alias El.Session.Claude
+  alias El.Session.Router
 
   def start_link({name, session_opts}) do
     opts = [name: Registry.via_tuple(name)]
@@ -40,10 +41,7 @@ defmodule El.Session do
   end
 
   def detect_routes(text) do
-    Regex.scan(~r/^@(\w+)>\s*(.*)$/m, text, capture: :all_but_first)
-    |> Enum.map(fn [target, payload] ->
-      {String.to_atom(target), payload}
-    end)
+    Router.detect_routes(text)
   end
 
   def alive?(name) do
@@ -94,10 +92,6 @@ defmodule El.Session do
   defp check_claude_alive(true, state), do: state
   defp check_claude_alive(false, state), do: maybe_respawn_claude(%{state | claude_pid: nil})
 
-  defp envelope(name, payload) do
-    "[from #{name}] #{payload}"
-  end
-
   @impl true
   def handle_cast({:tell, message}, state) do
     state = maybe_respawn_claude(state)
@@ -105,7 +99,7 @@ defmodule El.Session do
   end
 
   defp tell_impl(state, message) do
-    routes = detect_routes(message)
+    routes = Router.detect_routes(message)
     ref = make_ref()
     new_state = store_tell_immediate(state, message, ref, routes)
     process_tell(new_state, message, ref, routes)
@@ -115,8 +109,8 @@ defmodule El.Session do
   @impl true
   def handle_cast({:store_tell, ref, message, response}, state) do
     new_state = complete_tell_entry(state, ref, message, response)
-    routes = detect_routes(response)
-    process_tell_response(state, response, routes)
+    routes = Router.detect_routes(response)
+    Router.process_tell_response(state, response, routes)
     {:noreply, new_state}
   end
 
@@ -180,7 +174,7 @@ defmodule El.Session do
 
   @impl true
   def handle_cast({:tell_ask, target, message}, state) do
-    response = process_tell_ask(state, target, message)
+    response = Router.process_tell_ask(state, target, message)
     entry = {"relay", message, response, %{from: state.name}}
     state.store_module.store_message(state.name, entry)
     {:noreply, %{state | messages: state.messages ++ [entry]}}
@@ -191,7 +185,7 @@ defmodule El.Session do
   end
 
   defp process_tell(state, message, _ref, routes) do
-    route_all_tells(state, message, routes)
+    Router.route_all_tells(state, message, routes)
   end
 
   defp spawn_tell_task(state, message, ref) do
@@ -207,89 +201,18 @@ defmodule El.Session do
     GenServer.cast(server_pid, {:store_tell, ref, message, response})
   end
 
-  defp route_all_tells(state, message, routes) do
-    Enum.each(routes, fn {target, payload} ->
-      process_tell_route(state, message, target, payload)
-    end)
-  end
-
-  defp process_tell_route(state, _message, target, _payload)
-       when target == state.name do
-    :ok
-  end
-
-  defp process_tell_route(state, message, target, payload) do
-    route_if_alive(state, target, fn ->
-      tell_route_target(state, message, target, payload)
-    end)
-  end
-
-  defp tell_route_target(state, message, target, payload) do
-    relay_payload = envelope(state.name, payload)
-    GenServer.cast(Registry.via_tuple(target), {:cast_store_relay, relay_payload, ""})
-    cast_store_relay(state.name, message, "-> #{target}")
-  end
-
-  defp process_tell_response(state, response, routes) do
-    Enum.each(routes, fn {target, payload} ->
-      process_tell_response_route(state, response, target, payload)
-    end)
-  end
-
-  defp process_tell_response_route(state, _response, target, _payload)
-       when target == state.name do
-    :ok
-  end
-
-  defp process_tell_response_route(state, response, target, payload) do
-    route_if_alive(state, target, fn ->
-      El.Session.tell(target, envelope(state.name, payload))
-      cast_store_relay(state.name, response, "-> #{target}")
-    end)
-  end
-
-  defp process_tell_ask(state, target, message) do
-    route_if_alive(state, target, fn ->
-      state.task_module.start(fn ->
-        El.ask(target, envelope(state.name, message))
-      end)
-    end)
-  end
-
-  defp route_if_alive(state, target, on_alive) do
-    do_route(target, on_alive, state.alive_fn.(target))
-  end
-
-  defp do_route(target, on_alive, true) do
-    on_alive.()
-    "-> #{target}"
-  end
-
-  defp do_route(target, _on_alive, false) do
-    "#{target} is not running"
-  end
-
-  defp cast_store_relay(sender_name, message, response) do
-    pid = Registry.via_tuple(sender_name)
-    GenServer.cast(pid, {:cast_store_relay, message, response})
-  end
-
   @impl true
   def handle_call({:ask, message}, from, state) do
     state = maybe_respawn_claude(state)
     {ref, ask_state} = prepare_ask(state, from, message)
-    spawn_ask(ask_state, from, message, detect_routes(message), ref)
+    spawn_ask(ask_state, from, message, Router.detect_routes(message), ref)
     {:noreply, ask_state}
   end
 
   defp prepare_ask(state, from, message) do
-    valid_routes = filter_self_routes(detect_routes(message), state)
+    valid_routes = Router.filter_self_routes(Router.detect_routes(message), state)
     new_state = %{state | pending_calls: [from | state.pending_calls]}
     store_ask_immediate(new_state, message, valid_routes)
-  end
-
-  defp filter_self_routes(routes, state) do
-    Enum.filter(routes, fn {target, _} -> target != state.name end)
   end
 
   @impl true
@@ -309,7 +232,7 @@ defmodule El.Session do
 
   @impl true
   def handle_call({:ask_tell, target, message}, _from, state) do
-    response = process_ask_tell(state, target, message)
+    response = Router.process_ask_tell(state, target, message)
     entry = build_relay_entry(message, response, state)
     {:reply, response, store_relay_entry(state, entry)}
   end
@@ -365,12 +288,6 @@ defmodule El.Session do
   defp spawn_ask_task(state, from, message, valid_routes, ref, server_pid) do
     response = Claude.ask_work(state.claude_pid, message, valid_routes)
     GenServer.cast(server_pid, {:complete_ask, from, message, response, ref})
-  end
-
-  defp process_ask_tell(state, target, message) do
-    route_if_alive(state, target, fn ->
-      El.tell(target, envelope(state.name, message))
-    end)
   end
 
   @impl true
