@@ -15,13 +15,12 @@ defmodule El do
 
   defp start_if_needed(name, opts, []) do
     filtered_opts = filter_session_opts(opts)
-
-    supervisor().start_child(
-      El.SessionSupervisor,
-      {El.Session, {name, filtered_opts}}
-    )
-
+    start_session_child(name, filtered_opts)
     name
+  end
+
+  defp start_session_child(name, opts) do
+    supervisor().start_child(El.SessionSupervisor, {El.Session, {name, opts}})
   end
 
   defp filter_session_opts(opts) do
