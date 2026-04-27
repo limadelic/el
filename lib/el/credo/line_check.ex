@@ -25,7 +25,8 @@ defmodule El.Credo.LineCheck do
     Keyword.get(expr, :line)
   end
 
-  def issue_for(check, name, lines, max, meta, filename) do
+  def issue_for(check, name, lines, max, meta_and_file) do
+    {meta, filename} = meta_and_file
     msg = format_message(name, lines, max)
     build_issue(check, msg, meta, calc_priority(lines - max), filename)
   end

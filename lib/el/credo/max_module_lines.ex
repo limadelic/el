@@ -43,6 +43,6 @@ defmodule El.Credo.MaxModuleLines do
   defp add_issue(_, _, _, issues, _filename), do: issues
 
   defp create_issue(body_lines, max_lines, meta, filename) do
-    LineCheck.issue_for(__MODULE__, "Module", body_lines, max_lines, meta, filename)
+    LineCheck.issue_for(__MODULE__, "Module", body_lines, max_lines, {meta, filename})
   end
 end
