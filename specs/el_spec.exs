@@ -6,8 +6,14 @@ defmodule El.Spec do
 
   describe "start/2" do
     test "returns name when lookup returns empty" do
-      expect(El.MockRegistry, :lookup, fn El.Registry, _name -> [] end)
-      stub(El.MockSupervisor, :start_child, fn El.SessionSupervisor, _args -> {:ok, :pid} end)
+      expect(El.MockRegistry, :lookup, fn El.Registry, _name ->
+        []
+      end)
+
+      stub(El.MockSupervisor, :start_child, fn El.SessionSupervisor, _args ->
+        {:ok, :pid}
+      end)
+
       assert El.start(:kent) == :kent
     end
 
@@ -18,10 +24,13 @@ defmodule El.Spec do
 
     test "passes options to supervisor" do
       expect(El.MockRegistry, :lookup, fn El.Registry, _name -> [] end)
-      expect(El.MockSupervisor, :start_child, fn El.SessionSupervisor, {El.Session, {:eric, opts}} ->
+
+      expect(El.MockSupervisor, :start_child, fn El.SessionSupervisor,
+                                                 {El.Session, {:eric, opts}} ->
         assert opts == [claude_module: MockModule]
         {:ok, :pid}
       end)
+
       El.start(:eric, claude_module: MockModule)
     end
   end
