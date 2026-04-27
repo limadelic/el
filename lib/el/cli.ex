@@ -1,5 +1,5 @@
 defmodule El.CLI do
-  alias El.CLI.{Daemon, Router, Output, Log}
+  alias El.CLI.{Daemon, Router, Output, Log, Pattern}
 
   defp version(vsn) when is_list(vsn), do: "v" <> List.to_string(vsn)
   defp version(_), do: "v0.1.0"
@@ -108,40 +108,11 @@ defmodule El.CLI do
   end
 
   def execute(:exit, [name, "exit"]) do
-    exit_by_kind(pattern?(name), name)
-  end
-
-  defp exit_by_kind(true, name), do: exit_pattern(name)
-  defp exit_by_kind(false, name), do: exit_single(name)
-
-  defp exit_pattern(name) do
-    el().exit_pattern(name)
-    IO.puts("exited sessions matching #{name}")
-  end
-
-  defp exit_single(name) do
-    handle_exit(String.to_atom(name), name)
+    Pattern.exit_by_kind(el(), Pattern.pattern?(name), name)
   end
 
   def execute(:clear, [name, "clear"]) do
-    clear_by_kind(pattern?(name), name)
-  end
-
-  defp clear_by_kind(true, name), do: clear_pattern(name)
-  defp clear_by_kind(false, name), do: clear_single(name)
-
-  defp clear_pattern(name) do
-    el().clear_pattern(name)
-    IO.puts("cleared sessions matching #{name}")
-  end
-
-  defp clear_single(name) do
-    result = el().clear(String.to_atom(name))
-    Output.handle_result(result, name)
-  end
-
-  defp pattern?(name) do
-    String.contains?(name, ["*", "?"])
+    Pattern.clear_by_kind(el(), Pattern.pattern?(name), name)
   end
 
   def execute(:exit_all, ["exit"]) do
@@ -196,11 +167,6 @@ defmodule El.CLI do
 
   defp handle_msg(name_atom, msg, name) do
     result = el().ask(name_atom, msg)
-    Output.handle_result(result, name)
-  end
-
-  defp handle_exit(name_atom, name) do
-    result = el().exit(name_atom)
     Output.handle_result(result, name)
   end
 end
