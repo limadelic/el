@@ -3,24 +3,29 @@ defmodule El.Lifecycle do
     El.ls() |> Enum.each(&El.Lifecycle.exit/1)
   end
 
-  def exit(name) do
-    do_exit(name)
-  end
+  def exit(name), do: do_exit(name)
 
   defp do_exit(name) do
-    case El.registry().lookup(El.Registry, name) do
-      [{pid, _}] ->
-        spawn(fn ->
-          ref = Process.monitor(pid)
-          El.supervisor().terminate_child(El.SessionSupervisor, pid)
-          El.monitor().wait_for_down(ref, name)
-        end)
+    name |> lookup() |> exit_found(name)
+  end
 
-        :ok
+  defp lookup(name) do
+    El.registry().lookup(El.Registry, name)
+  end
 
-      [] ->
-        El.app().delete_session_messages(name)
-        :not_found
-    end
+  defp exit_found([{pid, _}], name) do
+    spawn(fn -> terminate(pid, name) end)
+    :ok
+  end
+
+  defp exit_found([], name) do
+    El.app().delete_session_messages(name)
+    :not_found
+  end
+
+  defp terminate(pid, name) do
+    ref = El.monitor().monitor(pid)
+    El.supervisor().terminate_child(El.Supervisor, pid)
+    El.monitor().wait_for_down(ref, name)
   end
 end
