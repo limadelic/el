@@ -7,87 +7,87 @@ defmodule El.CLI.Spec do
 
   describe "parse_route/1" do
     test "returns usage when no args" do
-      assert El.CLI.parse_route([]) == :usage
+      assert El.CLI.Router.parse_route([]) == :usage
     end
 
     test "returns ls for ls command" do
-      assert El.CLI.parse_route(["ls"]) == :ls
+      assert El.CLI.Router.parse_route(["ls"]) == :ls
     end
 
     test "returns start for single session name" do
-      assert El.CLI.parse_route(["my_session"]) == :start
+      assert El.CLI.Router.parse_route(["my_session"]) == :start
     end
 
     test "returns start with -m flag" do
-      assert El.CLI.parse_route(["my_session", "-m", "haiku"]) == :start
+      assert El.CLI.Router.parse_route(["my_session", "-m", "haiku"]) == :start
     end
 
     test "returns msg for name word message" do
-      assert El.CLI.parse_route(["session", "hello"]) == :msg
+      assert El.CLI.Router.parse_route(["session", "hello"]) == :msg
     end
 
     test "returns msg for name multiple words" do
-      assert El.CLI.parse_route(["session", "hello", "world", "foo"]) == :msg
+      assert El.CLI.Router.parse_route(["session", "hello", "world", "foo"]) == :msg
     end
 
     test "routes arbitrary args to msg" do
-      assert El.CLI.parse_route(["bogus", "args"]) == :msg
+      assert El.CLI.Router.parse_route(["bogus", "args"]) == :msg
     end
 
     test "returns log for name log" do
-      assert El.CLI.parse_route(["session", "log"]) == :log
+      assert El.CLI.Router.parse_route(["session", "log"]) == :log
     end
 
     test "returns log_n for name log with number" do
-      assert El.CLI.parse_route(["session", "log", "5"]) == :log_n
+      assert El.CLI.Router.parse_route(["session", "log", "5"]) == :log_n
     end
 
     test "returns log_n for name log all" do
-      assert El.CLI.parse_route(["session", "log", "all"]) == :log_n
+      assert El.CLI.Router.parse_route(["session", "log", "all"]) == :log_n
     end
 
     test "returns exit for name exit" do
-      assert El.CLI.parse_route(["session", "exit"]) == :exit
+      assert El.CLI.Router.parse_route(["session", "exit"]) == :exit
     end
 
     test "returns exit_all for exit" do
-      assert El.CLI.parse_route(["exit"]) == :exit_all
+      assert El.CLI.Router.parse_route(["exit"]) == :exit_all
     end
 
     test "returns exit for dud* exit" do
-      assert El.CLI.parse_route(["dud*", "exit"]) == :exit
+      assert El.CLI.Router.parse_route(["dud*", "exit"]) == :exit
     end
 
     test "returns clear for name clear" do
-      assert El.CLI.parse_route(["session", "clear"]) == :clear
+      assert El.CLI.Router.parse_route(["session", "clear"]) == :clear
     end
 
     test "returns tell_ask for name tell ask @target message" do
-      assert El.CLI.parse_route(["session", "tell", "ask", "@other", "hello"]) == :tell_ask
+      assert El.CLI.Router.parse_route(["session", "tell", "ask", "@other", "hello"]) == :tell_ask
     end
 
     test "returns ask_tell for name ask tell @target message" do
-      assert El.CLI.parse_route(["session", "ask", "tell", "@other", "hello"]) == :ask_tell
+      assert El.CLI.Router.parse_route(["session", "ask", "tell", "@other", "hello"]) == :ask_tell
     end
 
     test "returns daemon for --daemon flag" do
-      assert El.CLI.parse_route(["--daemon", "my_session"]) == :daemon
+      assert El.CLI.Router.parse_route(["--daemon", "my_session"]) == :daemon
     end
 
     test "returns daemon with -m flag" do
-      assert El.CLI.parse_route(["--daemon", "my_session", "-m", "opus"]) == :daemon
+      assert El.CLI.Router.parse_route(["--daemon", "my_session", "-m", "opus"]) == :daemon
     end
 
     test "returns version for -v" do
-      assert El.CLI.parse_route(["-v"]) == :version
+      assert El.CLI.Router.parse_route(["-v"]) == :version
     end
 
     test "returns usage for args starting with --" do
-      assert El.CLI.parse_route(["--nonsense"]) == :usage
+      assert El.CLI.Router.parse_route(["--nonsense"]) == :usage
     end
 
     test "returns usage for args starting with -" do
-      assert El.CLI.parse_route(["-x"]) == :usage
+      assert El.CLI.Router.parse_route(["-x"]) == :usage
     end
   end
 
