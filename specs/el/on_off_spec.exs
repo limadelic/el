@@ -7,24 +7,36 @@ defmodule El.Features.OnOffSpec do
   describe "El.start/2" do
     test "calls DynamicSupervisor.start_child with El.Session" do
       expect(El.MockRegistry, :lookup, fn El.Registry, :dude -> [] end)
-      expect(El.MockSupervisor, :start_child, fn El.SessionSupervisor, {El.Session, {:dude, []}} -> {:ok, :mock_pid} end)
+      spec = {El.Session, {:dude, []}}
+
+      expect(El.MockSupervisor, :start_child, fn El.SessionSupervisor, ^spec ->
+        {:ok, :mock_pid}
+      end)
+
       El.start(:dude)
     end
 
     test "passes options through to El.Session" do
       expect(El.MockRegistry, :lookup, fn El.Registry, :dude -> [] end)
-      expect(El.MockSupervisor, :start_child, fn El.SessionSupervisor, {El.Session, {:dude, [claude_module: TestClaudeCode]}} -> {:ok, :mock_pid} end)
+      spec = {El.Session, {:dude, [claude_module: TestClaudeCode]}}
+
+      expect(El.MockSupervisor, :start_child, fn El.SessionSupervisor, ^spec ->
+        {:ok, :mock_pid}
+      end)
+
       El.start(:dude, claude_module: TestClaudeCode)
     end
 
     test "returns session name on success" do
       expect(El.MockRegistry, :lookup, fn El.Registry, :dude -> [] end)
-      stub(El.MockSupervisor, :start_child, fn El.SessionSupervisor, _ -> {:ok, :mock_pid} end)
+      stub_fn = fn El.SessionSupervisor, _ -> {:ok, :mock_pid} end
+      stub(El.MockSupervisor, :start_child, stub_fn)
       assert El.start(:dude) == :dude
     end
 
     test "returns name if session already registered" do
-      expect(El.MockRegistry, :lookup, fn El.Registry, :dude -> [{:existing_pid, :registered}] end)
+      lookup_fn = fn El.Registry, :dude -> [{:existing_pid, :registered}] end
+      expect(El.MockRegistry, :lookup, lookup_fn)
       assert El.start(:dude) == :dude
     end
   end
@@ -37,15 +49,19 @@ defmodule El.Features.OnOffSpec do
     end
 
     test "terminates child when session found" do
-      expect(El.MockRegistry, :lookup, fn El.Registry, :dude -> [{:mock_pid, :meta}] end)
-      expect(El.MockSupervisor, :terminate_child, fn El.SessionSupervisor, :mock_pid -> :ok end)
+      lookup_fn = fn El.Registry, :dude -> [{:mock_pid, :meta}] end
+      expect(El.MockRegistry, :lookup, lookup_fn)
+      term_fn = fn El.SessionSupervisor, :mock_pid -> :ok end
+      expect(El.MockSupervisor, :terminate_child, term_fn)
       stub(El.MockMonitor, :wait_for_down, fn _, _ -> :ok end)
       El.exit(:dude)
     end
 
     test "monitors process and waits for DOWN" do
-      expect(El.MockRegistry, :lookup, fn El.Registry, :dude -> [{:mock_pid, :meta}] end)
-      stub(El.MockSupervisor, :terminate_child, fn El.SessionSupervisor, _pid -> :ok end)
+      lookup_fn = fn El.Registry, :dude -> [{:mock_pid, :meta}] end
+      expect(El.MockRegistry, :lookup, lookup_fn)
+      stub_fn = fn El.SessionSupervisor, _pid -> :ok end
+      stub(El.MockSupervisor, :terminate_child, stub_fn)
       expect(El.MockMonitor, :wait_for_down, fn _ref, :dude -> :ok end)
       El.exit(:dude)
     end
@@ -53,13 +69,18 @@ defmodule El.Features.OnOffSpec do
 
   describe "El.ls/0" do
     test "calls Registry.select to list all sessions" do
-      expect(El.MockRegistry, :select, fn El.Registry, [{{:"$1", :_, :_}, [], [:"$1"]}] -> [:dude, :duder, :dudito] end)
+      select_fn = fn El.Registry, [{{:"$1", :_, :_}, [], [:"$1"]}] ->
+        [:dude, :duder, :dudito]
+      end
+
+      expect(El.MockRegistry, :select, select_fn)
       sessions = El.ls()
       assert sessions == [:dude, :duder, :dudito]
     end
 
     test "returns sorted list" do
-      expect(El.MockRegistry, :select, fn El.Registry, _ -> [:dudito, :dude, :duder] end)
+      select_fn = fn El.Registry, _ -> [:dudito, :dude, :duder] end
+      expect(El.MockRegistry, :select, select_fn)
       sessions = El.ls()
       assert sessions == [:dude, :duder, :dudito]
     end
