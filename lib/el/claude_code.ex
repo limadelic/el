@@ -49,10 +49,15 @@ defmodule El.ClaudeCode do
   end
 
   defp add_resume_if_present(session_opts, opts) do
-    case Keyword.get(opts, :resume) do
-      nil -> session_opts
-      sid -> session_opts ++ [resume: sid]
-    end
+    add_resume(session_opts, Keyword.get(opts, :resume))
+  end
+
+  defp add_resume(session_opts, nil) do
+    session_opts
+  end
+
+  defp add_resume(session_opts, sid) do
+    session_opts ++ [resume: sid]
   end
 
   def stream(pid, prompt) do
