@@ -11,22 +11,17 @@ defmodule El.Application do
   def children do
     [
       {Registry, keys: :unique, name: El.Registry},
-      {DynamicSupervisor,
-       [
-         name: El.SessionSupervisor,
-         max_restarts: 50,
-         max_seconds: 60
-       ]}
+      {DynamicSupervisor, session_supervisor_opts()}
     ]
   end
 
+  defp session_supervisor_opts do
+    [name: El.SessionSupervisor, max_restarts: 50, max_seconds: 60]
+  end
+
   def supervisor_opts do
-    [
-      strategy: :one_for_one,
-      name: El.Supervisor,
-      max_restarts: 100,
-      max_seconds: 60
-    ]
+    [strategy: :one_for_one, name: El.Supervisor,
+     max_restarts: 100, max_seconds: 60]
   end
 
   def init_message_store do
