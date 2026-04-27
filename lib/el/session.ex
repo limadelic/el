@@ -139,6 +139,10 @@ defmodule El.Session do
   @impl true
   def handle_cast({:tell, message}, state) do
     state = maybe_respawn_claude(state)
+    tell_impl(state, message)
+  end
+
+  defp tell_impl(state, message) do
     routes = detect_routes(message)
     ref = make_ref()
     new_state = store_tell_immediate(state, message, ref, routes)
@@ -148,13 +152,17 @@ defmodule El.Session do
 
   @impl true
   def handle_cast({:store_tell, ref, message, response}, state) do
-    new_messages = replace_tell(state.messages, ref, message, response)
-    new_state = %{state | messages: new_messages}
-    delete_tell_entry(state, message, ref)
-    store_tell_entry(state, message, response)
+    new_state = complete_tell_entry(state, ref, message, response)
     routes = detect_routes(response)
     process_tell_response(state, response, routes)
     {:noreply, new_state}
+  end
+
+  defp complete_tell_entry(state, ref, message, response) do
+    new_messages = replace_tell(state.messages, ref, message, response)
+    delete_tell_entry(state, message, ref)
+    store_tell_entry(state, message, response)
+    %{state | messages: new_messages}
   end
 
   defp delete_tell_entry(state, message, ref) do
@@ -173,13 +181,18 @@ defmodule El.Session do
 
   @impl true
   def handle_cast({:complete_ask, from, message, response, ref}, state) do
+    new_state = finalize_ask(state, from, ref, message, response)
+    {:noreply, new_state}
+  end
+
+  defp finalize_ask(state, from, ref, message, response) do
     entry = {"ask", message, response, %{}}
     new_messages = replace_ask(state.messages, ref, message, response)
     delete_ask_entry(state, message, ref)
     store_ask_entry(state, entry)
     safe_reply(from, response)
     new_pending = List.delete(state.pending_calls, from)
-    {:noreply, %{state | messages: new_messages, pending_calls: new_pending}}
+    %{state | messages: new_messages, pending_calls: new_pending}
   end
 
   defp delete_ask_entry(state, message, ref) do
@@ -205,13 +218,18 @@ defmodule El.Session do
     response = process_tell_ask(state, target, message)
     entry = {"relay", message, response, %{from: state.name}}
     state.store_module.store_message(state.name, entry)
-
-    new_state = %{state | messages: state.messages ++ [entry]}
-
-    {:noreply, new_state}
+    {:noreply, %{state | messages: state.messages ++ [entry]}}
   end
 
   defp process_tell(state, message, ref, []) do
+    spawn_tell_task(state, message, ref)
+  end
+
+  defp process_tell(state, message, _ref, routes) do
+    route_all_tells(state, message, routes)
+  end
+
+  defp spawn_tell_task(state, message, ref) do
     server_pid = self()
 
     state.task_module.start(fn ->
@@ -220,7 +238,7 @@ defmodule El.Session do
     end)
   end
 
-  defp process_tell(state, message, _ref, routes) do
+  defp route_all_tells(state, message, routes) do
     Enum.each(routes, fn {target, payload} ->
       process_tell_route(state, message, target, payload)
     end)
@@ -233,9 +251,11 @@ defmodule El.Session do
 
   defp process_tell_route(state, message, target, payload) do
     route_if_alive(state, target, fn ->
+      relay_payload = envelope(state.name, payload)
+
       GenServer.cast(
         via_tuple(target),
-        {:cast_store_relay, envelope(state.name, payload), ""}
+        {:cast_store_relay, relay_payload, ""}
       )
 
       cast_store_relay(state.name, message, "-> #{target}")
