@@ -1,5 +1,5 @@
 defmodule El.CLI do
-  alias El.CLI.{Daemon, Router, Output, Log, Pattern}
+  alias El.CLI.{Daemon, Router, Output, Log, Pattern, Messaging}
 
   defp version(vsn) when is_list(vsn), do: "v" <> List.to_string(vsn)
   defp version(_), do: "v0.1.0"
@@ -83,20 +83,20 @@ defmodule El.CLI do
     target_atom = String.to_atom(target)
     msg = Enum.join(words, " ")
     name_atom = String.to_atom(name)
-    handle_tell_ask(name_atom, target_atom, msg, name)
+    Messaging.handle_tell_ask(name_atom, target_atom, msg, name, el())
   end
 
   def execute(:ask_tell, [name, "ask", "tell", "@" <> target | words]) do
     target_atom = String.to_atom(target)
     msg = Enum.join(words, " ")
     name_atom = String.to_atom(name)
-    handle_ask_tell(name_atom, target_atom, msg, name)
+    Messaging.handle_ask_tell(name_atom, target_atom, msg, name, el())
   end
 
   def execute(:msg, [name, word | more_words]) do
     msg = Enum.join([word | more_words], " ")
     name_atom = String.to_atom(name)
-    handle_msg(name_atom, msg, name)
+    Messaging.handle_msg(name_atom, msg, name, el())
   end
 
   def execute(:log, [name, "log"]) do
@@ -153,20 +153,5 @@ defmodule El.CLI do
 
   defp dispatch_rest(rest, name) do
     dispatch([name | rest])
-  end
-
-  defp handle_tell_ask(name_atom, target_atom, msg, name) do
-    result = el().tell_ask(name_atom, target_atom, msg)
-    Output.handle_result(result, name)
-  end
-
-  defp handle_ask_tell(name_atom, target_atom, msg, name) do
-    result = el().ask_tell(name_atom, target_atom, msg)
-    Output.handle_result(result, name)
-  end
-
-  defp handle_msg(name_atom, msg, name) do
-    result = el().ask(name_atom, msg)
-    Output.handle_result(result, name)
   end
 end
