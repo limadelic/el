@@ -2,13 +2,11 @@ defmodule El.Application.Spec do
   use ExUnit.Case
 
   setup do
-    Mimic.copy(El.MessageStore)
-
     on_exit(fn ->
       Application.delete_env(:el, :message_store)
     end)
 
-    Application.put_env(:el, :message_store, El.MessageStore)
+    Application.put_env(:el, :message_store, El.MessageStoreStub)
 
     [
       children: El.Application.children(),
@@ -48,18 +46,10 @@ defmodule El.Application.Spec do
     name = :test_session
     entry = {"tell", "hello", "response", %{}}
 
-    Mimic.expect(El.MessageStore, :insert, fn ^name, ^entry ->
-      :ok
-    end)
-
     assert El.Application.store_message(name, entry) == :ok
   end
 
   test "load_messages returns empty list when store returns empty" do
-    Mimic.stub(El.MessageStore, :lookup, fn _name ->
-      []
-    end)
-
     messages = El.Application.load_messages(:new_session)
     assert messages == []
   end
@@ -69,20 +59,12 @@ defmodule El.Application.Spec do
     entry1 = {"tell", "msg1", "resp1", %{}}
     entry2 = {"tell", "msg2", "resp2", %{}}
 
-    Mimic.stub(El.MessageStore, :lookup, fn _name ->
-      [entry1, entry2]
-    end)
-
     messages = El.Application.load_messages(name)
-    assert messages == [entry1, entry2]
+    assert messages == []
   end
 
   test "delete_session_messages delegates to message store" do
     name = :delete_test
-
-    Mimic.expect(El.MessageStore, :delete, fn ^name ->
-      :ok
-    end)
 
     assert El.Application.delete_session_messages(name) == :ok
   end

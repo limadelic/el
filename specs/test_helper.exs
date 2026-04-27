@@ -10,6 +10,23 @@ Mox.defmock(El.MockApp, for: El.Behaviours.App)
 Mox.defmock(El.MockMonitor, for: El.Behaviours.Monitor)
 Mox.defmock(El.MockEl, for: El.Behaviours.El)
 
+defmodule ClaudeCode.SessionStub do
+  def stream(_pid, _prompt) do
+    Stream.resource(fn -> nil end, fn _ -> :halt end, fn _ -> :ok end)
+  end
+end
+
+defmodule El.DetsBackendStub do
+  def delete_object(_table, _key), do: :ok
+end
+
+defmodule El.MessageStoreStub do
+  def insert(_name, _entry), do: :ok
+  def lookup(_name), do: []
+  def delete(_name), do: :ok
+end
+
+
 Application.put_env(:el, :registry, El.MockRegistry)
 Application.put_env(:el, :supervisor, El.MockSupervisor)
 Application.put_env(:el, :session, El.MockSession)
