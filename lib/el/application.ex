@@ -2,6 +2,13 @@ defmodule El.Application do
   @moduledoc false
   use Application
 
+  @supervisor_opts [
+    strategy: :one_for_one,
+    name: El.Supervisor,
+    max_restarts: 100,
+    max_seconds: 60
+  ]
+
   @impl true
   def start(_type, _args) do
     init_message_store()
@@ -19,14 +26,7 @@ defmodule El.Application do
     [name: El.SessionSupervisor, max_restarts: 50, max_seconds: 60]
   end
 
-  def supervisor_opts do
-    [
-      strategy: :one_for_one,
-      name: El.Supervisor,
-      max_restarts: 100,
-      max_seconds: 60
-    ]
-  end
+  def supervisor_opts, do: @supervisor_opts
 
   def init_message_store do
     dir = store_dir()
