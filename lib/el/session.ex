@@ -234,6 +234,7 @@ defmodule El.Session do
 
   defp spawn_tell_task(state, message, ref) do
     server_pid = self()
+
     state.task_module.start(fn ->
       process_tell_task(state, message, ref, server_pid)
     end)
