@@ -368,7 +368,11 @@ defmodule El.Session do
 
   @impl true
   def handle_info({:EXIT, pid, :normal}, %{claude_pid: pid} = state) do
-    {:noreply, %{state | claude_pid: nil}}
+    Enum.each(state.pending_calls, fn from ->
+      safe_reply(from, "(error)")
+    end)
+
+    {:noreply, %{state | claude_pid: nil, pending_calls: []}}
   end
 
   @impl true
