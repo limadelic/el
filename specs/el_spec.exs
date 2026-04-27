@@ -84,7 +84,7 @@ defmodule El.Spec do
       assert El.exit(:unknown) == :not_found
     end
 
-    test "handles errors in spawned process and returns ok" do
+    test "handles errors during termination and returns ok" do
       expect(El.MockRegistry, :lookup, fn El.Registry, _name ->
         [{:pid, :meta}]
       end)

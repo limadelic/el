@@ -15,6 +15,8 @@ defmodule El.Lifecycle do
 
   defp exit_found([{pid, _}], name) do
     terminate(pid, name)
+  rescue
+    _ -> :ok
   end
 
   defp exit_found([], name) do
