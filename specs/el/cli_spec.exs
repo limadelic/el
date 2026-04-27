@@ -269,75 +269,20 @@ defmodule El.CLI.Spec do
       end
     end
 
-    test "daemon uses el_dev@127.0.0.1 node when DEV env var is set" do
-      old_dev = System.get_env("DEV")
+    test "uses el_dev@127.0.0.1 when DEV is set" do
+      Mimic.copy(System)
+      Mimic.stub(System, :get_env, fn "DEV" -> "1" end)
 
-      try do
-        System.put_env("DEV", "1")
-
-        Mimic.copy(System)
-        Mimic.copy(Node)
-        Mimic.copy(IO)
-        Mimic.copy(El)
-
-        Mimic.expect(System, :cmd, fn
-          "epmd", ["-daemon"] -> {"", 0}
-          "sh", ["-c", cmd] -> send(self(), {:cmd, cmd}); {"", 0}
-        end)
-
-        Mimic.stub(Node, :connect, fn _ -> false end)
-        Mimic.stub(IO, :puts, fn _ -> :ok end)
-        Mimic.stub(System, :halt, fn _ -> :ok end)
-        Mimic.stub(System, :get_env, fn "DEV" -> "1" end)
-
-        El.CLI.main([])
-
-        receive do
-          {:cmd, _cmd} -> :ok
-        after 100 -> :ok
-        end
-      after
-        if old_dev do
-          System.put_env("DEV", old_dev)
-        else
-          System.delete_env("DEV")
-        end
-      end
+      assert El.CLI.daemon_node() == :"el_dev@127.0.0.1"
     end
 
-    test "daemon uses el@127.0.0.1 node when DEV env var is not set" do
-      old_dev = System.get_env("DEV")
+    test "uses el@127.0.0.1 when DEV is not set" do
+      Mimic.copy(System)
+      Mimic.stub(System, :get_env, fn "DEV" -> nil end)
 
-      try do
-        System.delete_env("DEV")
-
-        Mimic.copy(System)
-        Mimic.copy(Node)
-        Mimic.copy(IO)
-        Mimic.copy(El)
-
-        Mimic.expect(System, :cmd, fn
-          "epmd", ["-daemon"] -> {"", 0}
-          "sh", ["-c", cmd] -> send(self(), {:cmd, cmd}); {"", 0}
-        end)
-
-        Mimic.stub(Node, :connect, fn _ -> false end)
-        Mimic.stub(IO, :puts, fn _ -> :ok end)
-        Mimic.stub(System, :halt, fn _ -> :ok end)
-        Mimic.stub(System, :get_env, fn "DEV" -> nil end)
-
-        El.CLI.main([])
-
-        receive do
-          {:cmd, _cmd} -> :ok
-        after 100 -> :ok
-        end
-      after
-        if old_dev do
-          System.put_env("DEV", old_dev)
-        end
-      end
+      assert El.CLI.daemon_node() == :"el@127.0.0.1"
     end
+
   end
 
   describe "main/1" do

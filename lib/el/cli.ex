@@ -266,7 +266,7 @@ defmodule El.CLI do
     String.pad_trailing(cmd, pad) <> "  " <> desc
   end
 
-  defp daemon_node do
+  def daemon_node do
     if System.get_env("DEV"), do: :"el_dev@127.0.0.1", else: :"el@127.0.0.1"
   end
 
