@@ -65,7 +65,9 @@ defmodule El do
     ls() |> Enum.filter(&match_pattern?(&1, pattern)) |> Enum.each(&El.clear/1)
   end
 
-  def log_pattern(pattern, count), do: ls() |> Enum.filter(&match_pattern?(&1, pattern)) |> Enum.flat_map(&log_entries(&1, count))
+  def log_pattern(pattern, count),
+    do:
+      ls() |> Enum.filter(&match_pattern?(&1, pattern)) |> Enum.flat_map(&log_entries(&1, count))
 
   defp log_entries(name, count) do
     name |> session_api().log(count) |> filter_found()
@@ -80,7 +82,8 @@ defmodule El do
     Regex.match?(~r/^#{regex_pattern}$/, name_str)
   end
 
-  defp pattern_to_regex(pattern), do: pattern |> String.replace("*", ".*") |> String.replace("?", ".")
+  defp pattern_to_regex(pattern),
+    do: pattern |> String.replace("*", ".*") |> String.replace("?", ".")
 
   def ls do
     registry().select(El.Registry, [{{:"$1", :_, :_}, [], [:"$1"]}])

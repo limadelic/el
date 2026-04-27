@@ -36,7 +36,15 @@ defmodule El.Credo.LineCheck do
   end
 
   defp build_issue(check, msg, meta, pri, filename) do
-    %{@base_issue | check: check, message: msg, line_no: meta[:line], column: meta[:column], priority: pri, filename: filename}
+    %{
+      @base_issue
+      | check: check,
+        message: msg,
+        line_no: meta[:line],
+        column: meta[:column],
+        priority: pri,
+        filename: filename
+    }
   end
 
   defp calc_priority(severity)

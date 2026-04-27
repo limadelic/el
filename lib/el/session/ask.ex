@@ -14,7 +14,7 @@ defmodule El.Session.Ask do
     state.task_module.start(fn ->
       spawn_ask_task(state, {from, message, ref}, valid_routes, self())
     end)
-end
+  end
 
   defp spawn_ask_task(state, ask_info, valid_routes, server_pid) do
     {from, message, ref} = ask_info
