@@ -1,9 +1,9 @@
 defmodule El do
-  defp registry, do: Application.get_env(:el, :registry, Registry)
-  defp supervisor, do: Application.get_env(:el, :supervisor, DynamicSupervisor)
-  defp session, do: Application.get_env(:el, :session, El.Session)
-  defp app, do: Application.get_env(:el, :app, El.Application)
-  defp monitor, do: Application.get_env(:el, :monitor, El.ProcessMonitor)
+  def registry, do: Application.get_env(:el, :registry, Registry)
+  def supervisor, do: Application.get_env(:el, :supervisor, DynamicSupervisor)
+  def session, do: Application.get_env(:el, :session, El.Session)
+  def app, do: Application.get_env(:el, :app, El.Application)
+  def monitor, do: Application.get_env(:el, :monitor, El.ProcessMonitor)
 
   def start(name, opts \\ []) when is_atom(name) do
     start_if_needed(name, opts, registry().lookup(El.Registry, name))
@@ -54,10 +54,7 @@ defmodule El do
   end
 
   def exit(name) do
-    case name do
-      :all -> ls() |> Enum.each(&El.exit/1)
-      _ -> do_exit(name)
-    end
+    El.Lifecycle.exit(name)
   end
 
   def exit_pattern(pattern) do
@@ -73,13 +70,15 @@ defmodule El do
   def log_pattern(pattern, count) do
     ls()
     |> Enum.filter(&match_pattern?(&1, pattern))
-    |> Enum.flat_map(fn name ->
-      case session().log(name, count) do
-        :not_found -> []
-        entries -> entries
-      end
-    end)
+    |> Enum.flat_map(&log_entries(&1, count))
   end
+
+  defp log_entries(name, count) do
+    name |> session().log(count) |> filter_found()
+  end
+
+  defp filter_found(:not_found), do: []
+  defp filter_found(entries), do: entries
 
   defp match_pattern?(name, pattern) do
     name_str = Atom.to_string(name)
@@ -91,23 +90,6 @@ defmodule El do
     pattern
     |> String.replace("*", ".*")
     |> String.replace("?", ".")
-  end
-
-  defp do_exit(name) do
-    exit_if_found(name, registry().lookup(El.Registry, name))
-  rescue
-    _ -> :ok
-  end
-
-  defp exit_if_found(name, [{pid, _}]) do
-    ref = Process.monitor(pid)
-    supervisor().terminate_child(El.SessionSupervisor, pid)
-    monitor().wait_for_down(ref, name)
-  end
-
-  defp exit_if_found(name, []) do
-    app().delete_session_messages(name)
-    :not_found
   end
 
   def ls do
