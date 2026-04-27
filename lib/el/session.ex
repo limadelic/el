@@ -80,22 +80,9 @@ defmodule El.Session do
     {:noreply, %{state | claude_pid: claude_pid, messages: messages}}
   end
 
-  defp maybe_respawn_claude(%{claude_pid: nil} = state) do
-    opts = Claude.resume_options(state.opts, state.session_id)
-    pid = Claude.start(state.claude_module, opts)
-    %{state | claude_pid: pid}
-  end
-
-  defp maybe_respawn_claude(%{claude_pid: pid} = state) when is_pid(pid) do
-    check_claude_alive(Process.alive?(pid), state)
-  end
-
-  defp check_claude_alive(true, state), do: state
-  defp check_claude_alive(false, state), do: maybe_respawn_claude(%{state | claude_pid: nil})
-
   @impl true
   def handle_cast({:tell, message}, state) do
-    state = maybe_respawn_claude(state)
+    state = Claude.maybe_respawn_claude(state)
     tell_impl(state, message)
   end
 
@@ -124,7 +111,7 @@ defmodule El.Session do
   defp finalize_ask(state, from, ref, message, response) do
     Store.delete_ask_entry(state, message, ref)
     Store.store_ask_entry(state, {"ask", message, response, %{}})
-    safe_reply(from, response)
+    Claude.safe_reply(from, response)
     finalize_ask_state(state, from, ref, message, response)
   end
 
@@ -172,7 +159,7 @@ defmodule El.Session do
 
   @impl true
   def handle_call({:ask, message}, from, state) do
-    state = maybe_respawn_claude(state)
+    state = Claude.maybe_respawn_claude(state)
     {ref, ask_state} = prepare_ask(state, from, message)
     spawn_ask(ask_state, from, message, Router.detect_routes(message), ref)
     {:noreply, ask_state}
@@ -208,7 +195,7 @@ defmodule El.Session do
 
   @impl true
   def handle_call(:clear, _from, state) do
-    stop_claude(state.claude_pid)
+    Claude.stop_claude(state.claude_pid)
     new_state = reset_session(state)
     {:reply, :ok, new_state}
   end
@@ -231,12 +218,6 @@ defmodule El.Session do
     %{state | claude_pid: pid, claude_opts: opts, session_id: session_id}
   end
 
-  defp stop_claude(pid) when is_pid(pid) do
-    GenServer.stop(pid)
-  end
-
-  defp stop_claude(_), do: :ok
-
   defp spawn_ask(state, from, message, valid_routes, ref) do
     server_pid = self()
 
@@ -252,40 +233,18 @@ defmodule El.Session do
 
   @impl true
   def handle_info({:EXIT, pid, :normal}, %{claude_pid: pid} = state) do
-    clear_pending_calls(state.pending_calls)
+    Claude.clear_pending_calls(state.pending_calls)
     {:noreply, %{state | claude_pid: nil, pending_calls: []}}
   end
 
   @impl true
   def handle_info({:EXIT, pid, reason}, %{claude_pid: pid} = state) do
-    {:noreply, handle_claude_crash(state, reason)}
+    {:noreply, Claude.handle_claude_crash(state, reason)}
   end
 
   @impl true
   def handle_info(_msg, state) do
     {:noreply, state}
-  end
-
-  defp clear_pending_calls(pending) do
-    Enum.each(pending, &safe_reply(&1, "(error)"))
-  end
-
-  defp handle_claude_crash(state, reason) do
-    log_claude_death(state.name, reason)
-    entry = crash_entry(reason)
-    store_crash(state, entry)
-    crash_state(state, entry)
-  end
-
-  defp crash_entry(reason), do: {"crash", "session died", inspect(reason), %{}}
-
-  defp store_crash(state, entry) do
-    state.store_module.store_message(state.name, entry)
-  end
-
-  defp crash_state(state, entry) do
-    clear_pending_calls(state.pending_calls)
-    %{state | claude_pid: nil, pending_calls: [], messages: state.messages ++ [entry]}
   end
 
   @impl true
@@ -297,19 +256,10 @@ defmodule El.Session do
   @impl true
   def terminate({:shutdown, _}, _state), do: :ok
 
-  defp log_claude_death(name, reason) do
-    msg = "Session #{name} - Claude process died: #{inspect(reason)}"
-    Logger.error(msg)
-  end
-
   @impl true
   def terminate(reason, state) do
     entry = {"crash", "Session crashed", inspect(reason), %{}}
     state.store_module.store_message(state.name, entry)
     :ok
-  end
-
-  defp safe_reply(from, response) do
-    spawn(fn -> GenServer.reply(from, response) end)
   end
 end
