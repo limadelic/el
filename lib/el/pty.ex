@@ -24,16 +24,31 @@ defmodule El.PTY do
 
   @impl true
   def init({cmd, opts}) do
-    file_module = Keyword.get(opts, :file, File)
-    port_module = Keyword.get(opts, :port, Port)
-    pty = open_pty(port_module, cmd)
+    modules = extract_modules(opts)
+    pty = open_pty(modules.port, cmd)
+    setup_io(modules.file, pty, modules)
+  end
+
+  defp extract_modules(opts) do
+    %{
+      file: Keyword.get(opts, :file, File),
+      port: Keyword.get(opts, :port, Port)
+    }
+  end
+
+  defp setup_io(file_module, pty, modules) do
     {:ok, tty_out} = file_module.open(~c"/dev/tty", [:write, :binary, :raw])
     spawn_stdin_reader(file_module, self())
-    {:ok, %{pty: pty, tty_out: tty_out, file: file_module, port: port_module}}
+    {:ok, %{pty: pty, tty_out: tty_out, file: modules.file, port: modules.port}}
   end
 
   defp open_pty(port_module, cmd) do
-    port_module.open({:spawn, "script -q /dev/null #{cmd}"}, [:binary, :stream, :exit_status])
+    spawn_cmd = "script -q /dev/null #{cmd}"
+    port_module.open({:spawn, spawn_cmd}, pty_opts())
+  end
+
+  defp pty_opts do
+    [:binary, :stream, :exit_status]
   end
 
   defp spawn_stdin_reader(file_module, parent) do
@@ -44,7 +59,10 @@ defmodule El.PTY do
   end
 
   @impl true
-  def handle_info({port, {:data, data}}, %{pty: port, file: file_module} = state) do
+  def handle_info(
+        {port, {:data, data}},
+        %{pty: port, file: file_module} = state
+      ) do
     file_module.write(state.tty_out, data)
     {:noreply, state}
   end
