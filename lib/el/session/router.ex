@@ -4,6 +4,7 @@ defmodule El.Session.Router do
   def detect_routes(text) do
     Regex.scan(~r/^@(\w+)>\s*(.*)$/m, text, capture: :all_but_first)
     |> Enum.map(fn [target, payload] ->
+      # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
       {String.to_atom(target), payload}
     end)
   end

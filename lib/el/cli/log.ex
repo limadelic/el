@@ -13,6 +13,7 @@ defmodule El.CLI.Log do
   end
 
   def log_by_kind(false, name, count, el_module) do
+    # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
     el_module.log(String.to_atom(name), count)
   end
 
