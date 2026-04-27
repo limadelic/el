@@ -15,7 +15,12 @@ defmodule El do
 
   defp start_if_needed(name, opts, []) do
     filtered_opts = filter_session_opts(opts)
-    supervisor().start_child(El.SessionSupervisor, {El.Session, {name, filtered_opts}})
+
+    supervisor().start_child(
+      El.SessionSupervisor,
+      {El.Session, {name, filtered_opts}}
+    )
+
     name
   end
 

@@ -480,13 +480,15 @@ defmodule El.Session.Spec do
     end
 
     test "returns state unchanged", %{state: state} do
-      {:reply, _messages, returned_state} = El.Session.handle_call(:log, :from, state)
+      {:reply, _messages, returned_state} =
+        El.Session.handle_call(:log, :from, state)
 
       assert returned_state == state
     end
 
     test "returns empty list when no messages", %{state: state} do
-      {:reply, messages, _returned_state} = El.Session.handle_call(:log, :from, state)
+      {:reply, messages, _returned_state} =
+        El.Session.handle_call(:log, :from, state)
 
       assert messages == []
     end
