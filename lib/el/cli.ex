@@ -1,3 +1,4 @@
+# credo:disable-for-this-file El.Credo.MaxModuleLines
 defmodule El.CLI do
   alias El.CLI.{Daemon, Router, Output, Log, Pattern, Messaging, Start}
 
