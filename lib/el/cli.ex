@@ -1,9 +1,9 @@
 defmodule El.CLI do
+  defp version(vsn) when is_list(vsn), do: "v" <> List.to_string(vsn)
+  defp version(_), do: "v0.1.0"
+
   defp version do
-    case Application.spec(:el, :vsn) do
-      vsn when is_list(vsn) -> "v" <> List.to_string(vsn)
-      _ -> "v0.1.0"
-    end
+    Application.spec(:el, :vsn) |> version()
   end
 
   defp usage_cmds do
@@ -42,10 +42,15 @@ defmodule El.CLI do
   end
 
   defp connect_and_dispatch(args) do
-    case connect_to_daemon() do
-      {:ok, node} -> :rpc.call(node, El.CLI, :dispatch, [args])
-      :local -> dispatch(args)
-    end
+    connect_to_daemon() |> run_dispatch(args)
+  end
+
+  defp run_dispatch({:ok, node}, args) do
+    :rpc.call(node, El.CLI, :dispatch, [args])
+  end
+
+  defp run_dispatch(:local, args) do
+    dispatch(args)
   end
 
   def dispatch(args) do
@@ -63,11 +68,27 @@ defmodule El.CLI do
   def parse_route([_name, "log"]), do: :log
   def parse_route([_name, "exit"]), do: :exit
   def parse_route([_name, "clear"]), do: :clear
-  def parse_route([_name, "tell", "ask", "@" <> _target | _words]), do: :tell_ask
-  def parse_route([_name, "ask", "tell", "@" <> _target | _words]), do: :ask_tell
-  def parse_route([<<c, _::binary>>]) when c != ?-, do: :start
-  def parse_route([<<c, _::binary>>, "-m", _model | _rest]) when c != ?-, do: :start
-  def parse_route([<<c, _::binary>>, _word | _more_words]) when c != ?-, do: :msg
+
+  def parse_route([_name, "tell", "ask", "@" <> _target | _words]) do
+    :tell_ask
+  end
+
+  def parse_route([_name, "ask", "tell", "@" <> _target | _words]) do
+    :ask_tell
+  end
+
+  def parse_route([<<c, _::binary>>]) when c != ?- do
+    :start
+  end
+
+  def parse_route([<<c, _::binary>>, "-m", _model | _rest]) when c != ?- do
+    :start
+  end
+
+  def parse_route([<<c, _::binary>>, _word | _more_words]) when c != ?- do
+    :msg
+  end
+
   def parse_route(_), do: :usage
 
   def execute(:usage, _args) do
@@ -202,10 +223,15 @@ defmodule El.CLI do
   end
 
   defp handle_ls do
-    case el().ls() do
-      [] -> IO.puts("No sessions running. Start one: el <name>")
-      names -> Enum.each(names, &IO.puts/1)
-    end
+    el().ls() |> show_sessions()
+  end
+
+  defp show_sessions([]) do
+    IO.puts("No sessions running. Start one: el <name>")
+  end
+
+  defp show_sessions(names) do
+    Enum.each(names, &IO.puts/1)
   end
 
   defp handle_find_daemon_for_start(name, opts) do
@@ -288,8 +314,11 @@ defmodule El.CLI do
   end
 
   def daemon_node do
-    if dev?(), do: :"el_dev@127.0.0.1", else: :"el@127.0.0.1"
+    dev?() |> daemon_node_for()
   end
+
+  defp daemon_node_for(true), do: :"el_dev@127.0.0.1"
+  defp daemon_node_for(false), do: :"el@127.0.0.1"
 
   defp start_daemon_node do
     start_epmd()
@@ -342,14 +371,20 @@ defmodule El.CLI do
 
   defp spawn_daemon do
     script = daemon_script()
-    prefix = if dev?(), do: "DEV=1 ", else: ""
+    prefix = dev?() |> env_prefix()
     System.cmd("sh", ["-c", "#{prefix}#{script} --daemon > /dev/null 2>&1 &"])
   end
+
+  defp env_prefix(true), do: "DEV=1 "
+  defp env_prefix(false), do: ""
 
   defp wait_for_daemon(0), do: {:error, :timeout}
 
   defp wait_for_daemon(n) do
     :timer.sleep(100)
-    if Node.connect(daemon_node()), do: :ok, else: wait_for_daemon(n - 1)
+    daemon_node() |> Node.connect() |> check_connected(n)
   end
+
+  defp check_connected(true, _n), do: :ok
+  defp check_connected(false, n), do: wait_for_daemon(n - 1)
 end
