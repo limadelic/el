@@ -6,10 +6,25 @@ defmodule El.CLI do
     end
   end
 
+  defp usage_cmds do
+    [
+      {"el #{version()}", ""},
+      {"el -v", "version"},
+      {"el ls", "list sessions"},
+      {"el <name> [-m <model>]", "start or status"},
+      {"el <name> <msg>", "send a msg"},
+      {"el <name|glob> log [n|all]", "view log (default: last 1)"},
+      {"el <name|glob> clear", "clear log"},
+      {"el <name|glob> exit", "exit session"},
+      {"el exit", "exit all sessions"}
+    ]
+  end
+
   defp el, do: Application.get_env(:el, :el_module, El)
 
   def dev? do
-    System.get_env("DEV") != nil or Path.type(to_string(:escript.script_name())) == :relative
+    System.get_env("DEV") != nil or
+      Path.type(to_string(:escript.script_name())) == :relative
   end
 
   def daemon_script do
@@ -22,12 +37,15 @@ defmodule El.CLI do
   end
 
   def main(args) do
+    connect_and_dispatch(args)
+    System.halt(0)
+  end
+
+  defp connect_and_dispatch(args) do
     case connect_to_daemon() do
       {:ok, node} -> :rpc.call(node, El.CLI, :dispatch, [args])
       :local -> dispatch(args)
     end
-
-    System.halt(0)
   end
 
   def dispatch(args) do
@@ -73,10 +91,12 @@ defmodule El.CLI do
   end
 
   def execute(:daemon, ["--daemon", name, "-m", model]) do
-    name_atom = String.to_atom(name)
-    model_value = normalize_model(model)
-    opts = start_opts(model_value)
+    start_daemon_node_for(name, model)
+  end
 
+  defp start_daemon_node_for(name, model) do
+    name_atom = String.to_atom(name)
+    opts = start_opts(normalize_model(model))
     el().start(name_atom, opts)
     IO.puts("el: #{name} is up on #{Node.self()}")
     Process.sleep(:infinity)
@@ -114,50 +134,52 @@ defmodule El.CLI do
   end
 
   def execute(:log, [name, "log"]) do
-    if String.contains?(name, ["*", "?"]) do
-      result = el().log_pattern(name, 1)
-      handle_log_result(result, name)
-    else
-      name_atom = String.to_atom(name)
-      result = el().log(name_atom, 1)
-      handle_log_result(result, name)
-    end
+    execute_log(name, 1)
   end
 
   def execute(:log_n, [name, "log", n]) do
-    count = parse_log_count(n)
+    execute_log(name, parse_log_count(n))
+  end
 
-    if String.contains?(name, ["*", "?"]) do
-      result = el().log_pattern(name, count)
-      handle_log_result(result, name)
-    else
-      name_atom = String.to_atom(name)
-      result = el().log(name_atom, count)
-      handle_log_result(result, name)
-    end
+  defp execute_log(name, count) when is_binary(name) do
+    result = log_for_name(name, count)
+    handle_log_result(result, name)
+  end
+
+  defp log_for_name(name, count) when is_binary(name) do
+    (pattern?(name) && el().log_pattern(name, count)) ||
+      el().log(String.to_atom(name), count)
   end
 
   def execute(:exit, [name, "exit"]) do
-    cond do
-      String.contains?(name, ["*", "?"]) ->
-        el().exit_pattern(name)
-        IO.puts("exited sessions matching #{name}")
+    (pattern?(name) && exit_pattern(name)) || exit_single(name)
+  end
 
-      true ->
-        name_atom = String.to_atom(name)
-        handle_exit(name_atom, name)
-    end
+  defp exit_pattern(name) do
+    el().exit_pattern(name)
+    IO.puts("exited sessions matching #{name}")
+  end
+
+  defp exit_single(name) do
+    handle_exit(String.to_atom(name), name)
   end
 
   def execute(:clear, [name, "clear"]) do
-    if String.contains?(name, ["*", "?"]) do
-      el().clear_pattern(name)
-      IO.puts("cleared sessions matching #{name}")
-    else
-      name_atom = String.to_atom(name)
-      result = el().clear(name_atom)
-      handle_result(result, name)
-    end
+    (pattern?(name) && clear_pattern(name)) || clear_single(name)
+  end
+
+  defp clear_pattern(name) do
+    el().clear_pattern(name)
+    IO.puts("cleared sessions matching #{name}")
+  end
+
+  defp clear_single(name) do
+    result = el().clear(String.to_atom(name))
+    handle_result(result, name)
+  end
+
+  defp pattern?(name) do
+    String.contains?(name, ["*", "?"])
   end
 
   def execute(:exit_all, ["exit"]) do
@@ -250,29 +272,18 @@ defmodule El.CLI do
   end
 
   defp usage_message do
-    cmds = [
-      {"el #{version()}", ""},
-      {"el -v", "version"},
-      {"el ls", "list sessions"},
-      {"el <name> [-m <model>]", "start or status"},
-      {"el <name> <msg>", "send a msg"},
-      {"el <name|glob> log [n|all]", "view log (default: last 1)"},
-      {"el <name|glob> clear", "clear log"},
-      {"el <name|glob> exit", "exit session"},
-      {"el exit", "exit all sessions"}
-    ]
-
-    pad = cmds |> Enum.map(fn {cmd, _} -> String.length(cmd) end) |> Enum.max()
-
-    cmds
-    |> Enum.map_join("\n", fn {cmd, desc} ->
-      format_line(cmd, desc, pad)
-    end)
+    cmds = usage_cmds()
+    pad = max_cmd_length(cmds)
+    Enum.map_join(cmds, "\n", &format_line(&1, pad))
   end
 
-  defp format_line(cmd, "", _pad), do: cmd
+  defp max_cmd_length(cmds) do
+    cmds |> Enum.map(fn {cmd, _} -> String.length(cmd) end) |> Enum.max()
+  end
 
-  defp format_line(cmd, desc, pad) do
+  defp format_line({cmd, ""}, _pad), do: cmd
+
+  defp format_line({cmd, desc}, pad) do
     String.pad_trailing(cmd, pad) <> "  " <> desc
   end
 
@@ -288,9 +299,11 @@ defmodule El.CLI do
 
   defp connect_to_daemon do
     start_epmd()
+    connect_if_ready()
+  end
 
-    with {:ok, _} <- start_client_node(),
-         :ok <- ensure_daemon() do
+  defp connect_if_ready do
+    with {:ok, _} <- start_client_node(), :ok <- ensure_daemon() do
       {:ok, daemon_node()}
     else
       _ -> :local
@@ -299,25 +312,28 @@ defmodule El.CLI do
 
   defp start_client_node do
     id = System.unique_integer([:positive])
-
-    :net_kernel.start([:"el-cli-#{id}@127.0.0.1", :longnames])
-    |> case do
-      {:ok, _} ->
-        Node.set_cookie(:el)
-        {:ok, :started}
-
-      error ->
-        error
-    end
+    start_node_with_id(id)
   end
 
+  defp start_node_with_id(id) do
+    :net_kernel.start([:"el-cli-#{id}@127.0.0.1", :longnames])
+    |> maybe_set_cookie()
+  end
+
+  defp maybe_set_cookie({:ok, _}) do
+    Node.set_cookie(:el)
+    {:ok, :started}
+  end
+
+  defp maybe_set_cookie(error), do: error
+
   defp ensure_daemon do
-    if Node.connect(daemon_node()) do
-      :ok
-    else
-      spawn_daemon()
-      wait_for_daemon(30)
-    end
+    Node.connect(daemon_node()) || spawn_and_wait()
+  end
+
+  defp spawn_and_wait do
+    spawn_daemon()
+    wait_for_daemon(30)
   end
 
   defp start_epmd do
