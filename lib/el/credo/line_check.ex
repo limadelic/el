@@ -7,9 +7,10 @@ defmodule El.Credo.LineCheck do
   end
 
   defp to_result(nil, _meta), do: :error
+  defp to_result(end_line, meta), do: {:ok, count_lines(end_line, meta)}
 
-  defp to_result(end_line, meta) do
-    {:ok, end_line - Keyword.get(meta, :line, 0) - 1}
+  defp count_lines(end_line, meta) do
+    end_line - Keyword.get(meta, :line, 0) - 1
   end
 
   defp extract_end_line(meta) do
@@ -25,19 +26,16 @@ defmodule El.Credo.LineCheck do
   end
 
   def issue_for(check, name, lines, max, meta) do
-    msg = "#{name} is too long (#{lines} lines, max is #{max})."
+    msg = format_message(name, lines, max)
     build_issue(check, msg, meta, calc_priority(lines - max))
   end
 
+  defp format_message(name, lines, max) do
+    "#{name} is too long (#{lines} lines, max is #{max})."
+  end
+
   defp build_issue(check, msg, meta, pri) do
-    %{
-      @base_issue
-      | check: check,
-        message: msg,
-        line_no: meta[:line],
-        column: meta[:column],
-        priority: pri
-    }
+    %{@base_issue | check: check, message: msg, line_no: meta[:line], column: meta[:column], priority: pri}
   end
 
   defp calc_priority(severity)
