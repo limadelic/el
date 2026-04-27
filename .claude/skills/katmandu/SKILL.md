@@ -27,11 +27,11 @@ Kent's breakdown becomes the task list. Create one task per item kent identifies
 
 ### 2. Implement (kenny)
 
-Spawn kenny with the next task. One task per invocation. If kenny fails, simplify the ask - the task was too big or too vague.
+Spawn kenny with the next task. One task per invocation. Kenny does TCR — test && commit || revert. If tests pass, he commits. If they fail, he dies cheap and respawns fresh.
 
 ### 3. Review (cartman)
 
-Spawn cartman with the original prompt and kenny's output. If cartman flags real issues, send kenny back. If he's nitpicking, move on. Skip if the change is trivial. `/bob` commits when the task is done.
+Spawn cartman with the original prompt and kenny's output. If cartman flags real issues, send kenny back (fresh spawn, same task). If he's nitpicking, move on.
 
 ## Input
 

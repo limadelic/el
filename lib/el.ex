@@ -14,8 +14,14 @@ defmodule El do
   end
 
   defp start_if_needed(name, opts, []) do
-    filtered_opts = Keyword.drop(opts, [:registry, :supervisor, :monitor, :app])
-    supervisor().start_child(El.SessionSupervisor, {El.Session, {name, filtered_opts}})
+    filtered_opts =
+      Keyword.drop(opts, [:registry, :supervisor, :monitor, :app])
+
+    supervisor().start_child(
+      El.SessionSupervisor,
+      {El.Session, {name, filtered_opts}}
+    )
+
     name
   end
 
@@ -77,8 +83,14 @@ defmodule El do
 
   defp match_pattern?(name, pattern) do
     name_str = Atom.to_string(name)
-    regex_pattern = pattern |> String.replace("*", ".*") |> String.replace("?", ".")
+    regex_pattern = pattern_to_regex(pattern)
     Regex.match?(~r/^#{regex_pattern}$/, name_str)
+  end
+
+  defp pattern_to_regex(pattern) do
+    pattern
+    |> String.replace("*", ".*")
+    |> String.replace("?", ".")
   end
 
   defp do_exit(name) do

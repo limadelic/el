@@ -4,7 +4,8 @@ defmodule El.Session do
   require Logger
 
   def start_link({name, session_opts}) do
-    GenServer.start_link(__MODULE__, {name, session_opts}, name: via_tuple(name))
+    opts = [name: via_tuple(name)]
+    GenServer.start_link(__MODULE__, {name, session_opts}, opts)
   end
 
   def tell(name, message) do
@@ -54,7 +55,10 @@ defmodule El.Session do
     alive_fn = Keyword.get(opts, :alive_fn, &El.Session.alive?/1)
     registry_module = Keyword.get(opts, :registry_module, Registry)
     store_module = Keyword.get(opts, :store_module, El.Application)
-    {session_id, opts_without_resume} = extract_resume_or_generate_session_id(opts)
+
+    {session_id, opts_without_resume} =
+      extract_resume_or_generate_session_id(opts)
+
     claude_opts = Keyword.put(opts_without_resume, :session_id, session_id)
 
     {:ok,
@@ -82,8 +86,12 @@ defmodule El.Session do
   end
 
   defp maybe_respawn_claude(
-         %{claude_pid: nil, opts: opts, session_id: session_id, claude_module: claude_module} =
-           state
+         %{
+           claude_pid: nil,
+           opts: opts,
+           session_id: session_id,
+           claude_module: claude_module
+         } = state
        ) do
     opts_with_resume =
       opts
@@ -129,12 +137,18 @@ defmodule El.Session do
 
   defp generate_session_id do
     <<a::48, _::4, b::12, _::2, c::62>> = :crypto.strong_rand_bytes(16)
+    uuid_bytes = <<a::48, 4::4, b::12, 2::2, c::62>>
+    hex = Base.encode16(uuid_bytes, case: :lower)
+    format_uuid(hex)
+  end
 
-    <<a::48, 4::4, b::12, 2::2, c::62>>
-    |> Base.encode16(case: :lower)
-    |> then(fn hex ->
-      "#{String.slice(hex, 0, 8)}-#{String.slice(hex, 8, 4)}-#{String.slice(hex, 12, 4)}-#{String.slice(hex, 16, 4)}-#{String.slice(hex, 20, 12)}"
-    end)
+  defp format_uuid(hex) do
+    s0 = String.slice(hex, 0, 8)
+    s1 = String.slice(hex, 8, 4)
+    s2 = String.slice(hex, 12, 4)
+    s3 = String.slice(hex, 16, 4)
+    s4 = String.slice(hex, 20, 12)
+    "#{s0}-#{s1}-#{s2}-#{s3}-#{s4}"
   end
 
   @impl true
@@ -151,22 +165,47 @@ defmodule El.Session do
   def handle_cast({:store_tell, ref, message, response}, state) do
     new_messages = replace_tell(state.messages, ref, message, response)
     new_state = %{state | messages: new_messages}
-    state.store_module.delete_message(state.name, {"tell", message, "", %{ref: ref}})
-    state.store_module.store_message(state.name, {"tell", message, response, %{}})
+    delete_tell_entry(state, message, ref)
+    store_tell_entry(state, message, response)
     routes = detect_routes(response)
     process_tell_response(state, response, routes)
     {:noreply, new_state}
+  end
+
+  defp delete_tell_entry(state, message, ref) do
+    state.store_module.delete_message(
+      state.name,
+      {"tell", message, "", %{ref: ref}}
+    )
+  end
+
+  defp store_tell_entry(state, message, response) do
+    state.store_module.store_message(
+      state.name,
+      {"tell", message, response, %{}}
+    )
   end
 
   @impl true
   def handle_cast({:complete_ask, from, message, response, ref}, state) do
     entry = {"ask", message, response, %{}}
     new_messages = replace_ask(state.messages, ref, message, response)
-    state.store_module.delete_message(state.name, {"ask", message, "", %{ref: ref}})
-    state.store_module.store_message(state.name, entry)
+    delete_ask_entry(state, message, ref)
+    store_ask_entry(state, entry)
     safe_reply(from, response)
     new_pending = List.delete(state.pending_calls, from)
     {:noreply, %{state | messages: new_messages, pending_calls: new_pending}}
+  end
+
+  defp delete_ask_entry(state, message, ref) do
+    state.store_module.delete_message(
+      state.name,
+      {"ask", message, "", %{ref: ref}}
+    )
+  end
+
+  defp store_ask_entry(state, entry) do
+    state.store_module.store_message(state.name, entry)
   end
 
   @impl true
@@ -202,7 +241,8 @@ defmodule El.Session do
     end)
   end
 
-  defp process_tell_route(state, _message, target, _payload) when target == state.name do
+  defp process_tell_route(state, _message, target, _payload)
+       when target == state.name do
     :ok
   end
 
@@ -265,9 +305,15 @@ defmodule El.Session do
   def handle_call({:ask, message}, from, state) do
     state = maybe_respawn_claude(state)
     routes = detect_routes(message)
-    valid_routes = Enum.filter(routes, fn {target, _payload} -> target != state.name end)
+
+    valid_routes =
+      Enum.filter(routes, fn {target, _} -> target != state.name end)
+
     new_state = %{state | pending_calls: [from | state.pending_calls]}
-    {ref, state_with_pending} = store_ask_immediate(new_state, message, valid_routes)
+
+    {ref, state_with_pending} =
+      store_ask_immediate(new_state, message, valid_routes)
+
     spawn_ask(state_with_pending, from, message, valid_routes, ref)
     {:noreply, state_with_pending}
   end
@@ -380,7 +426,7 @@ defmodule El.Session do
 
   @impl true
   def handle_info({:EXIT, pid, reason}, %{claude_pid: pid} = state) do
-    Logger.error("Session #{state.name} - Claude process died: #{inspect(reason)}")
+    log_claude_death(state.name, reason)
     entry = {"crash", "session died", inspect(reason), %{}}
     state.store_module.store_message(state.name, entry)
 
@@ -411,6 +457,11 @@ defmodule El.Session do
 
   @impl true
   def terminate({:shutdown, _}, _state), do: :ok
+
+  defp log_claude_death(name, reason) do
+    msg = "Session #{name} - Claude process died: #{inspect(reason)}"
+    Logger.error(msg)
+  end
 
   @impl true
   def terminate(reason, state) do
