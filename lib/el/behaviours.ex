@@ -1,27 +1,42 @@
 defmodule El.Behaviours.Registry do
-  @callback lookup(atom(), term()) :: [{pid(), term()}]
-  @callback select(atom(), list()) :: [term()]
+  @callback lookup(term(), term()) :: term()
+  @callback select(term(), term()) :: term()
 end
 
 defmodule El.Behaviours.Supervisor do
-  @callback start_child(atom(), term()) :: {:ok, pid()} | {:error, term()}
-  @callback terminate_child(atom(), pid()) :: :ok | {:error, term()}
+  @callback start_child(term(), term()) :: term()
+  @callback terminate_child(term(), term()) :: term()
 end
 
 defmodule El.Behaviours.Session do
-  @callback tell(atom(), binary()) :: :ok
-  @callback ask(atom(), binary()) :: binary()
-  @callback log(atom()) :: list()
-  @callback log(atom(), integer()) :: list() | :not_found
-  @callback clear(atom()) :: :ok
-  @callback tell_ask(atom(), atom(), binary()) :: :ok
-  @callback ask_tell(atom(), atom(), binary()) :: binary()
+  @callback tell(term(), term()) :: term()
+  @callback ask(term(), term()) :: term()
+  @callback log(term()) :: term()
+  @callback log(term(), term()) :: term()
+  @callback clear(term()) :: term()
+  @callback tell_ask(term(), term(), term()) :: term()
+  @callback ask_tell(term(), term(), term()) :: term()
 end
 
 defmodule El.Behaviours.App do
-  @callback delete_session_messages(atom()) :: :ok
+  @callback delete_session_messages(term()) :: term()
 end
 
 defmodule El.Behaviours.Monitor do
-  @callback wait_for_down(reference(), atom()) :: :ok
+  @callback wait_for_down(term(), term()) :: term()
+end
+
+defmodule El.Behaviours.El do
+  @callback start(term(), term()) :: term()
+  @callback tell(term(), term()) :: term()
+  @callback ask(term(), term()) :: term()
+  @callback log(term(), term()) :: term()
+  @callback clear(term()) :: term()
+  @callback exit(term()) :: term()
+  @callback exit_pattern(term()) :: term()
+  @callback clear_pattern(term()) :: term()
+  @callback log_pattern(term(), term()) :: term()
+  @callback ls() :: term()
+  @callback tell_ask(term(), term(), term()) :: term()
+  @callback ask_tell(term(), term(), term()) :: term()
 end
