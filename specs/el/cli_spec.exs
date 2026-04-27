@@ -233,6 +233,43 @@ defmodule El.CLI.Spec do
     end
   end
 
+
+  describe "daemon spawning" do
+    setup do
+      Mimic.copy(System)
+      Mimic.copy(Node)
+      Mimic.copy(IO)
+      Mimic.copy(El)
+      :ok
+    end
+
+    test "spawn_daemon uses absolute path for script" do
+      Mimic.expect(System, :cmd, fn
+        "epmd", ["-daemon"] ->
+          {"", 0}
+
+        "sh", ["-c", cmd] ->
+          send(self(), {:cmd, cmd})
+          {"", 0}
+      end)
+
+      Mimic.stub(Node, :connect, fn _ -> false end)
+      Mimic.stub(IO, :puts, fn _ -> :ok end)
+      Mimic.stub(System, :halt, fn _ -> :ok end)
+
+      El.CLI.main([])
+
+      receive do
+        {:cmd, cmd} ->
+          script = cmd |> String.split(" ") |> List.first()
+          assert Path.absolute?(script)
+
+        after 100 ->
+          :ok
+      end
+    end
+  end
+
   describe "main/1" do
     setup do
       Mimic.copy(IO)
