@@ -1,5 +1,5 @@
 defmodule El.CLI do
-  alias El.CLI.{Daemon, Router, Output}
+  alias El.CLI.{Daemon, Router, Output, Log}
 
   defp version(vsn) when is_list(vsn), do: "v" <> List.to_string(vsn)
   defp version(_), do: "v0.1.0"
@@ -100,26 +100,11 @@ defmodule El.CLI do
   end
 
   def execute(:log, [name, "log"]) do
-    execute_log(name, 1)
+    Log.execute_log(name, 1, el())
   end
 
   def execute(:log_n, [name, "log", n]) do
-    execute_log(name, parse_log_count(n))
-  end
-
-  defp execute_log(name, count) when is_binary(name) do
-    result = log_for_name(name, count)
-    Output.handle_log_result(result, name)
-  end
-
-  defp log_for_name(name, count) when is_binary(name) do
-    log_by_kind(pattern?(name), name, count)
-  end
-
-  defp log_by_kind(true, name, count), do: el().log_pattern(name, count)
-
-  defp log_by_kind(false, name, count) do
-    el().log(String.to_atom(name), count)
+    Log.execute_log(name, Log.parse_log_count(n), el())
   end
 
   def execute(:exit, [name, "exit"]) do
@@ -163,9 +148,6 @@ defmodule El.CLI do
     el().exit(:all)
     IO.puts("exited all")
   end
-
-  defp parse_log_count("all"), do: :all
-  defp parse_log_count(n), do: String.to_integer(n)
 
   defp start_opts(nil), do: []
   defp start_opts(model), do: [model: model]
