@@ -50,17 +50,9 @@ defmodule El.Session do
   @impl true
   def init({name, opts}) do
     Process.flag(:trap_exit, true)
-    {session_id, rest} = extract_resume_or_id(opts)
+    {session_id, rest} = El.Session.Id.extract_resume_or_id(opts)
     {:ok, build_state(name, opts, rest, session_id), {:continue, :start_claude}}
   end
-
-  defp extract_resume_or_id(opts) do
-    {resume, rest} = Keyword.pop(opts, :resume)
-    {session_id(resume), rest}
-  end
-
-  defp session_id(nil), do: generate_session_id()
-  defp session_id(id), do: id
 
   defp build_state(name, opts, rest, session_id) do
     %{
@@ -117,23 +109,6 @@ defmodule El.Session do
 
   defp envelope(name, payload) do
     "[from #{name}] #{payload}"
-  end
-
-  defp generate_session_id do
-    <<a::48, _::4, b::12, _::2, c::62>> = :crypto.strong_rand_bytes(16)
-    uuid_bytes = <<a::48, 4::4, b::12, 2::2, c::62>>
-    Base.encode16(uuid_bytes, case: :lower) |> format_uuid()
-  end
-
-  defp format_uuid(hex) do
-    [
-      String.slice(hex, 0, 8),
-      String.slice(hex, 8, 4),
-      String.slice(hex, 12, 4),
-      String.slice(hex, 16, 4),
-      String.slice(hex, 20, 12)
-    ]
-    |> Enum.join("-")
   end
 
   @impl true
@@ -380,7 +355,7 @@ defmodule El.Session do
   end
 
   defp start_new_session(state) do
-    session_id = generate_session_id()
+    session_id = El.Session.Id.generate_session_id()
     opts = Keyword.put(state.opts, :session_id, session_id)
     pid = safe_start_claude(state.claude_module, opts)
     %{state | claude_pid: pid, claude_opts: opts, session_id: session_id}
