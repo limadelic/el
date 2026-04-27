@@ -20,8 +20,9 @@ defmodule El.Application do
   end
 
   def init_message_store do
-    path = Path.expand("~/.el/messages.dets") |> String.to_charlist()
-    File.mkdir_p!(Path.expand("~/.el"))
+    dir = if El.CLI.dev?(), do: "~/.el/dev", else: "~/.el"
+    path = Path.expand("#{dir}/messages.dets") |> String.to_charlist()
+    File.mkdir_p!(Path.expand(dir))
     {:ok, _} = :dets.open_file(:message_store, file: path, type: :bag)
   end
 
@@ -38,5 +39,10 @@ defmodule El.Application do
   def load_messages(name) do
     message_store = Application.get_env(:el, :message_store, El.MessageStore)
     message_store.lookup(name)
+  end
+
+  def delete_message(name, entry) do
+    message_store = Application.get_env(:el, :message_store, El.MessageStore)
+    message_store.delete_entry(name, entry)
   end
 end

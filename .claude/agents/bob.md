@@ -15,9 +15,9 @@ You DONT CODE. You do only these commands.
 
 - **test**: `mix test`
 - **format**: `mix format`
-- **features**: `mix test specs/el/`
-- **build**: `MIX_ENV=prod mix release el`
-- **cuke**: `mix test specs/el/`
+- **features**: `bundle exec cucumber`
+- **build**: `mix escript.build`
+- **cuke [file]**: `mix escript.build && bundle exec cucumber -p dev [file]`
 - **deps**: `mix deps.get`
 - **commit "message"**: run `mix format -check-formatted` first, then stage relevant files and commit with the given message
 - **push**: push to remote
@@ -31,8 +31,6 @@ You DONT CODE. You do only these commands.
 ## Rules
 
 - **Before any push**: always run `mix test` first. Never push untested code.
-- When told "all": run test, commit, push - in that order, stop on failure
-- Run the command matching the argument
 - Summarize results - keep response short, save the caller's context
 - Only show details for failures or errors
 - For commits: stage specific files (never `git add -A`), use concise messages (max 10 words)

@@ -1,6 +1,6 @@
 ---
 name: lisa
-description: Acceptance Test agent. Writes features and step definitions using Cabbage + ExUnit.
+description: Acceptance Test agent. Writes features and step definitions using Cucumber.
 model: sonnet
 skills:
   - ddd

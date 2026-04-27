@@ -1,33 +1,23 @@
 defmodule El.Features.El2ElSpec do
   use ExUnit.Case
+  import Mox
 
-  setup do
-    Mimic.copy(El.Session)
-    :ok
-  end
+  setup :verify_on_exit!
 
   describe "El.tell/2" do
     test "routes message to target session" do
-      Mimic.expect(El.Session, :tell, fn :dude, "@donnie> test message" ->
-        :ok
-      end)
-
-      El.tell(:dude, "@donnie> test message")
+      expect(El.MockSession, :tell, fn :dude, "@donnie> test message" -> :ok end)
+      assert El.tell(:dude, "@donnie> test message") == :ok
     end
 
     test "passes exact message to session" do
       expected_msg = "@donnie> you are out of your element"
-
-      Mimic.expect(El.Session, :tell, fn :dude, ^expected_msg ->
-        :ok
-      end)
-
-      El.tell(:dude, expected_msg)
+      expect(El.MockSession, :tell, fn :dude, ^expected_msg -> :ok end)
+      assert El.tell(:dude, expected_msg) == :ok
     end
 
     test "returns ok" do
-      Mimic.stub(El.Session, :tell, fn _, _ -> :ok end)
-
+      stub(El.MockSession, :tell, fn _, _ -> :ok end)
       result = El.tell(:dude, "message")
       assert result == :ok
     end
@@ -35,27 +25,19 @@ defmodule El.Features.El2ElSpec do
 
   describe "El.ask/2" do
     test "sends ask to session" do
-      Mimic.expect(El.Session, :ask, fn :dude, "1 + 1" ->
-        "2"
-      end)
-
-      El.ask(:dude, "1 + 1")
+      expect(El.MockSession, :ask, fn :dude, "1 + 1" -> "2" end)
+      assert El.ask(:dude, "1 + 1") == "2"
     end
 
     test "returns response from session" do
-      Mimic.stub(El.Session, :ask, fn _, _ -> "response text" end)
-
+      stub(El.MockSession, :ask, fn _, _ -> "response text" end)
       response = El.ask(:dude, "question")
       assert response == "response text"
     end
 
     test "routes to target session in message" do
       expected_msg = "@donnie> what is your name?"
-
-      Mimic.expect(El.Session, :ask, fn :dude, ^expected_msg ->
-        "-> donnie"
-      end)
-
+      expect(El.MockSession, :ask, fn :dude, ^expected_msg -> "-> donnie" end)
       result = El.ask(:dude, expected_msg)
       assert String.contains?(result, "donnie")
     end
@@ -64,18 +46,13 @@ defmodule El.Features.El2ElSpec do
   describe "El.log/1" do
     test "fetches log from session" do
       log_entry = {"tell", "message", "response", %{}}
-
-      Mimic.expect(El.Session, :log, fn :dude ->
-        [log_entry]
-      end)
-
+      expect(El.MockSession, :log, fn :dude -> [log_entry] end)
       log = El.log(:dude)
       assert log == [log_entry]
     end
 
     test "returns empty list when no messages" do
-      Mimic.stub(El.Session, :log, fn _ -> [] end)
-
+      stub(El.MockSession, :log, fn _ -> [] end)
       log = El.log(:dude)
       assert log == []
     end
@@ -86,11 +63,16 @@ defmodule El.Features.El2ElSpec do
         {"ask", "msg2", "resp2", %{}},
         {"relay", "msg3", "resp3", %{}}
       ]
-
-      Mimic.stub(El.Session, :log, fn _ -> entries end)
-
+      stub(El.MockSession, :log, fn _ -> entries end)
       log = El.log(:dude)
       assert log == entries
+    end
+  end
+
+  describe "El.log/2" do
+    test "delegates to session with name and count" do
+      expect(El.MockSession, :log, fn :dude, 5 -> :ok end)
+      assert El.log(:dude, 5) == :ok
     end
   end
 end

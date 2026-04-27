@@ -19,6 +19,14 @@ defmodule El.Session do
     GenServer.call(via_tuple(name), :log, :infinity)
   end
 
+  def log(name, count) do
+    GenServer.call(via_tuple(name), {:log, count}, :infinity)
+  end
+
+  def clear(name) do
+    GenServer.call(via_tuple(name), :clear)
+  end
+
   def tell_ask(name, target, message) do
     GenServer.cast(via_tuple(name), {:tell_ask, target, message})
   end
@@ -45,45 +53,65 @@ defmodule El.Session do
     task_module = Keyword.get(opts, :task_module, Task)
     alive_fn = Keyword.get(opts, :alive_fn, &El.Session.alive?/1)
     registry_module = Keyword.get(opts, :registry_module, Registry)
+    store_module = Keyword.get(opts, :store_module, El.Application)
     {session_id, opts_without_resume} = extract_resume_or_generate_session_id(opts)
     claude_opts = Keyword.put(opts_without_resume, :session_id, session_id)
 
-    case claude_module.start_link(claude_opts) do
-      {:error, reason} ->
-        {:stop, reason}
+    {:ok,
+     %{
+       name: name,
+       claude_pid: nil,
+       session_id: session_id,
+       messages: [],
+       pending_calls: [],
+       claude_module: claude_module,
+       task_module: task_module,
+       alive_fn: alive_fn,
+       registry_module: registry_module,
+       store_module: store_module,
+       opts: opts,
+       claude_opts: claude_opts
+     }, {:continue, :start_claude}}
+  end
 
-      {:ok, claude_pid} ->
-        messages = El.Application.load_messages(name)
-
-        {:ok,
-         %{
-           name: name,
-           claude_pid: claude_pid,
-           session_id: session_id,
-           messages: messages,
-           pending_calls: [],
-           claude_module: claude_module,
-           task_module: task_module,
-           alive_fn: alive_fn,
-           registry_module: registry_module,
-           opts: opts
-         }}
-    end
+  @impl true
+  def handle_continue(:start_claude, state) do
+    messages = state.store_module.load_messages(state.name)
+    claude_pid = safe_start_claude(state.claude_module, state.claude_opts)
+    {:noreply, %{state | claude_pid: claude_pid, messages: messages}}
   end
 
   defp maybe_respawn_claude(
          %{claude_pid: nil, opts: opts, session_id: session_id, claude_module: claude_module} =
            state
        ) do
-    opts_with_session_id = Keyword.put(opts, :session_id, session_id)
+    opts_with_resume =
+      opts
+      |> Keyword.put(:session_id, session_id)
+      |> Keyword.put(:resume, session_id)
 
-    case claude_module.start_link(opts_with_session_id) do
-      {:ok, pid} -> %{state | claude_pid: pid}
-      _ -> state
+    pid = safe_start_claude(claude_module, opts_with_resume)
+    %{state | claude_pid: pid}
+  end
+
+  defp maybe_respawn_claude(%{claude_pid: pid} = state) when is_pid(pid) do
+    if Process.alive?(pid) do
+      state
+    else
+      maybe_respawn_claude(%{state | claude_pid: nil})
     end
   end
 
-  defp maybe_respawn_claude(state), do: state
+  defp safe_start_claude(claude_module, opts) do
+    case claude_module.start_link(opts) do
+      {:ok, pid} -> pid
+      _ -> nil
+    end
+  rescue
+    _ -> nil
+  catch
+    _, _ -> nil
+  end
 
   defp envelope(name, payload) do
     "[from #{name}] #{payload}"
@@ -100,10 +128,13 @@ defmodule El.Session do
   end
 
   defp generate_session_id do
-    bytes = :crypto.strong_rand_bytes(16)
-    hex = Base.encode16(bytes, case: :lower)
+    <<a::48, _::4, b::12, _::2, c::62>> = :crypto.strong_rand_bytes(16)
 
-    "#{String.slice(hex, 0, 8)}-#{String.slice(hex, 8, 4)}-#{String.slice(hex, 12, 4)}-#{String.slice(hex, 16, 4)}-#{String.slice(hex, 20, 12)}"
+    <<a::48, 4::4, b::12, 2::2, c::62>>
+    |> Base.encode16(case: :lower)
+    |> then(fn hex ->
+      "#{String.slice(hex, 0, 8)}-#{String.slice(hex, 8, 4)}-#{String.slice(hex, 12, 4)}-#{String.slice(hex, 16, 4)}-#{String.slice(hex, 20, 12)}"
+    end)
   end
 
   @impl true
@@ -120,17 +151,19 @@ defmodule El.Session do
   def handle_cast({:store_tell, ref, message, response}, state) do
     new_messages = replace_tell(state.messages, ref, message, response)
     new_state = %{state | messages: new_messages}
-    El.Application.store_message(state.name, {"tell", message, response, %{}})
+    state.store_module.delete_message(state.name, {"tell", message, "", %{ref: ref}})
+    state.store_module.store_message(state.name, {"tell", message, response, %{}})
     routes = detect_routes(response)
     process_tell_response(state, response, routes)
     {:noreply, new_state}
   end
 
   @impl true
-  def handle_cast({:complete_ask, from, message, response}, state) do
+  def handle_cast({:complete_ask, from, message, response, ref}, state) do
     entry = {"ask", message, response, %{}}
-    new_messages = state.messages ++ [entry]
-    El.Application.store_message(state.name, entry)
+    new_messages = replace_ask(state.messages, ref, message, response)
+    state.store_module.delete_message(state.name, {"ask", message, "", %{ref: ref}})
+    state.store_module.store_message(state.name, entry)
     safe_reply(from, response)
     new_pending = List.delete(state.pending_calls, from)
     {:noreply, %{state | messages: new_messages, pending_calls: new_pending}}
@@ -139,7 +172,7 @@ defmodule El.Session do
   @impl true
   def handle_cast({:cast_store_relay, message, response}, state) do
     entry = {"relay", message, response, %{from: state.name}}
-    El.Application.store_message(state.name, entry)
+    state.store_module.store_message(state.name, entry)
     {:noreply, %{state | messages: state.messages ++ [entry]}}
   end
 
@@ -147,7 +180,7 @@ defmodule El.Session do
   def handle_cast({:tell_ask, target, message}, state) do
     response = process_tell_ask(state, target, message)
     entry = {"relay", message, response, %{from: state.name}}
-    El.Application.store_message(state.name, entry)
+    state.store_module.store_message(state.name, entry)
 
     new_state = %{state | messages: state.messages ++ [entry]}
 
@@ -234,8 +267,9 @@ defmodule El.Session do
     routes = detect_routes(message)
     valid_routes = Enum.filter(routes, fn {target, _payload} -> target != state.name end)
     new_state = %{state | pending_calls: [from | state.pending_calls]}
-    spawn_ask(new_state, from, message, valid_routes)
-    {:noreply, new_state}
+    {ref, state_with_pending} = store_ask_immediate(new_state, message, valid_routes)
+    spawn_ask(state_with_pending, from, message, valid_routes, ref)
+    {:noreply, state_with_pending}
   end
 
   @impl true
@@ -244,17 +278,54 @@ defmodule El.Session do
   end
 
   @impl true
+  def handle_call({:log, :all}, _from, state) do
+    {:reply, state.messages, state}
+  end
+
+  @impl true
+  def handle_call({:log, count}, _from, state) do
+    {:reply, Enum.take(state.messages, -count), state}
+  end
+
+  @impl true
   def handle_call({:ask_tell, target, message}, _from, state) do
     response = process_ask_tell(state, target, message)
     entry = {"relay", message, response, %{from: state.name}}
-    El.Application.store_message(state.name, entry)
+    state.store_module.store_message(state.name, entry)
 
     new_state = %{state | messages: state.messages ++ [entry]}
 
     {:reply, response, new_state}
   end
 
-  defp spawn_ask(state, from, message, valid_routes) do
+  @impl true
+  def handle_call(:clear, _from, state) do
+    stop_claude(state.claude_pid)
+
+    new_session_id = generate_session_id()
+    claude_opts = Keyword.put(state.opts, :session_id, new_session_id)
+    new_claude_pid = safe_start_claude(state.claude_module, claude_opts)
+
+    state.store_module.delete_session_messages(state.name)
+
+    new_state = %{
+      state
+      | claude_pid: new_claude_pid,
+        claude_opts: claude_opts,
+        session_id: new_session_id,
+        messages: []
+    }
+
+    {:reply, :ok, new_state}
+  end
+
+  defp stop_claude(pid) when is_pid(pid) do
+    GenServer.stop(pid)
+  end
+
+  defp stop_claude(_), do: :ok
+
+  defp spawn_ask(state, from, message, valid_routes, ref) do
     server_pid = self()
 
     state.task_module.start(fn ->
@@ -268,7 +339,7 @@ defmodule El.Session do
           _, _ -> "(error)"
         end
 
-      GenServer.cast(server_pid, {:complete_ask, from, message, response})
+      GenServer.cast(server_pid, {:complete_ask, from, message, response, ref})
     end)
   end
 
@@ -311,7 +382,7 @@ defmodule El.Session do
   def handle_info({:EXIT, pid, reason}, %{claude_pid: pid} = state) do
     Logger.error("Session #{state.name} - Claude process died: #{inspect(reason)}")
     entry = {"crash", "session died", inspect(reason), %{}}
-    El.Application.store_message(state.name, entry)
+    state.store_module.store_message(state.name, entry)
 
     Enum.each(state.pending_calls, fn from ->
       safe_reply(from, "(error)")
@@ -343,7 +414,7 @@ defmodule El.Session do
 
   @impl true
   def terminate(reason, state) do
-    El.Application.store_message(
+    state.store_module.store_message(
       state.name,
       {"crash", "Session crashed", inspect(reason), %{}}
     )
@@ -376,13 +447,29 @@ defmodule El.Session do
   defp safe_stream_claude(claude_pid, message) do
     claude_pid
     |> El.ClaudeCode.stream(message)
-    |> ClaudeCode.Stream.text_content()
-    |> Enum.join()
+    |> Enum.to_list()
+    |> Enum.find_value(fn
+      %ClaudeCode.Message.ResultMessage{result: result} -> result
+      _ -> nil
+    end) || ""
+  end
+
+  defp store_ask_immediate(state, message, []) do
+    ref = make_ref()
+    entry = {"ask", message, "", %{ref: ref}}
+    state.store_module.store_message(state.name, entry)
+    new_state = %{state | messages: state.messages ++ [entry]}
+    {ref, new_state}
+  end
+
+  defp store_ask_immediate(state, _message, _routes) do
+    ref = make_ref()
+    {ref, state}
   end
 
   defp store_tell_immediate(state, message, ref, []) do
     entry = {"tell", message, "", %{ref: ref}}
-    El.Application.store_message(state.name, entry)
+    state.store_module.store_message(state.name, entry)
     %{state | messages: state.messages ++ [entry]}
   end
 
@@ -403,6 +490,23 @@ defmodule El.Session do
 
   defp complete_tell({messages, []}, message, response) do
     messages ++ [{"tell", message, response, %{}}]
+  end
+
+  defp replace_ask(messages, ref, message, response) do
+    messages
+    |> Enum.split_while(fn
+      {"ask", _, "", %{ref: ^ref}} -> false
+      _ -> true
+    end)
+    |> complete_ask(message, response)
+  end
+
+  defp complete_ask({before, [{_, _, _, _} | rest]}, message, response) do
+    before ++ [{"ask", message, response, %{}} | rest]
+  end
+
+  defp complete_ask({messages, []}, message, response) do
+    messages ++ [{"ask", message, response, %{}}]
   end
 
   defp via_tuple(name) do

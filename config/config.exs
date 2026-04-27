@@ -6,3 +6,5 @@ config :claude_code, cli_path: :global
 config :logger,
   level: :error,
   handle_sasl_reports: false
+
+import_config "#{config_env()}.exs"

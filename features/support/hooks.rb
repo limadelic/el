@@ -1,15 +1,15 @@
-Before do
-  # Clean up stale daemon node file before each scenario
-  daemon_node_file = File.expand_path("~/.el/daemon_node")
-  File.delete(daemon_node_file) if File.exist?(daemon_node_file)
+require 'timeout'
+
+Around do |scenario, block|
+  Timeout.timeout(60) { block.call }
+rescue Timeout::Error
+  raise "Scenario '#{scenario.name}' timed out after 60s"
 end
 
-After do
-  if @pid
-    Process.kill("TERM", @pid) rescue nil
-  end
+Before do |scenario|
+  scenario.tags.map(&:name).grep(/^@el_(.+)$/) { el("#{$1} -m haiku") }
+end
 
-  # Clean up daemon node file after scenario
-  daemon_node_file = File.expand_path("~/.el/daemon_node")
-  File.delete(daemon_node_file) if File.exist?(daemon_node_file)
+After do |scenario|
+  scenario.tags.map(&:name).grep(/^@el_(.+)$/) { el("#{$1} exit") }
 end

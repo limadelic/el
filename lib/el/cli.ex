@@ -6,8 +6,27 @@ defmodule El.CLI do
     end
   end
 
-  def main(args) do
+  defp el, do: Application.get_env(:el, :el_module, El)
+
+  def dev? do
+    System.get_env("DEV") != nil or Path.type(to_string(:escript.script_name())) == :relative
+  end
+
+  def daemon_script do
+    :escript.script_name() |> to_string() |> Path.expand()
+  end
+
+  def main(["--daemon" | _] = args) do
+    start_daemon_node()
     dispatch(args)
+  end
+
+  def main(args) do
+    case connect_to_daemon() do
+      {:ok, node} -> :rpc.call(node, El.CLI, :dispatch, [args])
+      :local -> dispatch(args)
+    end
+
     System.halt(0)
   end
 
@@ -18,89 +37,136 @@ defmodule El.CLI do
   def parse_route([]), do: :usage
   def parse_route(["-v"]), do: :version
   def parse_route(["ls"]), do: :ls
+  def parse_route(["exit"]), do: :exit_all
+  def parse_route(["--daemon"]), do: :daemon_hub
   def parse_route(["--daemon", _name]), do: :daemon
   def parse_route(["--daemon", _name, "-m", _model]), do: :daemon
-  def parse_route(["kill", "all"]), do: :kill_all
+  def parse_route([_name, "log", _n]), do: :log_n
   def parse_route([_name, "log"]), do: :log
-  def parse_route([_name, "kill"]), do: :kill
+  def parse_route([_name, "exit"]), do: :exit
+  def parse_route([_name, "clear"]), do: :clear
   def parse_route([_name, "tell", "ask", "@" <> _target | _words]), do: :tell_ask
   def parse_route([_name, "ask", "tell", "@" <> _target | _words]), do: :ask_tell
-  def parse_route([_name]), do: :start
-  def parse_route([_name, "-m", _model | _rest]), do: :start
-  def parse_route([_name, _word | _more_words]), do: :msg
+  def parse_route([<<c, _::binary>>]) when c != ?-, do: :start
+  def parse_route([<<c, _::binary>>, "-m", _model | _rest]) when c != ?-, do: :start
+  def parse_route([<<c, _::binary>>, _word | _more_words]) when c != ?-, do: :msg
   def parse_route(_), do: :usage
 
-  defp execute(:usage, _args) do
+  def execute(:usage, _args) do
     IO.puts(usage_message())
   end
 
-  defp execute(:version, _args) do
+  def execute(:version, _args) do
     IO.puts(version())
   end
 
-  defp execute(:ls, _args) do
+  def execute(:ls, _args) do
     handle_ls()
   end
 
-  defp execute(:daemon, ["--daemon", name]) do
+  def execute(:daemon_hub, _args) do
+    Process.sleep(:infinity)
+  end
+
+  def execute(:daemon, ["--daemon", name]) do
     execute(:daemon, ["--daemon", name, "-m", ""])
   end
 
-  defp execute(:daemon, ["--daemon", name, "-m", model]) do
+  def execute(:daemon, ["--daemon", name, "-m", model]) do
     name_atom = String.to_atom(name)
     model_value = normalize_model(model)
     opts = start_opts(model_value)
 
-    El.start(name_atom, opts)
+    el().start(name_atom, opts)
     IO.puts("el: #{name} is up on #{Node.self()}")
     Process.sleep(:infinity)
   end
 
-  defp execute(:start, [name]) do
+  def execute(:start, [name]) do
     opts = start_opts(nil)
 
     handle_find_daemon_for_start(name, opts)
   end
 
-  defp execute(:start, [name, "-m", model | rest]) do
+  def execute(:start, [name, "-m", model | rest]) do
     opts = start_opts(model)
     handle_find_daemon_with_rest(name, opts, rest)
   end
 
-  defp execute(:tell_ask, [name, "tell", "ask", "@" <> target | words]) do
+  def execute(:tell_ask, [name, "tell", "ask", "@" <> target | words]) do
     target_atom = String.to_atom(target)
     msg = Enum.join(words, " ")
     name_atom = String.to_atom(name)
     handle_tell_ask(name_atom, target_atom, msg, name)
   end
 
-  defp execute(:ask_tell, [name, "ask", "tell", "@" <> target | words]) do
+  def execute(:ask_tell, [name, "ask", "tell", "@" <> target | words]) do
     target_atom = String.to_atom(target)
     msg = Enum.join(words, " ")
     name_atom = String.to_atom(name)
     handle_ask_tell(name_atom, target_atom, msg, name)
   end
 
-  defp execute(:msg, [name, word | more_words]) do
+  def execute(:msg, [name, word | more_words]) do
     msg = Enum.join([word | more_words], " ")
     name_atom = String.to_atom(name)
     handle_msg(name_atom, msg, name)
   end
 
-  defp execute(:log, [name, "log"]) do
-    name_atom = String.to_atom(name)
-    handle_log(name_atom, name)
+  def execute(:log, [name, "log"]) do
+    if String.contains?(name, ["*", "?"]) do
+      result = el().log_pattern(name, 1)
+      handle_log_result(result, name)
+    else
+      name_atom = String.to_atom(name)
+      result = el().log(name_atom, 1)
+      handle_log_result(result, name)
+    end
   end
 
-  defp execute(:kill, [name, "kill"]) do
-    name_atom = String.to_atom(name)
-    handle_kill(name_atom, name)
+  def execute(:log_n, [name, "log", n]) do
+    count = parse_log_count(n)
+
+    if String.contains?(name, ["*", "?"]) do
+      result = el().log_pattern(name, count)
+      handle_log_result(result, name)
+    else
+      name_atom = String.to_atom(name)
+      result = el().log(name_atom, count)
+      handle_log_result(result, name)
+    end
   end
 
-  defp execute(:kill_all, ["kill", "all"]) do
-    El.kill(:all)
-    IO.puts("killed all")
+  def execute(:exit, [name, "exit"]) do
+    cond do
+      String.contains?(name, ["*", "?"]) ->
+        el().exit_pattern(name)
+        IO.puts("exited sessions matching #{name}")
+
+      true ->
+        name_atom = String.to_atom(name)
+        handle_exit(name_atom, name)
+    end
   end
+
+  def execute(:clear, [name, "clear"]) do
+    if String.contains?(name, ["*", "?"]) do
+      el().clear_pattern(name)
+      IO.puts("cleared sessions matching #{name}")
+    else
+      name_atom = String.to_atom(name)
+      result = el().clear(name_atom)
+      handle_result(result, name)
+    end
+  end
+
+  def execute(:exit_all, ["exit"]) do
+    el().exit(:all)
+    IO.puts("exited all")
+  end
+
+  defp parse_log_count("all"), do: :all
+  defp parse_log_count(n), do: String.to_integer(n)
 
   defp start_opts(nil), do: []
   defp start_opts(model), do: [model: model]
@@ -114,21 +180,21 @@ defmodule El.CLI do
   end
 
   defp handle_ls do
-    case El.ls() do
-      [] -> IO.puts(:stderr, "No sessions running. Start one: el <name>")
+    case el().ls() do
+      [] -> IO.puts("No sessions running. Start one: el <name>")
       names -> Enum.each(names, &IO.puts/1)
     end
   end
 
   defp handle_find_daemon_for_start(name, opts) do
     name_atom = String.to_atom(name)
-    El.start(name_atom, opts)
+    el().start(name_atom, opts)
     IO.puts("el: #{name} is up")
   end
 
   defp handle_find_daemon_with_rest(name, opts, rest) do
     name_atom = String.to_atom(name)
-    El.start(name_atom, opts)
+    el().start(name_atom, opts)
     dispatch_rest(rest, name)
   end
 
@@ -141,27 +207,22 @@ defmodule El.CLI do
   end
 
   defp handle_tell_ask(name_atom, target_atom, msg, name) do
-    result = El.tell_ask(name_atom, target_atom, msg)
+    result = el().tell_ask(name_atom, target_atom, msg)
     handle_result(result, name)
   end
 
   defp handle_ask_tell(name_atom, target_atom, msg, name) do
-    result = El.ask_tell(name_atom, target_atom, msg)
+    result = el().ask_tell(name_atom, target_atom, msg)
     handle_result(result, name)
   end
 
   defp handle_msg(name_atom, msg, name) do
-    result = El.ask(name_atom, msg)
+    result = el().ask(name_atom, msg)
     handle_result(result, name)
   end
 
-  defp handle_log(name_atom, name) do
-    result = El.log(name_atom)
-    handle_log_result(result, name)
-  end
-
-  defp handle_kill(name_atom, name) do
-    result = El.kill(name_atom)
+  defp handle_exit(name_atom, name) do
+    result = el().exit(name_atom)
     handle_result(result, name)
   end
 
@@ -185,7 +246,7 @@ defmodule El.CLI do
   end
 
   defp handle_not_found(name) do
-    IO.puts(:stderr, "No sessions running. Start one: el #{name}")
+    IO.puts("No sessions running. Start one: el #{name}")
   end
 
   defp usage_message do
@@ -195,9 +256,10 @@ defmodule El.CLI do
       {"el ls", "list sessions"},
       {"el <name> [-m <model>]", "start or status"},
       {"el <name> <msg>", "send a msg"},
-      {"el <name> log", "view log"},
-      {"el <name> kill", "kill session"},
-      {"el kill all", "kill all sessions"}
+      {"el <name|glob> log [n|all]", "view log (default: last 1)"},
+      {"el <name|glob> clear", "clear log"},
+      {"el <name|glob> exit", "exit session"},
+      {"el exit", "exit all sessions"}
     ]
 
     pad = cmds |> Enum.map(fn {cmd, _} -> String.length(cmd) end) |> Enum.max()
@@ -212,5 +274,66 @@ defmodule El.CLI do
 
   defp format_line(cmd, desc, pad) do
     String.pad_trailing(cmd, pad) <> "  " <> desc
+  end
+
+  def daemon_node do
+    if dev?(), do: :"el_dev@127.0.0.1", else: :"el@127.0.0.1"
+  end
+
+  defp start_daemon_node do
+    start_epmd()
+    :net_kernel.start([daemon_node(), :longnames])
+    Node.set_cookie(:el)
+  end
+
+  defp connect_to_daemon do
+    start_epmd()
+
+    with {:ok, _} <- start_client_node(),
+         :ok <- ensure_daemon() do
+      {:ok, daemon_node()}
+    else
+      _ -> :local
+    end
+  end
+
+  defp start_client_node do
+    id = System.unique_integer([:positive])
+
+    :net_kernel.start([:"el-cli-#{id}@127.0.0.1", :longnames])
+    |> case do
+      {:ok, _} ->
+        Node.set_cookie(:el)
+        {:ok, :started}
+
+      error ->
+        error
+    end
+  end
+
+  defp ensure_daemon do
+    if Node.connect(daemon_node()) do
+      :ok
+    else
+      spawn_daemon()
+      wait_for_daemon(30)
+    end
+  end
+
+  defp start_epmd do
+    System.cmd("epmd", ["-daemon"])
+  end
+
+  defp spawn_daemon do
+    script = daemon_script()
+    prefix = if dev?(), do: "DEV=1 ", else: ""
+    System.cmd("sh", ["-c", "#{prefix}#{script} --daemon > /dev/null 2>&1 &"])
+  end
+
+  defp wait_for_daemon(0), do: {:error, :timeout}
+
+  defp wait_for_daemon(n) do
+    :timer.sleep(100)
+    if Node.connect(daemon_node()), do: :ok, else: wait_for_daemon(n - 1)
   end
 end

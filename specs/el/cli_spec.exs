@@ -1,5 +1,9 @@
 defmodule El.CLI.Spec do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
+  import Mox
+  import ExUnit.CaptureIO
+
+  setup :verify_on_exit!
 
   describe "parse_route/1" do
     test "returns usage when no args" do
@@ -34,12 +38,28 @@ defmodule El.CLI.Spec do
       assert El.CLI.parse_route(["session", "log"]) == :log
     end
 
-    test "returns kill for name kill" do
-      assert El.CLI.parse_route(["session", "kill"]) == :kill
+    test "returns log_n for name log with number" do
+      assert El.CLI.parse_route(["session", "log", "5"]) == :log_n
     end
 
-    test "returns kill_all for kill all" do
-      assert El.CLI.parse_route(["kill", "all"]) == :kill_all
+    test "returns log_n for name log all" do
+      assert El.CLI.parse_route(["session", "log", "all"]) == :log_n
+    end
+
+    test "returns exit for name exit" do
+      assert El.CLI.parse_route(["session", "exit"]) == :exit
+    end
+
+    test "returns exit_all for exit" do
+      assert El.CLI.parse_route(["exit"]) == :exit_all
+    end
+
+    test "returns exit for dud* exit" do
+      assert El.CLI.parse_route(["dud*", "exit"]) == :exit
+    end
+
+    test "returns clear for name clear" do
+      assert El.CLI.parse_route(["session", "clear"]) == :clear
     end
 
     test "returns tell_ask for name tell ask @target message" do
@@ -62,59 +82,197 @@ defmodule El.CLI.Spec do
       assert El.CLI.parse_route(["-v"]) == :version
     end
 
+    test "returns usage for args starting with --" do
+      assert El.CLI.parse_route(["--nonsense"]) == :usage
+    end
+
+    test "returns usage for args starting with -" do
+      assert El.CLI.parse_route(["-x"]) == :usage
+    end
+  end
+
+  describe "execute/2" do
+    test "execute :log_n with number calls El.log with count" do
+      expect(El.MockEl, :log, fn :session, 5 -> [] end)
+
+      capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "5"]) end)
+    end
+
+    test "execute :log_n with number prints result" do
+      expect(El.MockEl, :log, fn :session, 5 -> [{"ask", "hello", "world", %{}}] end)
+
+      output =
+        capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "5"]) end)
+
+      assert output =~ "[ask] hello"
+      assert output =~ "world"
+    end
+
+    test "execute :log_n with 'all' calls El.log with :all" do
+      expect(El.MockEl, :log, fn :session, :all -> [] end)
+
+      capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "all"]) end)
+    end
+
+    test "execute :log_n with 'all' prints result" do
+      expect(El.MockEl, :log, fn :session, :all ->
+        [{"tell", "goodbye", "see ya", %{}}]
+      end)
+
+      output =
+        capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "all"]) end)
+
+      assert output =~ "[tell] goodbye"
+      assert output =~ "see ya"
+    end
+
+    test "execute :log calls El.log with count 1" do
+      expect(El.MockEl, :log, fn :session, 1 -> [] end)
+
+      capture_io(fn -> El.CLI.execute(:log, ["session", "log"]) end)
+    end
+
+    test "execute :log prints result" do
+      expect(El.MockEl, :log, fn :session, 1 -> [{"ask", "hi", "reply", %{}}] end)
+
+      output = capture_io(fn -> El.CLI.execute(:log, ["session", "log"]) end)
+
+      assert output =~ "[ask] hi"
+      assert output =~ "reply"
+    end
+
+    test "execute :clear calls El.clear with name" do
+      expect(El.MockEl, :clear, fn :session -> "cleared" end)
+
+      capture_io(fn -> El.CLI.execute(:clear, ["session", "clear"]) end)
+    end
+
+    test "execute :clear handles not_found" do
+      stub(El.MockEl, :clear, fn _ -> :not_found end)
+
+      output =
+        capture_io(fn -> El.CLI.execute(:clear, ["session", "clear"]) end)
+
+      assert String.contains?(output, "No sessions running")
+    end
+
+    test "execute :exit_all calls El.exit(:all)" do
+      expect(El.MockEl, :exit, fn :all -> :ok end)
+
+      output =
+        capture_io(fn -> El.CLI.execute(:exit_all, ["exit"]) end)
+
+      assert output =~ "exited all"
+    end
+
+    test "execute :exit with glob pattern calls El.exit_pattern" do
+      expect(El.MockEl, :exit_pattern, fn "dud*" -> :ok end)
+
+      output =
+        capture_io(fn -> El.CLI.execute(:exit, ["dud*", "exit"]) end)
+
+      assert output =~ "exited sessions matching dud*"
+    end
+
+    test "execute :exit with session name calls El.exit" do
+      expect(El.MockEl, :exit, fn :session -> :ok end)
+
+      capture_io(fn -> El.CLI.execute(:exit, ["session", "exit"]) end)
+    end
+
+    test "execute :clear with glob pattern calls El.clear_pattern" do
+      expect(El.MockEl, :clear_pattern, fn "dud*" -> :ok end)
+
+      output =
+        capture_io(fn -> El.CLI.execute(:clear, ["dud*", "clear"]) end)
+
+      assert output =~ "cleared sessions matching dud*"
+    end
+
+    test "execute :clear with session name calls El.clear" do
+      expect(El.MockEl, :clear, fn :session -> "cleared" end)
+
+      capture_io(fn -> El.CLI.execute(:clear, ["session", "clear"]) end)
+    end
+
+    test "execute :log with glob pattern calls El.log_pattern" do
+      expect(El.MockEl, :log_pattern, fn "dud*", 1 -> [] end)
+
+      capture_io(fn -> El.CLI.execute(:log, ["dud*", "log"]) end)
+    end
+
+    test "execute :log with session name calls El.log" do
+      expect(El.MockEl, :log, fn :session, 1 -> [] end)
+
+      capture_io(fn -> El.CLI.execute(:log, ["session", "log"]) end)
+    end
+
+    test "execute :log_n with glob pattern calls El.log_pattern" do
+      expect(El.MockEl, :log_pattern, fn "dud*", 5 -> [] end)
+
+      capture_io(fn -> El.CLI.execute(:log_n, ["dud*", "log", "5"]) end)
+    end
+
+    test "execute :log_n with session name calls El.log" do
+      expect(El.MockEl, :log, fn :session, 5 -> [] end)
+
+      capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "5"]) end)
+    end
+  end
+
+  describe "daemon spawning" do
+    test "daemon_script returns absolute path" do
+      path = El.CLI.daemon_script()
+      assert String.starts_with?(path, "/")
+    end
+
+    test "dev? returns true when DEV is set" do
+      System.put_env("DEV", "1")
+      assert El.CLI.dev?() == true
+      System.delete_env("DEV")
+    end
+
+    test "daemon_node returns el_dev@127.0.0.1 when DEV is set" do
+      System.put_env("DEV", "1")
+      assert El.CLI.daemon_node() == :"el_dev@127.0.0.1"
+      System.delete_env("DEV")
+    end
   end
 
   describe "main/1" do
-    setup do
-      Mimic.copy(IO)
-      Mimic.copy(System)
-      :ok
-    end
-
-    test "version starts with el v0.1." do
-      Mimic.expect(IO, :puts, fn msg ->
-        assert String.starts_with?(msg, "el v0.1.")
-      end)
-      Mimic.expect(System, :halt, fn 0 -> :ok end)
-
-      El.CLI.main([])
+    test "version starts with v0.1." do
+      output = capture_io(fn -> El.CLI.dispatch(["-v"]) end)
+      assert String.starts_with?(String.trim(output), "v0.1.")
     end
 
     test "usage message contains el ls" do
-      Mimic.expect(IO, :puts, fn msg ->
-        assert String.contains?(msg, "el ls")
-      end)
-      Mimic.expect(System, :halt, fn 0 -> :ok end)
-
-      El.CLI.main([])
+      output = capture_io(fn -> El.CLI.dispatch([]) end)
+      assert String.contains?(output, "el ls")
     end
 
     test "usage message contains el -v" do
-      Mimic.expect(IO, :puts, fn msg ->
-        assert String.contains?(msg, "el -v")
-      end)
-      Mimic.expect(System, :halt, fn 0 -> :ok end)
+      output = capture_io(fn -> El.CLI.dispatch([]) end)
+      assert String.contains?(output, "el -v")
+    end
 
-      El.CLI.main([])
+    test "usage message contains el exit" do
+      output = capture_io(fn -> El.CLI.dispatch([]) end)
+      assert String.contains?(output, "el exit")
+    end
+
+    test "usage message contains el <name|glob> exit" do
+      output = capture_io(fn -> El.CLI.dispatch([]) end)
+      assert String.contains?(output, "el <name|glob> exit")
     end
 
     test "version does not contain usage info" do
-      Mimic.expect(IO, :puts, fn msg ->
-        refute String.contains?(msg, "el ls")
-      end)
-      Mimic.expect(System, :halt, fn 0 -> :ok end)
-
-      El.CLI.main(["-v"])
+      output = capture_io(fn -> El.CLI.dispatch(["-v"]) end)
+      refute String.contains?(output, "el ls")
     end
 
     test "version matches version format" do
-      Mimic.expect(IO, :puts, fn msg ->
-        assert msg =~ ~r/\d+\.\d+/
-      end)
-      Mimic.expect(System, :halt, fn 0 -> :ok end)
-
-      El.CLI.main(["-v"])
+      output = capture_io(fn -> El.CLI.dispatch(["-v"]) end)
+      assert output =~ ~r/\d+\.\d+/
     end
-
   end
 end
