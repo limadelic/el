@@ -94,6 +94,12 @@ defmodule El.CLI.Daemon do
     daemon_node() |> Node.connect() |> check_connected(n)
   end
 
-  defp check_connected(true, _n), do: :ok
+  defp check_connected(true, n) do
+    case :rpc.call(daemon_node(), Registry, :select, [El.Registry, [{{:"$1", :_, :_}, [], [:"$1"]}]]) do
+      {:badrpc, _} -> wait_for_daemon(n - 1)
+      _ -> :ok
+    end
+  end
+
   defp check_connected(false, n), do: wait_for_daemon(n - 1)
 end
