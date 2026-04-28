@@ -5,8 +5,13 @@ defmodule El.Features.OnOffSpec do
   setup :verify_on_exit!
 
   describe "El.start/2" do
+    setup do
+      stub(El.MockRegistry, :lookup, fn El.Registry, :dude -> [] end)
+      stub(El.MockSupervisor, :start_child, fn _, _ -> {:ok, :mock_pid} end)
+      :ok
+    end
+
     test "calls DynamicSupervisor.start_child with El.Session" do
-      expect(El.MockRegistry, :lookup, fn El.Registry, :dude -> [] end)
       spec = %{
         id: :dude,
         start: {El.Session.Api, :start_link, [{:dude, []}]},
@@ -21,7 +26,6 @@ defmodule El.Features.OnOffSpec do
     end
 
     test "passes options through to El.Session" do
-      expect(El.MockRegistry, :lookup, fn El.Registry, :dude -> [] end)
       spec = %{
         id: :dude,
         start: {El.Session.Api, :start_link, [{:dude, [claude_module: TestClaudeCode]}]},
@@ -36,9 +40,6 @@ defmodule El.Features.OnOffSpec do
     end
 
     test "returns session name on success" do
-      expect(El.MockRegistry, :lookup, fn El.Registry, :dude -> [] end)
-      stub_fn = fn El.SessionSupervisor, _ -> {:ok, :mock_pid} end
-      stub(El.MockSupervisor, :start_child, stub_fn)
       assert El.start(:dude) == :dude
     end
 
