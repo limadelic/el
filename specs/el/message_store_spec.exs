@@ -1,3 +1,12 @@
+defmodule DetsBackendWithEntries do
+  def delete_object(_table, _key), do: :ok
+
+  def foldl(_table, acc, fun) do
+    acc = fun.({:dude, {"ask", "hi", "hello", %{}}}, acc)
+    fun.({:kent, {"tell", "yo", "", %{}}}, acc)
+  end
+end
+
 defmodule El.MessageStore.Spec do
   use ExUnit.Case
 
@@ -26,6 +35,14 @@ defmodule El.MessageStore.Spec do
       result = El.MessageStore.session_names()
 
       assert result == []
+    end
+
+    test "returns unique names from store entries" do
+      Application.put_env(:el, :dets_backend, DetsBackendWithEntries)
+
+      result = El.MessageStore.session_names()
+
+      assert result == [:dude, :kent]
     end
   end
 end
