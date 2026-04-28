@@ -101,4 +101,9 @@ brew upgrade limadelic/tap/el 2>/dev/null || brew install limadelic/tap/el
 echo "✓ New version installed"
 
 echo ""
+echo "Step 14: Running cucumber prod..."
+bundle exec cucumber
+echo "✓ Cucumber prod passed"
+
+echo ""
 echo "🚀 Release $NEW_VERSION complete!"
