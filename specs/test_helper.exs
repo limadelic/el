@@ -37,7 +37,7 @@ Application.put_env(:el, :app, El.MockApp)
 Application.put_env(:el, :monitor, El.MockMonitor)
 Application.put_env(:el, :el_module, El.MockEl)
 
-ExUnit.start()
+ExUnit.start(timeout: 10)
 
 defmodule TestClaudeCode do
   def start_link(_opts) do
