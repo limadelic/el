@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pkill *)",
+      "Bash(./el *)",
+      "Bash(sleep *)"
+    ]
+  }
+}
