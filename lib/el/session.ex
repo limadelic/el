@@ -41,7 +41,7 @@ defmodule El.Session do
   end
 
   defp base_state(n, s, o),
-    do: @base_state_defaults |> Map.put(:name, n) |> Map.put(:session_id, s) |> Map.put(:opts, o)
+    do: @base_state_defaults |> Map.merge(%{name: n, session_id: s, opts: o})
 
   defp modules_and_callbacks(o), do: get_opts(o)
 
