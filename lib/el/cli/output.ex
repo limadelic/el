@@ -8,7 +8,8 @@ defmodule El.CLI.Output do
     {"el <name|glob> log [n|all]", "view log (default: last 1)"},
     {"el <name|glob> clear", "clear log"},
     {"el <name|glob> exit", "exit session"},
-    {"el exit", "exit all sessions"}
+    {"el exit", "exit all sessions"},
+    {"el restart", "restart daemon"}
   ]
 
   defp version do
