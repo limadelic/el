@@ -20,13 +20,11 @@ defmodule El do
   end
 
   defp start_session_child(name, opts) do
-    spec = %{
-      id: name,
-      start: {El.Session.Api, :start_link, [{name, opts}]},
-      restart: :temporary
-    }
+    supervisor().start_child(El.SessionSupervisor, session_spec(name, opts))
+  end
 
-    supervisor().start_child(El.SessionSupervisor, spec)
+  defp session_spec(name, opts) do
+    %{id: name, start: {El.Session.Api, :start_link, [{name, opts}]}, restart: :temporary}
   end
 
   defp filter_session_opts(opts) do
