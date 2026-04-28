@@ -10,7 +10,14 @@ module VerifyHelper
   end
 
   def verify_cell(cell, output)
-    negated?(cell) ? refute_includes(cell[1..-2].strip, output) : assert_includes(cell, output)
+    if negated?(cell)
+      content = cell[1..-2].strip
+      content = content[1..-1].strip if content.start_with?(">")
+      refute_includes(content, output)
+    else
+      content = cell.start_with?(">") ? cell[1..-1].strip : cell
+      assert_includes(content, output)
+    end
   end
 
   def negated?(cell)

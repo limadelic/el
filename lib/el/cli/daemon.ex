@@ -24,7 +24,7 @@ defmodule El.CLI.Daemon do
   def start_daemon_node do
     start_epmd()
     :net_kernel.start([daemon_node(), :longnames])
-    Node.set_cookie(:el)
+    Node.set_cookie(daemon_cookie())
   end
 
   def dev? do
@@ -37,6 +37,13 @@ defmodule El.CLI.Daemon do
 
   defp daemon_node_for(true), do: :"el_dev@127.0.0.1"
   defp daemon_node_for(false), do: :"el@127.0.0.1"
+
+  defp daemon_cookie_for(true), do: :el_dev
+  defp daemon_cookie_for(false), do: :el
+
+  defp daemon_cookie do
+    dev?() |> daemon_cookie_for()
+  end
 
   defp dev_check(nil), do: script_is_relative()
   defp dev_check(_), do: true
@@ -60,7 +67,7 @@ defmodule El.CLI.Daemon do
   end
 
   defp maybe_set_cookie({:ok, _}) do
-    Node.set_cookie(:el)
+    Node.set_cookie(daemon_cookie())
     {:ok, :started}
   end
 
@@ -95,7 +102,10 @@ defmodule El.CLI.Daemon do
   end
 
   defp check_connected(true, n) do
-    case :rpc.call(daemon_node(), Registry, :select, [El.Registry, [{{:"$1", :_, :_}, [], [:"$1"]}]]) do
+    case :rpc.call(daemon_node(), Registry, :select, [
+           El.Registry,
+           [{{:"$1", :_, :_}, [], [:"$1"]}]
+         ]) do
       {:badrpc, _} -> wait_for_daemon(n - 1)
       _ -> :ok
     end
