@@ -7,7 +7,7 @@ cd "$PROJECT_ROOT"
 COMMIT_MSG="${1:?Usage: bin/shipit \"commit message\"}"
 
 echo "Step 1: Running tests..."
-mix test
+mix test --cover
 echo "✓ Tests passed"
 
 echo ""
