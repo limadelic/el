@@ -10,9 +10,9 @@ defmodule El.Session.Ask do
     Store.store_ask_immediate(new_state, message, valid_routes)
   end
 
-  def spawn_ask(state, from, message, valid_routes, ref, server_pid) do
+  def spawn_ask(state, ask_info, valid_routes, server_pid) do
     state.task_module.start(fn ->
-      spawn_ask_task(state, {from, message, ref}, valid_routes, server_pid)
+      spawn_ask_task(state, ask_info, valid_routes, server_pid)
     end)
   end
 

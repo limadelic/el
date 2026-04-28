@@ -7,7 +7,8 @@ defmodule El.Session.CallHandler do
   def handle({:ask, message}, from, state) do
     state = Claude.maybe_respawn_claude(state)
     {ref, ask_state} = Ask.prepare_ask(state, from, message)
-    Ask.spawn_ask(ask_state, from, message, Router.detect_routes(message), ref, self())
+    routes = Router.detect_routes(message)
+    Ask.spawn_ask(ask_state, {from, message, ref}, routes, self())
     {:noreply, ask_state}
   end
 
