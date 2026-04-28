@@ -2,9 +2,16 @@ defmodule El.Application.Spec do
   use ExUnit.Case
 
   setup do
+    original_el_module = Application.get_env(:el, :el_module)
+
     on_exit(fn ->
       Application.delete_env(:el, :message_store)
-      Application.delete_env(:el, :el_module)
+
+      if original_el_module do
+        Application.put_env(:el, :el_module, original_el_module)
+      else
+        Application.delete_env(:el, :el_module)
+      end
     end)
 
     Application.put_env(:el, :message_store, El.MessageStoreStub)
