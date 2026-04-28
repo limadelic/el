@@ -78,7 +78,7 @@ defmodule El.CLI.Daemon do
 
   defp spawn_and_wait do
     spawn_daemon()
-    wait_for_daemon(30)
+    El.CLI.DaemonConnector.wait_for_daemon(30)
   end
 
   defp start_epmd do
@@ -93,23 +93,4 @@ defmodule El.CLI.Daemon do
 
   defp env_prefix(true), do: "DEV=1 "
   defp env_prefix(false), do: ""
-
-  defp wait_for_daemon(0), do: {:error, :timeout}
-
-  defp wait_for_daemon(n) do
-    :timer.sleep(100)
-    daemon_node() |> Node.connect() |> check_connected(n)
-  end
-
-  defp check_connected(true, n) do
-    case :rpc.call(daemon_node(), Registry, :select, [
-           El.Registry,
-           [{{:"$1", :_, :_}, [], [:"$1"]}]
-         ]) do
-      {:badrpc, _} -> wait_for_daemon(n - 1)
-      _ -> :ok
-    end
-  end
-
-  defp check_connected(false, n), do: wait_for_daemon(n - 1)
 end

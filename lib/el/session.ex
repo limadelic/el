@@ -24,7 +24,9 @@ defmodule El.Session do
     |> Map.put(:claude_opts, Keyword.put(rest, :session_id, session_id))
   end
 
-  defp base_state(name, session_id, opts) do
+  defp base_state(name, session_id, opts), do: state_map(name, session_id, opts)
+
+  defp state_map(name, session_id, opts) do
     %{
       name: name,
       claude_pid: nil,
@@ -35,7 +37,9 @@ defmodule El.Session do
     }
   end
 
-  defp modules_and_callbacks(opts) do
+  defp modules_and_callbacks(opts), do: callbacks_map(opts)
+
+  defp callbacks_map(opts) do
     %{
       claude_module: Keyword.get(opts, :claude_module, El.ClaudeCode),
       task_module: Keyword.get(opts, :task_module, Task),

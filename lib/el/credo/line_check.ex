@@ -40,12 +40,15 @@ defmodule El.Credo.LineCheck do
       @base_issue
       | check: check,
         message: msg,
-        line_no: meta[:line],
-        column: meta[:column],
+        line_no: get_line(meta),
+        column: get_column(meta),
         priority: pri,
         filename: filename
     }
   end
+
+  defp get_line(meta), do: meta[:line]
+  defp get_column(meta), do: meta[:column]
 
   defp calc_priority(severity)
        when severity > @default_threshold, do: :higher

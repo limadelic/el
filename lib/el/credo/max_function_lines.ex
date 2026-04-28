@@ -18,7 +18,11 @@ defmodule El.Credo.MaxFunctionLines do
 
   def run(%SourceFile{} = source_file, params) do
     max_lines = Keyword.get(params, :max_lines, 5)
-    Code.prewalk(source_file, &check_function(&1, &2, max_lines, source_file.filename))
+    Code.prewalk(source_file, &check_function_wrapper(&1, &2, max_lines, source_file.filename))
+  end
+
+  defp check_function_wrapper(ast, issues, max_lines, filename) do
+    check_function(ast, issues, max_lines, filename)
   end
 
   defp check_function({type, meta, [_head | _tail]} = ast, issues, max_lines, filename)
