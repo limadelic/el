@@ -25,7 +25,6 @@ defmodule El.CLI.Output do
   end
 
   def show_sessions([]) do
-    IO.puts("No sessions running. Start one: el <name>")
   end
 
   def show_sessions(names) do
