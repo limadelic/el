@@ -24,10 +24,8 @@ defmodule El.MessageStore do
 
   def session_names do
     backend = Application.get_env(:el, :dets_backend, El.DetsBackend)
-
-    backend.foldl(:message_store, MapSet.new(), fn {name, _}, acc ->
-      MapSet.put(acc, name)
-    end)
-    |> MapSet.to_list()
+    backend.foldl(:message_store, MapSet.new(), &add_session_name/2) |> MapSet.to_list()
   end
+
+  defp add_session_name({name, _}, acc), do: MapSet.put(acc, name)
 end
