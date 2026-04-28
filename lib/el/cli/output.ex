@@ -49,8 +49,9 @@ defmodule El.CLI.Output do
   end
 
   def handle_log_result(log, _name) do
-    Enum.each(log, fn {_type, message, _response, _metadata} ->
+    Enum.each(log, fn {_type, message, response, _metadata} ->
       IO.puts("> #{message}")
+      if response != "", do: IO.puts("> #{response}")
     end)
   end
 

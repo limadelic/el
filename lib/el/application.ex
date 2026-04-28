@@ -12,7 +12,17 @@ defmodule El.Application do
   @impl true
   def start(_type, _args) do
     init_message_store()
-    Supervisor.start_link(children(), supervisor_opts())
+    {:ok, pid} = Supervisor.start_link(children(), supervisor_opts())
+    restore_sessions()
+    {:ok, pid}
+  end
+
+  defp restore_sessions do
+    el = Application.get_env(:el, :el_module, El)
+    message_store = Application.get_env(:el, :message_store, El.MessageStore)
+
+    message_store.session_names()
+    |> Enum.each(fn name -> el.start(name) end)
   end
 
   def children do

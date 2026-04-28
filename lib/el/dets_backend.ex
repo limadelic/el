@@ -14,4 +14,8 @@ defmodule El.DetsBackend do
   def delete(table, key) do
     :dets.delete(table, key)
   end
+
+  def foldl(table, acc, fun) do
+    :dets.foldl(fun, acc, table)
+  end
 end
