@@ -101,9 +101,19 @@ brew upgrade limadelic/tap/el 2>/dev/null || brew install limadelic/tap/el
 echo "✓ New version installed"
 
 echo ""
-echo "Step 14: Running cucumber prod..."
+echo "Step 14: Verifying installed version..."
+INSTALLED_VERSION=$(el -v 2>/dev/null | tr -d 'v')
+if [ "$INSTALLED_VERSION" != "$NEW_VERSION" ]; then
+  echo "✗ FATAL: 'el -v' reports v${INSTALLED_VERSION} but expected v${NEW_VERSION}"
+  echo "  $(which el) is not the homebrew binary"
+  exit 1
+fi
+echo "✓ Verified: el -v = v$NEW_VERSION at $(which el)"
+
+echo ""
+echo "Step 15: Running cucumber prod..."
 bundle exec cucumber
 echo "✓ Cucumber prod passed"
 
 echo ""
-echo "🚀 Release $NEW_VERSION complete!"
+echo "Release $NEW_VERSION complete!"
