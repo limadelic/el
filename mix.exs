@@ -13,6 +13,7 @@ defmodule El.MixProject do
         &String.ends_with?(&1, "_test.exs"),
         &String.ends_with?(&1, "_spec.exs")
       ],
+      test_coverage: [tool: ExCoveralls, summary: [threshold: 0]],
       deps: deps(),
       releases: [
         el: [
@@ -52,6 +53,7 @@ defmodule El.MixProject do
     [
       {:claude_code, "~> 0.36"},
       {:mox, "~> 1.0", only: :test},
+      {:excoveralls, "~> 0.18", only: :test},
       {:credo, "~> 1.7", runtime: false}
     ]
   end
