@@ -20,4 +20,12 @@ defmodule El.MessageStore.Spec do
       assert result == :ok
     end
   end
+
+  describe "session_names/0" do
+    test "returns empty list when no sessions" do
+      result = El.MessageStore.session_names()
+
+      assert result == []
+    end
+  end
 end

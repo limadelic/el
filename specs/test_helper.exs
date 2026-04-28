@@ -18,6 +18,7 @@ end
 
 defmodule El.DetsBackendStub do
   def delete_object(_table, _key), do: :ok
+  def foldl(_table, acc, _fun), do: acc
 end
 
 defmodule El.MessageStoreStub do
