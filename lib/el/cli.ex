@@ -1,11 +1,8 @@
 defmodule El.CLI do
   alias El.CLI.{Daemon, Router, Output, Log, Pattern, Messaging, Start}
 
-  defp version(vsn) when is_list(vsn), do: "v" <> List.to_string(vsn)
-  defp version(_), do: "v0.1.0"
-
   defp version do
-    Application.spec(:el, :vsn) |> version()
+    Application.spec(:el, :vsn) |> Output.format_version()
   end
 
   defp el, do: Application.get_env(:el, :el_module, El)

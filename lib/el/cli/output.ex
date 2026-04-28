@@ -15,8 +15,8 @@ defmodule El.CLI.Output do
     Application.spec(:el, :vsn) |> format_version()
   end
 
-  defp format_version(vsn) when is_list(vsn), do: "v" <> List.to_string(vsn)
-  defp format_version(_), do: "v0.1.0"
+  def format_version(vsn) when is_list(vsn), do: "v" <> List.to_string(vsn)
+  def format_version(_), do: "v0.1.0"
 
   def usage_message do
     cmds = @usage_cmds |> List.replace_at(0, {"el #{version()}", ""})
