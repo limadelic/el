@@ -11,6 +11,22 @@ defmodule El.Session do
   alias El.Session.CastHandler
   alias El.Session.CallHandler
 
+  @defaults %{
+    claude_module: El.ClaudeCode,
+    task_module: Task,
+    alive_fn: &El.Session.Api.alive?/1,
+    registry_module: Registry,
+    store_module: El.Application
+  }
+  @base_state_defaults %{
+    name: nil,
+    claude_pid: nil,
+    session_id: nil,
+    messages: [],
+    pending_calls: [],
+    opts: []
+  }
+
   @impl true
   def init({name, opts}) do
     Process.flag(:trap_exit, true)
@@ -24,30 +40,12 @@ defmodule El.Session do
     |> Map.put(:claude_opts, Keyword.put(rest, :session_id, session_id))
   end
 
-  defp base_state(name, session_id, opts), do: state_map(name, session_id, opts)
+  defp base_state(n, s, o),
+    do: @base_state_defaults |> Map.put(:name, n) |> Map.put(:session_id, s) |> Map.put(:opts, o)
 
-  defp state_map(name, session_id, opts) do
-    %{
-      name: name,
-      claude_pid: nil,
-      session_id: session_id,
-      messages: [],
-      pending_calls: [],
-      opts: opts
-    }
-  end
+  defp modules_and_callbacks(o), do: get_opts(o)
 
-  defp modules_and_callbacks(opts), do: callbacks_map(opts)
-
-  defp callbacks_map(opts) do
-    %{
-      claude_module: Keyword.get(opts, :claude_module, El.ClaudeCode),
-      task_module: Keyword.get(opts, :task_module, Task),
-      alive_fn: Keyword.get(opts, :alive_fn, &El.Session.Api.alive?/1),
-      registry_module: Keyword.get(opts, :registry_module, Registry),
-      store_module: Keyword.get(opts, :store_module, El.Application)
-    }
-  end
+  defp get_opts(o), do: @defaults |> Map.merge(Map.new(o))
 
   @impl true
   def handle_continue(:start_claude, state) do
