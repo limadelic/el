@@ -23,7 +23,7 @@ Kent's breakdown becomes the task list. Create one task per item kent identifies
 
 ### 1. Analyze (kent)
 
-`el kent ask` with the problem - a failing scenario, a behavior description, whatever you have. Kent looks at the code and breaks the work into small tasks. You sanity-check the list and adjust if needed.
+`el kent <msg>` with the problem - a failing scenario, a behavior description, whatever you have. Kent looks at the code and breaks the work into small tasks. You sanity-check the list and adjust if needed.
 
 ### 2. Implement (kenny)
 

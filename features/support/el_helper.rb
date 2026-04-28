@@ -24,7 +24,14 @@ module ElHelper
   end
 
   def assert_cell(cell, output)
-    negated?(cell) ? refute_match(cell[1..-2], output) : assert_match(cell, output)
+    if negated?(cell)
+      content = cell[1..-2].strip
+      content = content[1..-1].strip if content.start_with?(">")
+      refute_match(content, output)
+    else
+      content = cell.start_with?(">") ? cell[1..-1].strip : cell
+      assert_match(content, output)
+    end
   end
 
   def negated?(cell)

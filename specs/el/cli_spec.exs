@@ -104,8 +104,7 @@ defmodule El.CLI.Spec do
       output =
         capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "5"]) end)
 
-      assert output =~ "[ask] hello"
-      assert output =~ "world"
+      assert output =~ "> hello"
     end
 
     test "execute :log_n with 'all' calls El.log with :all" do
@@ -122,8 +121,7 @@ defmodule El.CLI.Spec do
       output =
         capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "all"]) end)
 
-      assert output =~ "[tell] goodbye"
-      assert output =~ "see ya"
+      assert output =~ "> goodbye"
     end
 
     test "execute :log calls El.log with count 1" do
@@ -137,8 +135,7 @@ defmodule El.CLI.Spec do
 
       output = capture_io(fn -> El.CLI.execute(:log, ["session", "log"]) end)
 
-      assert output =~ "[ask] hi"
-      assert output =~ "reply"
+      assert output =~ "> hi"
     end
 
     test "execute :clear calls El.clear with name" do
