@@ -24,7 +24,11 @@ defmodule El do
   end
 
   defp session_spec(name, opts) do
-    %{id: name, start: {El.Session.Api, :start_link, [{name, opts}]}, restart: :temporary}
+    %{
+      id: name,
+      start: {El.Session.Api, :start_link, [{name, opts}]},
+      restart: :temporary
+    }
   end
 
   defp filter_session_opts(opts) do
