@@ -52,6 +52,7 @@ defmodule El.MixProject do
   defp deps do
     [
       {:claude_code, "~> 0.36"},
+      {:mimic, "~> 1.7", only: :test},
       {:mox, "~> 1.0", only: :test},
       {:excoveralls, "~> 0.18", only: :test},
       {:credo, "~> 1.7", runtime: false}
