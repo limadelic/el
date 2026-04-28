@@ -7,7 +7,11 @@ defmodule El.Features.OnOffSpec do
   describe "El.start/2" do
     test "calls DynamicSupervisor.start_child with El.Session" do
       expect(El.MockRegistry, :lookup, fn El.Registry, :dude -> [] end)
-      spec = %{id: :dude, start: {El.Session.Api, :start_link, [{:dude, []}]}, restart: :temporary}
+      spec = %{
+        id: :dude,
+        start: {El.Session.Api, :start_link, [{:dude, []}]},
+        restart: :temporary
+      }
 
       expect(El.MockSupervisor, :start_child, fn El.SessionSupervisor, ^spec ->
         {:ok, :mock_pid}
@@ -18,7 +22,11 @@ defmodule El.Features.OnOffSpec do
 
     test "passes options through to El.Session" do
       expect(El.MockRegistry, :lookup, fn El.Registry, :dude -> [] end)
-      spec = %{id: :dude, start: {El.Session.Api, :start_link, [{:dude, [claude_module: TestClaudeCode]}]}, restart: :temporary}
+      spec = %{
+        id: :dude,
+        start: {El.Session.Api, :start_link, [{:dude, [claude_module: TestClaudeCode]}]},
+        restart: :temporary
+      }
 
       expect(El.MockSupervisor, :start_child, fn El.SessionSupervisor, ^spec ->
         {:ok, :mock_pid}
