@@ -25,30 +25,21 @@ defmodule El.Credo.LineCheck do
     Keyword.get(expr, :line)
   end
 
-  def issue_for(check, name, lines, max, meta_and_file) do
-    {meta, filename} = meta_and_file
-    msg = format_message(name, lines, max)
-    build_issue(check, msg, meta, calc_priority(lines - max), filename)
-  end
-
-  defp format_message(name, lines, max) do
-    "#{name} is too long (#{lines} lines, max is #{max})."
+  def issue_for(check, name, lines, max, {meta, filename}) do
+    msg = "#{name} is too long (#{lines} lines, max is #{max})."
+    pri = calc_priority(lines - max)
+    build_issue(check, msg, meta, pri, filename)
   end
 
   defp build_issue(check, msg, meta, pri, filename) do
-    %{
-      @base_issue
-      | check: check,
-        message: msg,
-        line_no: get_line(meta),
-        column: get_column(meta),
-        priority: pri,
-        filename: filename
-    }
+    line = meta[:line]
+    col = meta[:column]
+    @base_issue |> update_issue_fields({check, msg, line, col, pri, filename})
   end
 
-  defp get_line(meta), do: meta[:line]
-  defp get_column(meta), do: meta[:column]
+  defp update_issue_fields(issue, {c, m, l, col, p, f}) do
+    issue |> Map.merge(%{check: c, message: m, line_no: l, column: col, priority: p, filename: f})
+  end
 
   defp calc_priority(severity)
        when severity > @default_threshold, do: :higher

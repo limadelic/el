@@ -18,11 +18,8 @@ defmodule El.Credo.MaxModuleLines do
 
   def run(%SourceFile{} = source_file, params) do
     max_lines = Keyword.get(params, :max_lines, 100)
-    Code.prewalk(source_file, &check_module_wrapper(&1, &2, max_lines, source_file.filename))
-  end
-
-  defp check_module_wrapper(ast, issues, max_lines, filename) do
-    check_module(ast, issues, max_lines, filename)
+    filename = source_file.filename
+    Code.prewalk(source_file, &check_module(&1, &2, max_lines, filename))
   end
 
   defp check_module({:defmodule, meta, [_ | _]} = ast, issues, max_lines, filename) do
