@@ -49,10 +49,16 @@ defmodule El.CLI.Output do
   end
 
   def handle_log_result(log, _name) do
-    Enum.each(log, fn {_type, message, response, _metadata} ->
-      IO.puts("> #{message}")
-      if response != "", do: IO.puts("> #{response}")
-    end)
+    Enum.each(log, &log_line/1)
+  end
+
+  defp log_line({_type, message, "", _metadata}) do
+    IO.puts("> #{message}")
+  end
+
+  defp log_line({_type, message, response, _metadata}) do
+    IO.puts("> #{message}")
+    IO.puts("> #{response}")
   end
 
   defp max_cmd_length(cmds) do
