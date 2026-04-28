@@ -20,7 +20,7 @@ defmodule El do
   end
 
   defp start_session_child(name, opts) do
-    supervisor().start_child(El.SessionSupervisor, {El.Session, {name, opts}})
+    supervisor().start_child(El.SessionSupervisor, {El.Session.Api, {name, opts}})
   end
 
   defp filter_session_opts(opts) do
