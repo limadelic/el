@@ -4,16 +4,11 @@ module ElHelper
     `#{bin} #{args}`.chomp
   end
 
-  def el_verify(args, table, timeout: 15)
-    retry_until(timeout) { assert_table(table, el(args)) }
+  def el_verify(args, table)
+    assert_table(table, el(args))
   end
 
-  private
-
-  def retry_until(timeout)
-    deadline = Time.now + timeout
-    loop { return yield rescue (raise if Time.now >= deadline; sleep 0.5) }
-  end
+  privateend
 
   def assert_table(table, output)
     cells(table).each { |cell| assert_cell(cell, output) }
@@ -24,14 +19,7 @@ module ElHelper
   end
 
   def assert_cell(cell, output)
-    if negated?(cell)
-      content = cell[1..-2].strip
-      content = content[1..-1].strip if content.start_with?(">")
-      refute_match(content, output)
-    else
-      content = cell.start_with?(">") ? cell[1..-1].strip : cell
-      assert_match(content, output)
-    end
+    negated?(cell) ? refute_match(cell[1..-2].strip, output) : assert_match(cell, output)
   end
 
   def negated?(cell)
