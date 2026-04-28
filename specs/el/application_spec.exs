@@ -4,6 +4,7 @@ defmodule El.Application.Spec do
   setup do
     on_exit(fn ->
       Application.delete_env(:el, :message_store)
+      Application.delete_env(:el, :el_module)
     end)
 
     Application.put_env(:el, :message_store, El.MessageStoreStub)
@@ -81,5 +82,29 @@ defmodule El.Application.Spec do
     System.delete_env("DEV")
     dir = if El.CLI.Daemon.dev?(), do: "~/.el/dev", else: "~/.el"
     assert dir == "~/.el"
+  end
+
+  describe "restore_sessions/0" do
+    test "starts sessions from message store" do
+      {:ok, _pid} = Agent.start_link(fn -> [] end, name: RestoreSessionsStubEl)
+
+      Application.put_env(:el, :message_store, RestoreSessionsStubStore)
+      Application.put_env(:el, :el_module, RestoreSessionsStubEl)
+
+      El.Application.restore_sessions()
+
+      calls = Agent.get(RestoreSessionsStubEl, & &1)
+      assert Enum.reverse(calls) == [:dude, :kent]
+    end
+  end
+end
+
+defmodule RestoreSessionsStubStore do
+  def session_names, do: [:dude, :kent]
+end
+
+defmodule RestoreSessionsStubEl do
+  def start(name) do
+    Agent.update(__MODULE__, &[name | &1])
   end
 end

@@ -17,7 +17,7 @@ defmodule El.Application do
     {:ok, pid}
   end
 
-  defp restore_sessions do
+  def restore_sessions do
     el = Application.get_env(:el, :el_module, El)
     message_store = Application.get_env(:el, :message_store, El.MessageStore)
 
