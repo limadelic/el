@@ -243,7 +243,6 @@ defmodule El.CLI.Spec do
       output =
         capture_io(fn -> El.CLI.execute(:msg, ["session", "hello", "world"]) end)
 
-      assert output =~ "session"
       assert output =~ "reply"
     end
 
@@ -257,7 +256,6 @@ defmodule El.CLI.Spec do
       output =
         capture_io(fn -> El.CLI.execute(:msg, ["session", "hello"]) end)
 
-      assert output =~ "session"
       assert output =~ "reply"
     end
 

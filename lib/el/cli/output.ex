@@ -40,8 +40,8 @@ defmodule El.CLI.Output do
     handle_not_found(name)
   end
 
-  def handle_result(response, name) do
-    IO.puts("#{name}\n#{response}")
+  def handle_result(response, _name) do
+    IO.puts(response)
   end
 
   def handle_log_result(:not_found, name) do
