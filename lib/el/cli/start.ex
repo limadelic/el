@@ -9,11 +9,24 @@ defmodule El.CLI.Start do
   def normalize_model(model), do: model
 
   def detect_and_merge_agent(name, opts) do
-    opts ++ agent_opt(El.AgentDetector.detect_agent(name))
+    merged = opts ++ agent_opt(El.AgentDetector.detect_agent(name))
+    merged ++ env_model(merged)
   end
 
   defp agent_opt(nil), do: []
   defp agent_opt(agent), do: [agent: agent]
+
+  defp env_model(opts) do
+    env_model_for(Keyword.get(opts, :model), Keyword.get(opts, :agent))
+  end
+
+  defp env_model_for(nil, nil) do
+    subagent_model(System.get_env("CLAUDE_CODE_SUBAGENT_MODEL"))
+  end
+  defp env_model_for(_, _), do: []
+
+  defp subagent_model(nil), do: []
+  defp subagent_model(model), do: [model: model]
 
   def handle_find_daemon_for_start(name, opts, el) do
     # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
