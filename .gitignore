@@ -8,6 +8,7 @@ erl_crash.dump
 el-*.tar
 /tmp/
 .idea/
+burrito_out/
 CLAUDE.local.md
 /el
 status.json

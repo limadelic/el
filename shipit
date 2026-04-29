@@ -1,0 +1,81 @@
+#!/bin/bash
+set -e
+set -o pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")"
+
+{
+
+echo "--- Test"
+mix test --cover
+
+echo "--- Format"
+mix format --check-formatted
+
+echo "--- Credo"
+mix credo --strict
+
+echo "--- Restart dev"
+./el restart
+
+echo "--- Cucumber dev"
+bundle exec cucumber -p dev
+
+echo "--- Bump version"
+CURRENT=$(grep 'version:' mix.exs | sed 's/.*version: "\(.*\)".*/\1/')
+MAJOR_MINOR=$(echo "$CURRENT" | cut -d. -f1-2)
+PATCH=$(echo "$CURRENT" | cut -d. -f3)
+VERSION="$MAJOR_MINOR.$((PATCH + 1))"
+sed -i '' "s/version: \"$CURRENT\"/version: \"$VERSION\"/" mix.exs
+git add mix.exs
+git commit -m "v$VERSION"
+git push
+
+echo "--- Build release"
+MIX_ENV=prod mix release el --overwrite
+
+echo "--- Tarball"
+TARBALL="_build/prod/el-$VERSION.tar.gz"
+tar -czf "$TARBALL" -C _build/prod/rel el
+
+echo "--- GitHub release"
+GITHUB_TOKEN=$GITHUB_LIMADELIC gh release create "v$VERSION" "$TARBALL" \
+  --title "v$VERSION" --notes "v$VERSION"
+
+echo "--- Hex publish"
+mix hex.publish package --yes
+
+echo "--- Homebrew tap"
+SHA256=$(shasum -a 256 "$TARBALL" | awk '{print $1}')
+FORMULA=$(cat rel/formula.rb.template)
+FORMULA="${FORMULA//\$VERSION/$VERSION}"
+FORMULA="${FORMULA//\$SHA256/$SHA256}"
+TAP="$(brew --repository limadelic/tap)"
+echo "$FORMULA" > "$TAP/Formula/el.rb"
+cd "$TAP"
+git add Formula/el.rb
+git commit -m "el $VERSION"
+GITHUB_TOKEN=$GITHUB_LIMADELIC git push
+cd "$(dirname "${BASH_SOURCE[0]}")"
+
+echo "--- Install"
+brew upgrade limadelic/tap/el 2>/dev/null || brew install limadelic/tap/el
+
+echo "--- Restart prod"
+el restart
+
+echo "--- Verify"
+INSTALLED=$(el -v 2>/dev/null | tr -d 'v')
+if [ "$INSTALLED" != "$VERSION" ]; then
+  echo "FATAL: el -v = v${INSTALLED}, expected v${VERSION}"
+  exit 1
+fi
+echo "el v$VERSION at $(which el)"
+
+echo "--- Cucumber prod"
+bundle exec cucumber
+
+echo ""
+echo "Shipped v$VERSION"
+
+} 2>&1 | tee /tmp/shipit.log
