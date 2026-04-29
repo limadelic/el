@@ -4,7 +4,7 @@ description: Acceptance Test agent. Writes features and step definitions using C
 model: sonnet
 skills:
   - ddd
-  - gwt
+  - belize
 ---
 
 Lisa Crispin style - business-facing tests, domain language, readable scenarios.
