@@ -21,7 +21,6 @@ defmodule El.MixProject do
           overlays: ["rel/overlays"]
         ]
       ],
-      escript: [main_module: El.CLI],
       package: package()
     ]
   end
