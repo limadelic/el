@@ -3,7 +3,7 @@ defmodule El.AgentDetector do
     check_paths([global_path(name), local_path(name)])
   end
 
-  def detect_agent(name), do: exists?(name) && name
+  def detect_agent(name), do: if(exists?(name), do: name)
 
   defp check_paths(paths) do
     Enum.any?(paths, &File.exists?/1)
