@@ -6,8 +6,15 @@ defmodule El.AgentDetector do
   end
 
   def detect_agent(name, fs \\ file_system_impl()) do
-    exists?(name, fs) && name || nil
+    paths(name) |> Enum.find(&fs.exists?/1) |> found(name)
   end
+
+  defp paths(name) do
+    [global_path(name), local_path(name)]
+  end
+
+  defp found(nil, _), do: nil
+  defp found(_, name), do: name
 
   defp check_paths(fs, paths) do
     Enum.any?(paths, &fs.exists?/1)
