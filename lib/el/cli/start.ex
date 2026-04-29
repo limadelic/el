@@ -23,6 +23,7 @@ defmodule El.CLI.Start do
   defp env_model_for(nil, nil) do
     subagent_model(System.get_env("CLAUDE_CODE_SUBAGENT_MODEL"))
   end
+
   defp env_model_for(_, _), do: []
 
   defp subagent_model(nil), do: []
