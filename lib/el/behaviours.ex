@@ -40,3 +40,7 @@ defmodule El.Behaviours.El do
   @callback tell_ask(term(), term(), term()) :: term()
   @callback ask_tell(term(), term(), term()) :: term()
 end
+
+defmodule El.Behaviours.FileSystem do
+  @callback exists?(String.t()) :: boolean()
+end

@@ -1,46 +1,47 @@
 defmodule El.AgentDetector.Spec do
   use ExUnit.Case
 
-  setup do
-    on_exit(fn -> File.rm_rf!(".claude/agents") end)
-    :ok
-  end
+  import Mox
 
-  describe "exists?/1" do
+  setup :verify_on_exit!
+
+  describe "El.AgentDetector.exists?/2" do
     test "returns true when global agent file exists" do
-      home = System.get_env("HOME")
-      agent_dir = Path.join([home, ".claude", "agents"])
-      File.mkdir_p!(agent_dir)
-      agent_file = Path.join(agent_dir, "kent.md")
-      File.write!(agent_file, "")
+      stub(El.MockFileSystem, :exists?, fn path ->
+        String.contains?(path, "kent.md")
+      end)
 
-      assert El.AgentDetector.exists?("kent")
-
-      File.rm!(agent_file)
+      assert El.AgentDetector.exists?("kent", El.MockFileSystem)
     end
 
     test "returns true when local agent file exists" do
-      File.mkdir_p!(".claude/agents")
-      File.write!(".claude/agents/liz.md", "")
+      stub(El.MockFileSystem, :exists?, fn path ->
+        String.contains?(path, "liz.md")
+      end)
 
-      assert El.AgentDetector.exists?("liz")
+      assert El.AgentDetector.exists?("liz", El.MockFileSystem)
     end
 
     test "returns false when agent file does not exist" do
-      refute El.AgentDetector.exists?("nonexistent")
+      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+
+      refute El.AgentDetector.exists?("nonexistent", El.MockFileSystem)
     end
   end
 
-  describe "detect_agent/1" do
+  describe "El.AgentDetector.detect_agent/2" do
     test "returns name when agent exists" do
-      File.mkdir_p!(".claude/agents")
-      File.write!(".claude/agents/kenny.md", "")
+      stub(El.MockFileSystem, :exists?, fn path ->
+        String.contains?(path, "kenny.md")
+      end)
 
-      assert El.AgentDetector.detect_agent("kenny") == "kenny"
+      assert El.AgentDetector.detect_agent("kenny", El.MockFileSystem) == "kenny"
     end
 
     test "returns nil when agent does not exist" do
-      assert El.AgentDetector.detect_agent("nonexistent") == nil
+      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+
+      assert El.AgentDetector.detect_agent("nonexistent", El.MockFileSystem) == nil
     end
   end
 end

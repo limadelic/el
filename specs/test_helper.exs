@@ -9,6 +9,7 @@ Mox.defmock(El.MockSession, for: El.Behaviours.Session)
 Mox.defmock(El.MockApp, for: El.Behaviours.App)
 Mox.defmock(El.MockMonitor, for: El.Behaviours.Monitor)
 Mox.defmock(El.MockEl, for: El.Behaviours.El)
+Mox.defmock(El.MockFileSystem, for: El.Behaviours.FileSystem)
 
 defmodule ClaudeCode.SessionStub do
   def stream(_pid, _prompt) do
