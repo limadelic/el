@@ -56,6 +56,11 @@ defmodule El.CLI do
     Start.handle_find_daemon_with_rest(name, opts, rest, el())
   end
 
+  def execute(:start, [name, "-a", agent | rest]) do
+    opts = Start.agent_opts(agent)
+    Start.handle_find_daemon_with_rest(name, opts, rest, el())
+  end
+
   def execute(:tell_ask, [name, "tell", "ask", "@" <> target | words]) do
     Messaging.execute_tell_ask(name, target, words, el())
   end

@@ -2,6 +2,9 @@ defmodule El.CLI.Start do
   def start_opts(nil), do: []
   def start_opts(model), do: [model: model]
 
+  def agent_opts(nil), do: []
+  def agent_opts(agent), do: [agent: agent]
+
   def normalize_model(""), do: nil
   def normalize_model(model), do: model
 
