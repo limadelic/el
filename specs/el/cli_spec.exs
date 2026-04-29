@@ -96,6 +96,12 @@ defmodule El.CLI.Spec do
   end
 
   describe "execute/2" do
+    setup do
+      Application.put_env(:el, :file_system, El.MockFileSystem)
+      on_exit(fn -> Application.delete_env(:el, :file_system) end)
+      :ok
+    end
+
     test "execute :log_n with number calls El.log with count" do
       expect(El.MockEl, :log, fn :session, 5 -> [] end)
 
@@ -218,6 +224,60 @@ defmodule El.CLI.Spec do
       expect(El.MockEl, :log, fn :session, 5 -> [] end)
 
       capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "5"]) end)
+    end
+
+    test "execute :start calls AgentDetector.detect_agent and merges agent into opts" do
+      stub(El.MockFileSystem, :exists?, fn path ->
+        String.contains?(path, "my_session.md")
+      end)
+
+      expect(El.MockEl, :start, fn :my_session, [agent: "my_session"] -> :ok end)
+
+      capture_io(fn ->
+        El.CLI.execute(:start, ["my_session"])
+      end)
+    end
+
+    test "execute :start with -m model calls AgentDetector.detect_agent and merges agent" do
+      stub(El.MockFileSystem, :exists?, fn path ->
+        String.contains?(path, "my_session.md")
+      end)
+
+      expect(El.MockEl, :start, fn :my_session, [model: "haiku", agent: "my_session"] -> :ok end)
+
+      capture_io(fn ->
+        El.CLI.execute(:start, ["my_session", "-m", "haiku"])
+      end)
+    end
+
+    test "execute :start with -a agent skips detection and uses explicit agent" do
+      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+
+      expect(El.MockEl, :start, fn :my_session, [agent: "explicit"] -> :ok end)
+
+      capture_io(fn ->
+        El.CLI.execute(:start, ["my_session", "-a", "explicit"])
+      end)
+    end
+
+    test "execute :start when no agent detected does not merge agent into opts" do
+      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+
+      expect(El.MockEl, :start, fn :my_session, [] -> :ok end)
+
+      capture_io(fn ->
+        El.CLI.execute(:start, ["my_session"])
+      end)
+    end
+
+    test "execute :start with -m model when no agent detected does not merge agent" do
+      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+
+      expect(El.MockEl, :start, fn :my_session, [model: "haiku"] -> :ok end)
+
+      capture_io(fn ->
+        El.CLI.execute(:start, ["my_session", "-m", "haiku"])
+      end)
     end
   end
 
