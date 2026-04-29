@@ -86,6 +86,15 @@ defmodule El.Session.Spec do
       assert Keyword.get(state.claude_opts, :model) == "test-model"
     end
 
+    test "stores agent in claude_opts" do
+      opts = [agent: "kent", claude_module: ModelCaptureModule]
+
+      {:ok, state, {:continue, :start_claude}} =
+        El.Session.init({:test_session, opts})
+
+      assert Keyword.get(state.claude_opts, :agent) == "kent"
+    end
+
     test "generates and stores session_id" do
       opts = [claude_module: MockSessionModule]
 

@@ -22,6 +22,10 @@ defmodule El.CLI.Spec do
       assert El.CLI.Router.parse_route(["my_session", "-m", "haiku"]) == :start
     end
 
+    test "returns start with -a flag" do
+      assert El.CLI.Router.parse_route(["my_session", "-a", "kent"]) == :start
+    end
+
     test "returns msg for name word message" do
       assert El.CLI.Router.parse_route(["session", "hello"]) == :msg
     end
