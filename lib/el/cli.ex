@@ -1,11 +1,18 @@
 defmodule El.CLI do
-  alias El.CLI.{Daemon, Router, Output, Log, Pattern, Messaging, Start}
+  alias El.CLI.{Daemon, Router, Output, Log, Pattern, Messaging, Start, AgentDetector}
 
   defp version do
     Application.spec(:el, :vsn) |> Output.format_version()
   end
 
   defp el, do: Application.get_env(:el, :el_module, El)
+
+  defp detect_and_inject_agent(name, opts) do
+    case AgentDetector.detect_agent(name) do
+      nil -> []
+      agent -> if Keyword.has_key?(opts, :agent), do: [], else: [agent: agent]
+    end
+  end
 
   def main(["--daemon" | _] = args) do
     Daemon.start_daemon_node()
@@ -47,17 +54,20 @@ defmodule El.CLI do
   end
 
   def execute(:start, [name]) do
-    opts = Start.start_opts(nil)
+    base_opts = Start.start_opts(nil)
+    opts = base_opts ++ detect_and_inject_agent(name, base_opts)
     Start.handle_find_daemon_for_start(name, opts, el())
   end
 
   def execute(:start, [name, "-m", model | rest]) do
-    opts = Start.start_opts(model)
+    base_opts = Start.start_opts(model)
+    opts = base_opts ++ detect_and_inject_agent(name, base_opts)
     Start.handle_find_daemon_with_rest(name, opts, rest, el())
   end
 
   def execute(:start, [name, "-a", agent | rest]) do
-    opts = Start.agent_opts(agent)
+    base_opts = Start.agent_opts(agent)
+    opts = base_opts ++ detect_and_inject_agent(name, base_opts)
     Start.handle_find_daemon_with_rest(name, opts, rest, el())
   end
 

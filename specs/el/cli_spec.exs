@@ -276,4 +276,30 @@ defmodule El.CLI.Spec do
       assert output =~ ~r/\d+\.\d+/
     end
   end
+
+  describe "implicit agent detection" do
+    test "execute :start with agent name detects and injects agent" do
+      expect(El.MockEl, :start, fn :kent, [agent: "kent"] -> :kent end)
+
+      capture_io(fn -> El.CLI.execute(:start, ["kent"]) end)
+    end
+
+    test "execute :start with non-agent name passes empty opts" do
+      expect(El.MockEl, :start, fn :unknown, [] -> :unknown end)
+
+      capture_io(fn -> El.CLI.execute(:start, ["unknown"]) end)
+    end
+
+    test "execute :start with -m flag and agent name detects and injects agent" do
+      expect(El.MockEl, :start, fn :kent, [model: "haiku", agent: "kent"] -> :kent end)
+
+      capture_io(fn -> El.CLI.execute(:start, ["kent", "-m", "haiku"]) end)
+    end
+
+    test "execute :start with explicit -a flag takes priority" do
+      expect(El.MockEl, :start, fn :kent, [agent: "eric"] -> :kent end)
+
+      capture_io(fn -> El.CLI.execute(:start, ["kent", "-a", "eric"]) end)
+    end
+  end
 end
