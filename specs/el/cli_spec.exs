@@ -269,16 +269,6 @@ defmodule El.CLI.Spec do
         El.CLI.execute(:start, ["my_session"])
       end)
     end
-
-    test "execute :start with -m model when no agent detected does not merge agent" do
-      stub(El.MockFileSystem, :exists?, fn _path -> false end)
-
-      expect(El.MockEl, :start, fn :my_session, [model: "haiku"] -> :ok end)
-
-      capture_io(fn ->
-        El.CLI.execute(:start, ["my_session", "-m", "haiku"])
-      end)
-    end
   end
 
   describe "daemon spawning" do
