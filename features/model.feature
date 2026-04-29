@@ -1,11 +1,12 @@
 Feature: Model selection
 
+  @el_haiko
   Scenario: Default model from environment
-    * > el neo "what model are you using?":
+    * > el haiko "what model are you using?":
       | haiku |
-    * > el neo exit
 
   Scenario: Explicit model flag
-    * > el trinity -m sonnet "what model are you using?":
+    * > el sonet -m sonnet
+    * > el sonet "what model are you using?":
       | sonnet |
-    * > el trinity exit
+    * > el sonet exit

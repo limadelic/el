@@ -101,6 +101,7 @@ defmodule El.CLI.Spec do
 
       on_exit(fn ->
         Application.delete_env(:el, :file_system)
+        System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
       end)
 
       :ok
@@ -299,8 +300,6 @@ defmodule El.CLI.Spec do
 
       expect(El.MockEl, :start, fn :my_session, [] -> :ok end)
 
-      System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
-
       capture_io(fn ->
         El.CLI.execute(:start, ["my_session"])
       end)
@@ -326,8 +325,6 @@ defmodule El.CLI.Spec do
       capture_io(fn ->
         El.CLI.execute(:start, ["my_session"])
       end)
-
-      System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
     end
 
     test "execute :start ignores env model when model provided" do
@@ -340,8 +337,6 @@ defmodule El.CLI.Spec do
       capture_io(fn ->
         El.CLI.execute(:start, ["my_session", "-m", "opus"])
       end)
-
-      System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
     end
 
     test "execute :start ignores env model when agent detected" do
@@ -356,16 +351,12 @@ defmodule El.CLI.Spec do
       capture_io(fn ->
         El.CLI.execute(:start, ["my_session"])
       end)
-
-      System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
     end
 
     test "execute :start ignores nil env model" do
       stub(El.MockFileSystem, :exists?, fn _path -> false end)
 
       expect(El.MockEl, :start, fn :my_session, [] -> :ok end)
-
-      System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
 
       capture_io(fn ->
         El.CLI.execute(:start, ["my_session"])
@@ -392,7 +383,7 @@ defmodule El.CLI.Spec do
     end
   end
 
-  describe "main/1" do
+  describe "dispatch/1" do
     test "version starts with v0.1." do
       output = capture_io(fn -> El.CLI.dispatch(["-v"]) end)
       assert String.starts_with?(String.trim(output), "v0.1.")

@@ -22,73 +22,41 @@ defmodule El.ClaudeCode do
     |> add_resume_if_present(opts)
   end
 
-  defp extract_session_module(nil) do
-    @default_session_module
-  end
-
-  defp extract_session_module(module) do
-    module
-  end
+  defp extract_session_module(nil), do: @default_session_module
+  defp extract_session_module(module), do: module
 
   defp base_session_opts(session_id, cli_path) do
-    [base_adapter(cli_path), {:session_id, session_id}, base_perms(),
-     base_settings()]
+    opts = [base_adapter(cli_path), {:session_id, session_id}]
+    opts ++ [base_perms(), base_settings()]
   end
 
   defp base_adapter(cli_path) do
     {:adapter, {ClaudeCode.Adapter.Port, [cli_path: cli_path]}}
   end
 
-  defp base_perms do
-    {:dangerously_skip_permissions, true}
-  end
+  defp base_perms, do: {:dangerously_skip_permissions, true}
+  defp base_settings, do: {:setting_sources, @default_setting_sources}
 
-  defp base_settings do
-    {:setting_sources, @default_setting_sources}
-  end
+  defp add_model(session_opts, nil), do: session_opts
+  defp add_model(session_opts, model), do: session_opts ++ [model: model]
 
-  defp add_model(session_opts, nil) do
-    session_opts
-  end
+  defp add_agent(session_opts, nil), do: session_opts
+  defp add_agent(session_opts, agent), do: session_opts ++ [agent: agent]
 
-  defp add_model(session_opts, model) do
-    session_opts ++ [model: model]
-  end
-
-  defp add_agent(session_opts, nil) do
-    session_opts
-  end
-
-  defp add_agent(session_opts, agent) do
-    session_opts ++ [agent: agent]
-  end
-
-  defp extract_session_id(opts) do
-    Keyword.pop(opts, :session_id)
-  end
+  defp extract_session_id(opts), do: Keyword.pop(opts, :session_id)
 
   defp add_resume_if_present(session_opts, opts) do
     add_resume(session_opts, Keyword.get(opts, :resume))
   end
 
-  defp add_resume(session_opts, nil) do
-    session_opts
-  end
-
-  defp add_resume(session_opts, sid) do
-    session_opts ++ [resume: sid]
-  end
+  defp add_resume(session_opts, nil), do: session_opts
+  defp add_resume(session_opts, sid), do: session_opts ++ [resume: sid]
 
   def stream(pid, prompt, opts \\ []) do
     session_module = extract_stream_session_module(opts[:session_module])
     session_module.stream(pid, prompt)
   end
 
-  defp extract_stream_session_module(nil) do
-    @default_session_module
-  end
-
-  defp extract_stream_session_module(module) do
-    module
-  end
+  defp extract_stream_session_module(nil), do: @default_session_module
+  defp extract_stream_session_module(module), do: module
 end
