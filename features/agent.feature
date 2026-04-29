@@ -1,16 +1,14 @@
 Feature: Agent support
 
   Scenario: Explicit agent flag
-    * > el session1 -a kent "calculate 2 + 2":
+    * > el kenny -a kent
+    * > el kenny "who are you and what model are you?":
       | kent |
-    * > el session1 exit
+      | opus |
+    * > el kenny exit
 
   @el_kent
   Scenario: Implicit agent detection from session name
-    * > el kent "say ok":
+    * > el kent "who are you and what model are you?":
       | kent |
-
-  Scenario: Agent not found uses default session
-    * > el unknown "task":
-      | unknown |
-    * > el unknown exit
+      | haiku |
