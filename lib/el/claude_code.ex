@@ -1,5 +1,6 @@
 defmodule El.ClaudeCode do
   @default_session_module ClaudeCode.Session
+  @default_setting_sources ["user", "project", "local"]
 
   def start_link(opts) do
     session_module = extract_session_module(opts[:session_module])
@@ -30,12 +31,20 @@ defmodule El.ClaudeCode do
   end
 
   defp base_session_opts(session_id, cli_path) do
-    [
-      adapter: {ClaudeCode.Adapter.Port, [cli_path: cli_path]},
-      session_id: session_id,
-      dangerously_skip_permissions: true,
-      setting_sources: ["user", "project", "local"]
-    ]
+    [base_adapter(cli_path), {:session_id, session_id},
+     base_perms(), base_settings()]
+  end
+
+  defp base_adapter(cli_path) do
+    {:adapter, {ClaudeCode.Adapter.Port, [cli_path: cli_path]}}
+  end
+
+  defp base_perms do
+    {:dangerously_skip_permissions, true}
+  end
+
+  defp base_settings do
+    {:setting_sources, @default_setting_sources}
   end
 
   defp add_model(session_opts, nil) do
