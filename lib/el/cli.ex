@@ -55,12 +55,12 @@ defmodule El.CLI do
   def execute(:daemon, ["--daemon", name, "-m", model], _context) do
     Start.start_daemon_node_for(name, model, el())
   end
-  def execute(:start, [name], context) do
-    opts = Start.detect_and_merge_agent(name, Start.start_opts(nil), context)
+  def execute(:start, [name], _context) do
+    opts = Start.detect_and_merge_agent(name, Start.start_opts(nil))
     Start.handle_find_daemon_for_start(name, opts, el())
   end
-  def execute(:start, [name, "-m", model | rest], context) do
-    opts = Start.detect_and_merge_agent(name, Start.start_opts(model), context)
+  def execute(:start, [name, "-m", model | rest], _context) do
+    opts = Start.detect_and_merge_agent(name, Start.start_opts(model))
     Start.handle_find_daemon_with_rest(name, opts, rest, el())
   end
   def execute(:start, [name, "-a", agent | rest], _context) do
@@ -73,8 +73,8 @@ defmodule El.CLI do
   def execute(:ask_tell, [name, "ask", "tell", "@" <> target | words], _context) do
     Messaging.execute_ask_tell(name, target, words, el())
   end
-  def execute(:msg, [name, word | more_words], context) do
-    opts = Start.detect_and_merge_agent(name, Start.start_opts(nil), context)
+  def execute(:msg, [name, word | more_words], _context) do
+    opts = Start.detect_and_merge_agent(name, Start.start_opts(nil))
     el().start(String.to_atom(name), opts)
     Messaging.execute_msg(name, [word | more_words], el())
   end
