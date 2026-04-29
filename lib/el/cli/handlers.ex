@@ -40,7 +40,6 @@ defmodule El.CLI.Handlers do
 
   def handle_msg([name, word | more_words], context, el) do
     opts = Start.detect_and_merge_agent(name, Start.start_opts(nil), context)
-    # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
     el.start(String.to_atom(name), opts)
     Messaging.execute_msg(name, [word | more_words], el)
   end

@@ -92,7 +92,7 @@
           {Credo.Check.Warning.OperationOnSameValues, []},
           {Credo.Check.Warning.OperationWithConstantResult, []},
           {Credo.Check.Warning.RaiseInsideRescue, []},
-          {Credo.Check.Warning.UnsafeToAtom, []},
+          {Credo.Check.Warning.UnsafeToAtom, false},
           {Credo.Check.Refactor.Nesting, []},
           {Credo.Check.Refactor.NegatedConditionsWithElse, []},
           {Credo.Check.Refactor.CondStatements, []}

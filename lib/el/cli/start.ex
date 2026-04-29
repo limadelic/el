@@ -30,14 +30,12 @@ defmodule El.CLI.Start do
   defp subagent_model(model), do: [model: model]
 
   def handle_find_daemon_for_start(name, opts, el) do
-    # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
     name_atom = String.to_atom(name)
     el.start(name_atom, opts)
     IO.puts("el: #{name} is up")
   end
 
   def handle_find_daemon_with_rest(name, opts, rest, el) do
-    # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
     name_atom = String.to_atom(name)
     el.start(name_atom, opts)
     dispatch_rest(rest, name)
@@ -52,7 +50,6 @@ defmodule El.CLI.Start do
   end
 
   def start_daemon_node_for(name, model, el) do
-    # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
     name_atom = String.to_atom(name)
     el.start(name_atom, start_opts(normalize_model(model)))
     report_daemon_up(name)

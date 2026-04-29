@@ -31,7 +31,8 @@ defmodule El.ClaudeCode do
   end
 
   defp base_session_opts(session_id, cli_path) do
-    [base_adapter(cli_path), {:session_id, session_id}, base_perms(), base_settings()]
+    [base_adapter(cli_path), {:session_id, session_id}, base_perms(),
+     base_settings()]
   end
 
   defp base_adapter(cli_path) do

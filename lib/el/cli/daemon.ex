@@ -61,7 +61,6 @@ defmodule El.CLI.Daemon do
   end
 
   defp start_node_with_id(id) do
-    # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
     :net_kernel.start([:"el-cli-#{id}@127.0.0.1", :longnames])
     |> maybe_set_cookie()
   end
