@@ -1,20 +1,20 @@
-@el_dude
+@el_donny
 Feature: Msg
 
   Scenario: Msg
-    * > el dude 1 + 1:
+    * > el donny 1 + 1:
       | 2 |
-    * > el dude log:
+    * > el donny log:
       | 1 + 1 |
       | 2     |
 
   Scenario: Convo
-    * > el dude knock knock:
+    * > el donny knock knock:
       | who |
-    * > el dude the dude:
-      | dude |
-    * > el dude abides
-    * > el dude log all:
-      | knock  |
-      | dude   |
-      | abides |
+    * > el donny the donny:
+      | donny |
+    * > el donny out of your element
+    * > el donny log all:
+      | knock   |
+      | donny   |
+      | element |

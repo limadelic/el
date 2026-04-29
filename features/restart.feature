@@ -1,8 +1,8 @@
-@el_dude
+@el_donny
 Feature: Restart
 
   Scenario: Restart
-    * > el dude 1 + 1
+    * > el donny 1 + 1
     * > el restart
     * > el ls:
-      | dude |
+      | donny |
