@@ -104,6 +104,12 @@ defmodule El.Application.Spec do
       assert Enum.reverse(calls) == [:dude, :kent]
     end
   end
+
+  describe "stop/1" do
+    test "closes the message store" do
+      assert El.Application.stop(:ignored) == :ok
+    end
+  end
 end
 
 defmodule RestoreSessionsStubStore do

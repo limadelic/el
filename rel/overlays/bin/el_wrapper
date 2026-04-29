@@ -15,14 +15,24 @@ esac
 case "$1" in
   restart)
     if [ -n "$DEV" ]; then
+      NODE_NAME="el_dev"
+      EPMD_PORT="4371"
+    else
+      NODE_NAME="el"
+      EPMD_PORT="4370"
+    fi
+
+    "$RELEASE_ROOT/bin/el" stop 2>/dev/null || true
+    pkill -f "beam.smp.*${NODE_NAME}@" 2>/dev/null || true
+    pkill -f "epmd.*-port ${EPMD_PORT}" 2>/dev/null || true
+    sleep 0.5
+
+    if [ -n "$DEV" ]; then
       PROJECT_ROOT="$(cd "$RELEASE_ROOT/../../../.." && pwd)"
-      if [ ! -f "$PROJECT_ROOT/mix.exs" ]; then
-        echo "Cannot find project root" >&2
-        exit 1
-      fi
       (cd "$PROJECT_ROOT" && mix release --overwrite >/dev/null 2>&1) || exit 1
     fi
-    exec "$RELEASE_ROOT/bin/el" restart
+
+    exec "$RELEASE_ROOT/bin/el" daemon
     ;;
   start|daemon|stop|pid|remote)
     exec "$RELEASE_ROOT/bin/el" "$@"
