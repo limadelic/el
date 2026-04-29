@@ -79,7 +79,16 @@ defmodule El.ClaudeCode do
     session_opts ++ [resume: sid]
   end
 
-  def stream(pid, prompt) do
-    ClaudeCode.Session.stream(pid, prompt)
+  def stream(pid, prompt, opts \\ []) do
+    session_module = extract_stream_session_module(opts[:session_module])
+    session_module.stream(pid, prompt)
+  end
+
+  defp extract_stream_session_module(nil) do
+    @default_session_module
+  end
+
+  defp extract_stream_session_module(module) do
+    module
   end
 end
