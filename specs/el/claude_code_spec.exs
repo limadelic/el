@@ -117,6 +117,17 @@ defmodule El.ClaudeCode.Spec do
 
       El.ClaudeCode.start_link(session_module: ResumeOmittedTest)
     end
+
+    test "includes setting_sources in session options" do
+      defmodule SettingSourcesTest do
+        def start_link(opts) do
+          assert opts[:setting_sources] == ["user", "project", "local"]
+          {:ok, self()}
+        end
+      end
+
+      El.ClaudeCode.start_link(session_module: SettingSourcesTest)
+    end
   end
 
   describe "stream/2" do

@@ -12,3 +12,9 @@ Feature: Agent support
     * > el kent "who are you and what model are you?":
       | kent |
       | haiku |
+
+  @el_lisa
+  Scenario: Lisa agent with sonnet model
+    * > el lisa "who are you and what model are you?":
+      | lisa |
+      | sonnet |

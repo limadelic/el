@@ -33,7 +33,8 @@ defmodule El.ClaudeCode do
     [
       adapter: {ClaudeCode.Adapter.Port, [cli_path: cli_path]},
       session_id: session_id,
-      dangerously_skip_permissions: true
+      dangerously_skip_permissions: true,
+      setting_sources: ["user", "project", "local"]
     ]
   end
 
