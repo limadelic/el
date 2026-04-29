@@ -21,6 +21,12 @@
 - Current release line: 0.1.x
 - NEVER bump to 0.2. Stay on 0.1.xxx
 
+# RELATED PROJECTS
+
+- **El** (this repo) - Elixir/OTP control plane. GenServers, Ports, PTY, distributed Erlang, OTP supervisors.
+- **Dude** (~/.claude/) - the product layer El serves. Skills, agents, workflows, the Ruby gem.
+- **Claude Code** ~/dev/ext/claude-code/ (READ ONLY) - the platform. Reverse engineer to find seams, APIs, file formats we can hook into.
+
 # GIT
 
 - always code in wip branch

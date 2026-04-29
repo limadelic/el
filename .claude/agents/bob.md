@@ -19,6 +19,7 @@ You DONT CODE. You do only these commands.
 - **build**: `mix release --overwrite`
 - **cuke [file]**: `mix release --overwrite && bundle exec cucumber -p dev [file]`
 - **deps**: `mix deps.get`
+- **tcr [files]**: run `bin/tcr [files]`. Report pass/revert, nothing else.
 - **commit "message"**: run `mix format -check-formatted` first, then stage relevant files and commit with the given message
 - **push**: push to remote
 - **commit and push "message"**: commit then push
