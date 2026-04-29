@@ -13,7 +13,14 @@ defmodule El.CLI.Messaging do
 
   def handle_msg(name_atom, msg, name, el_module) do
     result = el_module.ask(name_atom, msg)
-    Output.handle_result(result, resolve_name(el_module.agent(name_atom), name))
+    agent_name = agent_safe(el_module, name_atom, name)
+    Output.handle_result(result, resolve_name(agent_name, name))
+  end
+
+  defp agent_safe(el_module, name_atom, _fallback) do
+    el_module.agent(name_atom)
+  catch
+    _ -> nil
   end
 
   defp resolve_name(nil, fallback), do: fallback

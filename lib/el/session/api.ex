@@ -47,6 +47,6 @@ defmodule El.Session.Api do
   def agent(name) do
     GenServer.call(Registry.via_tuple(name), :agent, 5_000)
   catch
-    :exit, _ -> nil
+    _ -> nil
   end
 end
