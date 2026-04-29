@@ -2,14 +2,14 @@
 #Feature: El2El Sessions talk to each other via @name> routing.
 #
 #  Scenario: Tell route to another session
-#    * > el dude
+#    * > el donny
 #    * > el donnie
-#    * > el dude tell @donnie you are out of your element
+#    * > el donny tell @donnie you are out of your element
 #    * > el donnie log
 #      | you are out of your element |
 #
 #  Scenario: Ask route to another session
-#    * > el dude
+#    * > el donny
 #    * > el donnie
-#    * > el dude ask @donnie 1 + 1
+#    * > el donny ask @donnie 1 + 1
 #      | 2 |

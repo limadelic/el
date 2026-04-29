@@ -1,10 +1,10 @@
-@el_dude
+@el_donny
 Feature: Clear
 
   Scenario: Clear
-    * > el dude 1 + 1
-    * > el dude log:
+    * > el donny 1 + 1
+    * > el donny log:
       | 1 + 1 |
-    * > el dude clear
-    * > el dude log:
+    * > el donny clear
+    * > el donny log:
       | (1 + 1) |

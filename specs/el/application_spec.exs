@@ -2,8 +2,16 @@ defmodule El.Application.Spec do
   use ExUnit.Case
 
   setup do
+    original_el_module = Application.get_env(:el, :el_module)
+
     on_exit(fn ->
       Application.delete_env(:el, :message_store)
+
+      if original_el_module do
+        Application.put_env(:el, :el_module, original_el_module)
+      else
+        Application.delete_env(:el, :el_module)
+      end
     end)
 
     Application.put_env(:el, :message_store, El.MessageStoreStub)
@@ -19,7 +27,8 @@ defmodule El.Application.Spec do
   end
 
   test "children includes DynamicSupervisor", %{children: children} do
-    assert {DynamicSupervisor, [name: El.SessionSupervisor, max_restarts: 50, max_seconds: 60]} in children
+    opts = [name: El.SessionSupervisor, max_restarts: 50, max_seconds: 60]
+    assert {DynamicSupervisor, opts} in children
   end
 
   test "children has exactly two entries", %{children: children} do
@@ -71,14 +80,38 @@ defmodule El.Application.Spec do
 
   test "uses dev DETS path when DEV is set" do
     System.put_env("DEV", "1")
-    dir = if El.CLI.dev?(), do: "~/.el/dev", else: "~/.el"
+    dir = if El.CLI.Daemon.dev?(), do: "~/.el/dev", else: "~/.el"
     assert dir == "~/.el/dev"
     System.delete_env("DEV")
   end
 
   test "uses prod DETS path when DEV is not set" do
     System.delete_env("DEV")
-    dir = if El.CLI.dev?(), do: "~/.el/dev", else: "~/.el"
+    dir = if El.CLI.Daemon.dev?(), do: "~/.el/dev", else: "~/.el"
     assert dir == "~/.el"
+  end
+
+  describe "restore_sessions/0" do
+    test "starts sessions from message store" do
+      {:ok, _pid} = Agent.start_link(fn -> [] end, name: RestoreSessionsStubEl)
+
+      Application.put_env(:el, :message_store, RestoreSessionsStubStore)
+      Application.put_env(:el, :el_module, RestoreSessionsStubEl)
+
+      El.Application.restore_sessions()
+
+      calls = Agent.get(RestoreSessionsStubEl, & &1)
+      assert Enum.reverse(calls) == [:dude, :kent]
+    end
+  end
+end
+
+defmodule RestoreSessionsStubStore do
+  def session_names, do: [:dude, :kent]
+end
+
+defmodule RestoreSessionsStubEl do
+  def start(name) do
+    Agent.update(__MODULE__, &[name | &1])
   end
 end

@@ -7,91 +7,106 @@ defmodule El.CLI.Spec do
 
   describe "parse_route/1" do
     test "returns usage when no args" do
-      assert El.CLI.parse_route([]) == :usage
+      assert El.CLI.Router.parse_route([]) == :usage
     end
 
     test "returns ls for ls command" do
-      assert El.CLI.parse_route(["ls"]) == :ls
+      assert El.CLI.Router.parse_route(["ls"]) == :ls
     end
 
     test "returns start for single session name" do
-      assert El.CLI.parse_route(["my_session"]) == :start
+      assert El.CLI.Router.parse_route(["my_session"]) == :start
     end
 
     test "returns start with -m flag" do
-      assert El.CLI.parse_route(["my_session", "-m", "haiku"]) == :start
+      assert El.CLI.Router.parse_route(["my_session", "-m", "haiku"]) == :start
+    end
+
+    test "returns start with -a flag" do
+      assert El.CLI.Router.parse_route(["my_session", "-a", "kent"]) == :start
     end
 
     test "returns msg for name word message" do
-      assert El.CLI.parse_route(["session", "hello"]) == :msg
+      assert El.CLI.Router.parse_route(["session", "hello"]) == :msg
     end
 
     test "returns msg for name multiple words" do
-      assert El.CLI.parse_route(["session", "hello", "world", "foo"]) == :msg
+      assert El.CLI.Router.parse_route(["session", "hello", "world", "foo"]) == :msg
     end
 
     test "routes arbitrary args to msg" do
-      assert El.CLI.parse_route(["bogus", "args"]) == :msg
+      assert El.CLI.Router.parse_route(["bogus", "args"]) == :msg
     end
 
     test "returns log for name log" do
-      assert El.CLI.parse_route(["session", "log"]) == :log
+      assert El.CLI.Router.parse_route(["session", "log"]) == :log
     end
 
     test "returns log_n for name log with number" do
-      assert El.CLI.parse_route(["session", "log", "5"]) == :log_n
+      assert El.CLI.Router.parse_route(["session", "log", "5"]) == :log_n
     end
 
     test "returns log_n for name log all" do
-      assert El.CLI.parse_route(["session", "log", "all"]) == :log_n
+      assert El.CLI.Router.parse_route(["session", "log", "all"]) == :log_n
     end
 
     test "returns exit for name exit" do
-      assert El.CLI.parse_route(["session", "exit"]) == :exit
+      assert El.CLI.Router.parse_route(["session", "exit"]) == :exit
     end
 
     test "returns exit_all for exit" do
-      assert El.CLI.parse_route(["exit"]) == :exit_all
+      assert El.CLI.Router.parse_route(["exit"]) == :exit_all
     end
 
     test "returns exit for dud* exit" do
-      assert El.CLI.parse_route(["dud*", "exit"]) == :exit
+      assert El.CLI.Router.parse_route(["dud*", "exit"]) == :exit
     end
 
     test "returns clear for name clear" do
-      assert El.CLI.parse_route(["session", "clear"]) == :clear
+      assert El.CLI.Router.parse_route(["session", "clear"]) == :clear
     end
 
     test "returns tell_ask for name tell ask @target message" do
-      assert El.CLI.parse_route(["session", "tell", "ask", "@other", "hello"]) == :tell_ask
+      assert El.CLI.Router.parse_route(["session", "tell", "ask", "@other", "hello"]) == :tell_ask
     end
 
     test "returns ask_tell for name ask tell @target message" do
-      assert El.CLI.parse_route(["session", "ask", "tell", "@other", "hello"]) == :ask_tell
+      assert El.CLI.Router.parse_route(["session", "ask", "tell", "@other", "hello"]) == :ask_tell
     end
 
     test "returns daemon for --daemon flag" do
-      assert El.CLI.parse_route(["--daemon", "my_session"]) == :daemon
+      assert El.CLI.Router.parse_route(["--daemon", "my_session"]) == :daemon
     end
 
     test "returns daemon with -m flag" do
-      assert El.CLI.parse_route(["--daemon", "my_session", "-m", "opus"]) == :daemon
+      assert El.CLI.Router.parse_route(["--daemon", "my_session", "-m", "opus"]) == :daemon
     end
 
     test "returns version for -v" do
-      assert El.CLI.parse_route(["-v"]) == :version
+      assert El.CLI.Router.parse_route(["-v"]) == :version
     end
 
     test "returns usage for args starting with --" do
-      assert El.CLI.parse_route(["--nonsense"]) == :usage
+      assert El.CLI.Router.parse_route(["--nonsense"]) == :usage
     end
 
     test "returns usage for args starting with -" do
-      assert El.CLI.parse_route(["-x"]) == :usage
+      assert El.CLI.Router.parse_route(["-x"]) == :usage
     end
   end
 
   describe "execute/2" do
+    setup do
+      Application.put_env(:el, :file_system, El.MockFileSystem)
+
+      on_exit(fn ->
+        Application.delete_env(:el, :file_system)
+        System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
+      end)
+
+      :ok
+    end
+
     test "execute :log_n with number calls El.log with count" do
       expect(El.MockEl, :log, fn :session, 5 -> [] end)
 
@@ -104,8 +119,7 @@ defmodule El.CLI.Spec do
       output =
         capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "5"]) end)
 
-      assert output =~ "[ask] hello"
-      assert output =~ "world"
+      assert output =~ "> hello"
     end
 
     test "execute :log_n with 'all' calls El.log with :all" do
@@ -122,8 +136,7 @@ defmodule El.CLI.Spec do
       output =
         capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "all"]) end)
 
-      assert output =~ "[tell] goodbye"
-      assert output =~ "see ya"
+      assert output =~ "> goodbye"
     end
 
     test "execute :log calls El.log with count 1" do
@@ -137,8 +150,7 @@ defmodule El.CLI.Spec do
 
       output = capture_io(fn -> El.CLI.execute(:log, ["session", "log"]) end)
 
-      assert output =~ "[ask] hi"
-      assert output =~ "reply"
+      assert output =~ "> hi"
     end
 
     test "execute :clear calls El.clear with name" do
@@ -218,28 +230,160 @@ defmodule El.CLI.Spec do
 
       capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "5"]) end)
     end
+
+    test "execute :msg auto-starts session with agent detection" do
+      stub(El.MockFileSystem, :exists?, fn path ->
+        String.contains?(path, "session.md")
+      end)
+
+      expect(El.MockEl, :start, fn :session, [agent: "session"] -> :ok end)
+      expect(El.MockEl, :ask, fn :session, "hello world" -> "reply" end)
+      expect(El.MockEl, :agent, fn :session -> "session" end)
+
+      output =
+        capture_io(fn -> El.CLI.execute(:msg, ["session", "hello", "world"]) end)
+
+      assert output =~ "session"
+      assert output =~ "reply"
+    end
+
+    test "execute :msg without agent uses session name" do
+      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      expect(El.MockEl, :ask, fn :session, "hello" -> "reply" end)
+      expect(El.MockEl, :agent, fn :session -> nil end)
+
+      output =
+        capture_io(fn -> El.CLI.execute(:msg, ["session", "hello"]) end)
+
+      assert output =~ "session"
+      assert output =~ "reply"
+    end
+
+    test "execute :start calls AgentDetector.detect_agent and merges agent into opts" do
+      stub(El.MockFileSystem, :exists?, fn path ->
+        String.contains?(path, "my_session.md")
+      end)
+
+      expect(El.MockEl, :start, fn :my_session, [agent: "my_session"] -> :ok end)
+
+      capture_io(fn ->
+        El.CLI.execute(:start, ["my_session"])
+      end)
+    end
+
+    test "execute :start with -m model calls AgentDetector.detect_agent and merges agent" do
+      stub(El.MockFileSystem, :exists?, fn path ->
+        String.contains?(path, "my_session.md")
+      end)
+
+      expect(El.MockEl, :start, fn :my_session, [model: "haiku", agent: "my_session"] -> :ok end)
+
+      capture_io(fn ->
+        El.CLI.execute(:start, ["my_session", "-m", "haiku"])
+      end)
+    end
+
+    test "execute :start with -a agent skips detection and uses explicit agent" do
+      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+
+      expect(El.MockEl, :start, fn :my_session, [agent: "explicit"] -> :ok end)
+
+      capture_io(fn ->
+        El.CLI.execute(:start, ["my_session", "-a", "explicit"])
+      end)
+    end
+
+    test "execute :start when no agent detected does not merge agent into opts" do
+      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+
+      expect(El.MockEl, :start, fn :my_session, [] -> :ok end)
+
+      capture_io(fn ->
+        El.CLI.execute(:start, ["my_session"])
+      end)
+    end
+
+    test "execute :start with -m model when no agent detected does not merge agent" do
+      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+
+      expect(El.MockEl, :start, fn :my_session, [model: "haiku"] -> :ok end)
+
+      capture_io(fn ->
+        El.CLI.execute(:start, ["my_session", "-m", "haiku"])
+      end)
+    end
+
+    test "execute :start uses env model when no model or agent" do
+      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+
+      expect(El.MockEl, :start, fn :my_session, [model: "sonnet"] -> :ok end)
+
+      System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
+
+      capture_io(fn ->
+        El.CLI.execute(:start, ["my_session"])
+      end)
+    end
+
+    test "execute :start ignores env model when model provided" do
+      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+
+      expect(El.MockEl, :start, fn :my_session, [model: "opus"] -> :ok end)
+
+      System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
+
+      capture_io(fn ->
+        El.CLI.execute(:start, ["my_session", "-m", "opus"])
+      end)
+    end
+
+    test "execute :start ignores env model when agent detected" do
+      stub(El.MockFileSystem, :exists?, fn path ->
+        String.contains?(path, "my_session.md")
+      end)
+
+      expect(El.MockEl, :start, fn :my_session, [agent: "my_session"] -> :ok end)
+
+      System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
+
+      capture_io(fn ->
+        El.CLI.execute(:start, ["my_session"])
+      end)
+    end
+
+    test "execute :start ignores nil env model" do
+      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+
+      expect(El.MockEl, :start, fn :my_session, [] -> :ok end)
+
+      capture_io(fn ->
+        El.CLI.execute(:start, ["my_session"])
+      end)
+    end
   end
 
   describe "daemon spawning" do
     test "daemon_script returns absolute path" do
-      path = El.CLI.daemon_script()
+      path = El.CLI.Daemon.daemon_script()
       assert String.starts_with?(path, "/")
     end
 
     test "dev? returns true when DEV is set" do
       System.put_env("DEV", "1")
-      assert El.CLI.dev?() == true
+      assert El.CLI.Daemon.dev?() == true
       System.delete_env("DEV")
     end
 
     test "daemon_node returns el_dev@127.0.0.1 when DEV is set" do
       System.put_env("DEV", "1")
-      assert El.CLI.daemon_node() == :"el_dev@127.0.0.1"
+      assert El.CLI.Daemon.daemon_node() == :"el_dev@127.0.0.1"
       System.delete_env("DEV")
     end
   end
 
-  describe "main/1" do
+  describe "dispatch/1" do
     test "version starts with v0.1." do
       output = capture_io(fn -> El.CLI.dispatch(["-v"]) end)
       assert String.starts_with?(String.trim(output), "v0.1.")

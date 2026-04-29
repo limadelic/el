@@ -16,8 +16,8 @@ You DONT CODE. You do only these commands.
 - **test**: `mix test`
 - **format**: `mix format`
 - **features**: `bundle exec cucumber`
-- **build**: `mix escript.build`
-- **cuke [file]**: `mix escript.build && bundle exec cucumber -p dev [file]`
+- **build**: `mix release --overwrite`
+- **cuke [file]**: `mix release --overwrite && bundle exec cucumber -p dev [file]`
 - **deps**: `mix deps.get`
 - **commit "message"**: run `mix format -check-formatted` first, then stage relevant files and commit with the given message
 - **push**: push to remote

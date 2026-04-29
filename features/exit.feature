@@ -2,10 +2,10 @@ Feature: Exit
 
   Scenario: Single
     * > el ls:
-      | (dude) |
-    * > el dude
+      | (donny) |
+    * > el donny
     * > el ls:
-      | dude |
-    * > el dude exit
+      | donny |
+    * > el donny exit
     * > el ls:
-      | (dude) |
+      | (donny) |

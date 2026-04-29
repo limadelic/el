@@ -25,83 +25,111 @@ defmodule El.Session.Spec do
 
   describe "detect_routes/1" do
     test "returns empty list for text without routes" do
-      assert El.Session.detect_routes("hello") == []
+      assert El.Session.Api.detect_routes("hello") == []
     end
 
     test "returns empty list for bare @name without >" do
-      assert El.Session.detect_routes("talk to @donnie about it") == []
+      result = El.Session.Api.detect_routes("talk to @donnie about it")
+      assert result == []
     end
 
     test "detects single route" do
-      assert El.Session.detect_routes("@donnie> you are out of your element") == [
+      text = "@donnie> you are out of your element"
+      result = El.Session.Api.detect_routes(text)
+
+      assert result == [
                {:donnie, "you are out of your element"}
              ]
     end
 
     test "detects multiple routes on different lines" do
-      assert El.Session.detect_routes("@donnie> hey\n@walter> sup") == [
+      assert El.Session.Api.detect_routes("@donnie> hey\n@walter> sup") == [
                {:donnie, "hey"},
                {:walter, "sup"}
              ]
     end
 
     test "detects route with empty payload" do
-      assert El.Session.detect_routes("@donnie>") == [{:donnie, ""}]
+      assert El.Session.Api.detect_routes("@donnie>") == [{:donnie, ""}]
     end
 
     test "ignores routes not at start of line" do
-      assert El.Session.detect_routes("some text @donnie> payload") == []
+      assert El.Session.Api.detect_routes("some text @donnie> payload") == []
     end
   end
 
   describe "init/1" do
     test "stores session name in state" do
+      opts = [claude_module: MockSessionModule]
+
       {:ok, state, {:continue, :start_claude}} =
-        El.Session.init({:my_session, [claude_module: MockSessionModule]})
+        El.Session.init({:my_session, opts})
 
       assert state.name == :my_session
     end
 
     test "initializes messages as empty list" do
+      opts = [claude_module: MockSessionModule]
+
       {:ok, state, {:continue, :start_claude}} =
-        El.Session.init({:test_session, [claude_module: MockSessionModule]})
+        El.Session.init({:test_session, opts})
 
       assert state.messages == []
     end
 
     test "stores claude_opts for continue phase" do
+      opts = [model: "test-model", claude_module: ModelCaptureModule]
+
       {:ok, state, {:continue, :start_claude}} =
-        El.Session.init({:test_session, [model: "test-model", claude_module: ModelCaptureModule]})
+        El.Session.init({:test_session, opts})
 
       assert Keyword.get(state.claude_opts, :model) == "test-model"
     end
 
-    test "generates and stores session_id" do
+    test "stores agent in claude_opts" do
+      opts = [agent: "kent", claude_module: ModelCaptureModule]
+
       {:ok, state, {:continue, :start_claude}} =
-        El.Session.init({:test_session, [claude_module: MockSessionModule]})
+        El.Session.init({:test_session, opts})
+
+      assert Keyword.get(state.claude_opts, :agent) == "kent"
+    end
+
+    test "generates and stores session_id" do
+      opts = [claude_module: MockSessionModule]
+
+      {:ok, state, {:continue, :start_claude}} =
+        El.Session.init({:test_session, opts})
 
       assert is_binary(state.session_id)
     end
 
     test "stores nil claude_pid before continue" do
+      opts = [claude_module: MockSessionModule]
+
       {:ok, state, {:continue, :start_claude}} =
-        El.Session.init({:test_session, [claude_module: MockSessionModule]})
+        El.Session.init({:test_session, opts})
 
       assert state.claude_pid == nil
     end
 
     test "stores default task_module" do
+      opts = [claude_module: MockSessionModule]
+
       {:ok, state, {:continue, :start_claude}} =
-        El.Session.init({:test_session, [claude_module: MockSessionModule]})
+        El.Session.init({:test_session, opts})
 
       assert state.task_module == Task
     end
 
     test "stores provided task_module" do
+      opts = [
+        claude_module: MockSessionModule,
+        task_module: MockSessionModule
+      ]
+
       {:ok, state, {:continue, :start_claude}} =
-        El.Session.init(
-          {:test_session, [claude_module: MockSessionModule, task_module: MockSessionModule]}
-        )
+        El.Session.init({:test_session, opts})
 
       assert state.task_module == MockSessionModule
     end
@@ -109,33 +137,46 @@ defmodule El.Session.Spec do
 
   describe "handle_continue/2 :start_claude" do
     test "calls claude_module.start_link with claude_opts" do
-      {:ok, state, {:continue, :start_claude}} =
-        El.Session.init(
-          {:test_session, [claude_module: MockSessionModule, store_module: MockSessionStore]}
-        )
+      opts = [
+        claude_module: MockSessionModule,
+        store_module: MockSessionStore
+      ]
 
-      {:noreply, result_state} = El.Session.handle_continue(:start_claude, state)
+      {:ok, state, {:continue, :start_claude}} =
+        El.Session.init({:test_session, opts})
+
+      {:noreply, result_state} =
+        El.Session.handle_continue(:start_claude, state)
 
       assert result_state.claude_pid == :mock_pid
     end
 
     test "loads messages from El.Application" do
+      opts = [claude_module: MockSessionModule]
+
       {:ok, state, {:continue, :start_claude}} =
-        El.Session.init({:test_session, [claude_module: MockSessionModule]})
+        El.Session.init({:test_session, opts})
+
+      updated_state = %{state | store_module: MockLoadingStore}
 
       {:noreply, result_state} =
-        El.Session.handle_continue(:start_claude, %{state | store_module: MockLoadingStore})
+        El.Session.handle_continue(:start_claude, updated_state)
 
-      assert [{"tell", "old_message", "old_response", %{}}] == result_state.messages
+      expected = [{"tell", "old_message", "old_response", %{}}]
+      assert expected == result_state.messages
     end
 
     test "sets claude_pid to nil on start failure" do
-      {:ok, state, {:continue, :start_claude}} =
-        El.Session.init(
-          {:test_session, [claude_module: FailingModule, store_module: MockSessionStore]}
-        )
+      opts = [
+        claude_module: FailingModule,
+        store_module: MockSessionStore
+      ]
 
-      {:noreply, result_state} = El.Session.handle_continue(:start_claude, state)
+      {:ok, state, {:continue, :start_claude}} =
+        El.Session.init({:test_session, opts})
+
+      {:noreply, result_state} =
+        El.Session.handle_continue(:start_claude, state)
 
       assert result_state.claude_pid == nil
     end
@@ -167,8 +208,11 @@ defmodule El.Session.Spec do
       state: state,
       alive_fn_target: alive_fn
     } do
+      cast_msg = {:tell, "@target> message"}
+      updated_state = %{state | alive_fn: alive_fn}
+
       {:noreply, returned_state} =
-        El.Session.handle_cast({:tell, "@target> message"}, %{state | alive_fn: alive_fn})
+        El.Session.handle_cast(cast_msg, updated_state)
 
       assert returned_state.messages == []
     end
@@ -180,7 +224,10 @@ defmodule El.Session.Spec do
       pending_state = %{state | messages: [{"tell", "msg", "", %{ref: ref}}]}
 
       {:noreply, returned_state} =
-        El.Session.handle_cast({:store_tell, ref, "msg", "response"}, pending_state)
+        El.Session.handle_cast(
+          {:store_tell, ref, "msg", "response"},
+          pending_state
+        )
 
       assert [{"tell", "msg", "response", %{}}] = returned_state.messages
     end
@@ -197,11 +244,15 @@ defmodule El.Session.Spec do
           ]
       }
 
-      {:noreply, returned_state} =
-        El.Session.handle_cast({:store_tell, ref1, "msg", "done first"}, pending_state)
+      cast_msg = {:store_tell, ref1, "msg", "done first"}
 
-      assert [{"tell", "msg", "done first", %{}}, {"tell", "msg", "", %{ref: ^ref2}}] =
-               returned_state.messages
+      {:noreply, returned_state} =
+        El.Session.handle_cast(cast_msg, pending_state)
+
+      assert [
+               {"tell", "msg", "done first", %{}},
+               {"tell", "msg", "", %{ref: ^ref2}}
+             ] = returned_state.messages
     end
 
     test "appends when no pending entry exists", %{state: state} do
@@ -218,7 +269,10 @@ defmodule El.Session.Spec do
       pending_state = %{state | messages: [{"tell", "msg", "", %{ref: ref}}]}
 
       {:noreply, returned_state} =
-        El.Session.handle_cast({:store_tell, ref, "msg", "response"}, pending_state)
+        El.Session.handle_cast(
+          {:store_tell, ref, "msg", "response"},
+          pending_state
+        )
 
       assert [{"tell", "msg", "response", %{}}] = returned_state.messages
     end
@@ -235,7 +289,10 @@ defmodule El.Session.Spec do
 
     test "appends relay message to log", %{state: state} do
       {:noreply, returned_state} =
-        El.Session.handle_cast({:cast_store_relay, "message", "response"}, state)
+        El.Session.handle_cast(
+          {:cast_store_relay, "message", "response"},
+          state
+        )
 
       assert length(returned_state.messages) == 1
     end
@@ -244,7 +301,8 @@ defmodule El.Session.Spec do
       assert type == "relay"
     end
 
-    test "stores from metadata with session name", %{message_tuple: {_, _, _, metadata}} do
+    test "stores from metadata with session name",
+         %{message_tuple: {_, _, _, metadata}} do
       assert metadata == %{from: :test_session}
     end
   end
@@ -257,7 +315,10 @@ defmodule El.Session.Spec do
       end
 
       {:noreply, returned_state} =
-        El.Session.handle_cast({:tell_ask, :target, "message"}, %{state | alive_fn: alive_fn})
+        El.Session.handle_cast(
+          {:tell_ask, :target, "message"},
+          %{state | alive_fn: alive_fn}
+        )
 
       assert length(returned_state.messages) == 1
     end
@@ -266,9 +327,10 @@ defmodule El.Session.Spec do
   describe "handle_call/2 :ask" do
     test "returns noreply and spawns task", %{state: state} do
       from = {self(), make_ref()}
+      updated_state = %{state | task_module: MockTaskModule}
 
       assert {:noreply, _state} =
-               El.Session.handle_call({:ask, "test"}, from, %{state | task_module: MockTaskModule})
+               El.Session.handle_call({:ask, "test"}, from, updated_state)
     end
 
     test "filters out self-routes", %{state: state} do
@@ -283,29 +345,39 @@ defmodule El.Session.Spec do
 
     test "stores pending entry immediately", %{state: state} do
       from = {self(), make_ref()}
+      updated_state = %{state | task_module: MockTaskModule}
 
       {:noreply, returned_state} =
-        El.Session.handle_call({:ask, "test question"}, from, %{
-          state
-          | task_module: MockTaskModule
-        })
+        El.Session.handle_call({:ask, "test question"}, from, updated_state)
 
-      assert [{"ask", "test question", "", %{ref: ref}}] = returned_state.messages
+      assert [{"ask", "test question", "", %{ref: ref}}] =
+               returned_state.messages
+
       assert is_reference(ref)
     end
 
-    test "does not store pending entry when ask has routes", %{state: state} do
+    test "does not store pending entry when ask has routes", %{
+      state: state
+    } do
       from = {self(), make_ref()}
 
+      alive_fn = fn
+        :target -> true
+        _ -> false
+      end
+
+      updated_state = %{
+        state
+        | task_module: MockTaskModule,
+          alive_fn: alive_fn
+      }
+
       {:noreply, returned_state} =
-        El.Session.handle_call({:ask, "@target> routed question"}, from, %{
-          state
-          | task_module: MockTaskModule,
-            alive_fn: fn
-              :target -> true
-              _ -> false
-            end
-        })
+        El.Session.handle_call(
+          {:ask, "@target> routed question"},
+          from,
+          updated_state
+        )
 
       assert returned_state.messages == []
     end
@@ -315,9 +387,10 @@ defmodule El.Session.Spec do
     test "appends when no pending entry exists", %{state: state} do
       from = {self(), make_ref()}
       ref = make_ref()
+      cast_msg = {:complete_ask, from, "test", "response", ref}
 
       {:noreply, returned_state} =
-        El.Session.handle_cast({:complete_ask, from, "test", "response", ref}, state)
+        El.Session.handle_cast(cast_msg, state)
 
       assert [{"ask", "test", "response", %{}}] = returned_state.messages
     end
@@ -327,7 +400,10 @@ defmodule El.Session.Spec do
       from = {self(), caller_ref}
       cast_ref = make_ref()
 
-      El.Session.handle_cast({:complete_ask, from, "test", "the answer", cast_ref}, state)
+      El.Session.handle_cast(
+        {:complete_ask, from, "test", "the answer", cast_ref},
+        state
+      )
 
       assert_receive {^caller_ref, "the answer"}
     end
@@ -337,7 +413,10 @@ defmodule El.Session.Spec do
       ref = make_ref()
 
       {:noreply, returned_state} =
-        El.Session.handle_cast({:complete_ask, from, "my question", "42", ref}, state)
+        El.Session.handle_cast(
+          {:complete_ask, from, "my question", "42", ref},
+          state
+        )
 
       [{_, message, response, _}] = returned_state.messages
       assert message == "my question"
@@ -350,12 +429,16 @@ defmodule El.Session.Spec do
       pending_state = %{state | messages: [{"ask", "hello", "", %{ref: ref}}]}
 
       {:noreply, returned_state} =
-        El.Session.handle_cast({:complete_ask, from, "hello", "response", ref}, pending_state)
+        El.Session.handle_cast(
+          {:complete_ask, from, "hello", "response", ref},
+          pending_state
+        )
 
       assert [{"ask", "hello", "response", %{}}] = returned_state.messages
     end
 
-    test "replaces correct entry when duplicates exist", %{state: state} do
+    test "replaces correct entry when duplicates exist",
+         %{state: state} do
       from = {self(), make_ref()}
       ref1 = make_ref()
       ref2 = make_ref()
@@ -368,23 +451,28 @@ defmodule El.Session.Spec do
           ]
       }
 
-      {:noreply, returned_state} =
-        El.Session.handle_cast(
-          {:complete_ask, from, "question", "answer first", ref1},
-          pending_state
-        )
+      cast_msg = {:complete_ask, from, "question", "answer first", ref1}
 
-      assert [{"ask", "question", "answer first", %{}}, {"ask", "question", "", %{ref: ^ref2}}] =
-               returned_state.messages
+      {:noreply, returned_state} =
+        El.Session.handle_cast(cast_msg, pending_state)
+
+      assert [
+               {"ask", "question", "answer first", %{}},
+               {"ask", "question", "", %{ref: ^ref2}}
+             ] = returned_state.messages
     end
 
-    test "deletes pending entry from DETS on completion", %{state: state} do
+    test "deletes pending entry from DETS on completion",
+         %{state: state} do
       from = {self(), make_ref()}
       ref = make_ref()
-      pending_state = %{state | messages: [{"ask", "question", "", %{ref: ref}}]}
+      msg = [{"ask", "question", "", %{ref: ref}}]
+      pending_state = %{state | messages: msg}
+
+      cast_msg = {:complete_ask, from, "question", "answer", ref}
 
       {:noreply, returned_state} =
-        El.Session.handle_cast({:complete_ask, from, "question", "answer", ref}, pending_state)
+        El.Session.handle_cast(cast_msg, pending_state)
 
       assert [{"ask", "question", "answer", %{}}] = returned_state.messages
     end
@@ -401,13 +489,15 @@ defmodule El.Session.Spec do
     end
 
     test "returns state unchanged", %{state: state} do
-      {:reply, _messages, returned_state} = El.Session.handle_call(:log, :from, state)
+      {:reply, _messages, returned_state} =
+        El.Session.handle_call(:log, :from, state)
 
       assert returned_state == state
     end
 
     test "returns empty list when no messages", %{state: state} do
-      {:reply, messages, _returned_state} = El.Session.handle_call(:log, :from, state)
+      {:reply, messages, _returned_state} =
+        El.Session.handle_call(:log, :from, state)
 
       assert messages == []
     end
@@ -415,7 +505,11 @@ defmodule El.Session.Spec do
 
   describe "handle_call/2 {:log, count}" do
     test "{:log, :all} returns all messages", %{state: state} do
-      messages = [{"type1", "msg1", "resp1", %{}}, {"type2", "msg2", "resp2", %{}}]
+      messages = [
+        {"type1", "msg1", "resp1", %{}},
+        {"type2", "msg2", "resp2", %{}}
+      ]
+
       state_with_messages = %{state | messages: messages}
 
       {:reply, returned_messages, _returned_state} =
@@ -425,13 +519,18 @@ defmodule El.Session.Spec do
     end
 
     test "{:log, 1} returns last 1 message", %{state: state} do
-      messages = [{"type1", "msg1", "resp1", %{}}, {"type2", "msg2", "resp2", %{}}]
+      messages = [
+        {"type1", "msg1", "resp1", %{}},
+        {"type2", "msg2", "resp2", %{}}
+      ]
+
       state_with_messages = %{state | messages: messages}
 
       {:reply, returned_messages, _returned_state} =
         El.Session.handle_call({:log, 1}, :from, state_with_messages)
 
-      assert returned_messages == [{"type2", "msg2", "resp2", %{}}]
+      expected = [{"type2", "msg2", "resp2", %{}}]
+      assert returned_messages == expected
     end
 
     test "{:log, 3} returns last 3 messages", %{state: state} do
@@ -454,8 +553,14 @@ defmodule El.Session.Spec do
              ]
     end
 
-    test "{:log, N} where N > length returns all messages", %{state: state} do
-      messages = [{"type1", "msg1", "resp1", %{}}, {"type2", "msg2", "resp2", %{}}]
+    test "{:log, N} where N > length returns all messages", %{
+      state: state
+    } do
+      messages = [
+        {"type1", "msg1", "resp1", %{}},
+        {"type2", "msg2", "resp2", %{}}
+      ]
+
       state_with_messages = %{state | messages: messages}
 
       {:reply, returned_messages, _returned_state} =
@@ -464,7 +569,8 @@ defmodule El.Session.Spec do
       assert returned_messages == messages
     end
 
-    test "{:log, count} with empty messages returns empty list", %{state: state} do
+    test "{:log, count} with empty messages returns empty list",
+         %{state: state} do
       {:reply, returned_messages, _returned_state} =
         El.Session.handle_call({:log, 3}, :from, state)
 
@@ -491,11 +597,16 @@ defmodule El.Session.Spec do
 
       alive_fn_down = fn _target -> false end
 
-      {:ok, state: state, alive_fn_target: alive_fn_target, alive_fn_down: alive_fn_down}
+      {:ok,
+       state: state,
+       alive_fn_target: alive_fn_target,
+       alive_fn_down: alive_fn_down}
     end
 
-    test "returns route message when target running", %{state: state, alive_fn_target: alive_fn} do
-      Mox.stub(El.MockSession, :tell, fn _, _ -> :ok end)
+    test "returns route message when target running",
+         %{state: state, alive_fn_target: alive_fn} do
+      Mox.stub(El.MockSessionApi, :tell, fn _, _ -> :ok end)
+
       {:reply, response, _returned_state} =
         El.Session.handle_call({:ask_tell, :target, "message"}, :from, %{
           state
@@ -505,8 +616,10 @@ defmodule El.Session.Spec do
       assert response == "-> target"
     end
 
-    test "stores message when target running", %{state: state, alive_fn_target: alive_fn} do
-      Mox.stub(El.MockSession, :tell, fn _, _ -> :ok end)
+    test "stores message when target running",
+         %{state: state, alive_fn_target: alive_fn} do
+      Mox.stub(El.MockSessionApi, :tell, fn _, _ -> :ok end)
+
       {:reply, _response, returned_state} =
         El.Session.handle_call({:ask_tell, :target, "message"}, :from, %{
           state
@@ -516,7 +629,8 @@ defmodule El.Session.Spec do
       assert length(returned_state.messages) == 1
     end
 
-    test "returns not running message when target down", %{state: state, alive_fn_down: alive_fn} do
+    test "returns not running message when target down",
+         %{state: state, alive_fn_down: alive_fn} do
       {:reply, response, _returned_state} =
         El.Session.handle_call({:ask_tell, :missing, "message"}, :from, %{
           state
@@ -526,8 +640,10 @@ defmodule El.Session.Spec do
       assert response == "missing is not running"
     end
 
-    test "stores relay message", %{state: state, alive_fn_target: alive_fn} do
-      Mox.stub(El.MockSession, :tell, fn _, _ -> :ok end)
+    test "stores relay message",
+         %{state: state, alive_fn_target: alive_fn} do
+      Mox.stub(El.MockSessionApi, :tell, fn _, _ -> :ok end)
+
       {:reply, _response, returned_state} =
         El.Session.handle_call({:ask_tell, :target, "message"}, :from, %{
           state
@@ -539,7 +655,8 @@ defmodule El.Session.Spec do
   end
 
   describe "handle_cast/2 with dead claude_pid" do
-    test "respawns claude with session_id when pid is nil", %{state: state} do
+    test "respawns claude with session_id when pid is nil",
+         %{state: state} do
       dead_state = %{
         state
         | claude_pid: nil,
@@ -548,7 +665,8 @@ defmodule El.Session.Spec do
           opts: [model: "test"]
       }
 
-      {:noreply, respawned} = El.Session.handle_cast({:tell, "test"}, dead_state)
+      {:noreply, respawned} =
+        El.Session.handle_cast({:tell, "test"}, dead_state)
 
       assert respawned.claude_pid == "captured-session-id"
     end
@@ -556,15 +674,20 @@ defmodule El.Session.Spec do
 
   describe "handle_info/2" do
     test "clears claude_pid on EXIT from claude process", %{state: state} do
+      updated_state = %{state | claude_pid: :mock_pid}
+
       {:noreply, returned_state} =
-        El.Session.handle_info({:EXIT, :mock_pid, :killed}, %{state | claude_pid: :mock_pid})
+        El.Session.handle_info({:EXIT, :mock_pid, :killed}, updated_state)
 
       assert returned_state.claude_pid == nil
     end
 
-    test "clears pending_calls on EXIT from claude process", %{state: state} do
+    test "clears pending_calls on EXIT from claude process",
+         %{state: state} do
+      updated_state = %{state | claude_pid: :mock_pid}
+
       {:noreply, returned_state} =
-        El.Session.handle_info({:EXIT, :mock_pid, :killed}, %{state | claude_pid: :mock_pid})
+        El.Session.handle_info({:EXIT, :mock_pid, :killed}, updated_state)
 
       assert returned_state.pending_calls == []
     end
@@ -572,7 +695,12 @@ defmodule El.Session.Spec do
     test "replies to pending calls on EXIT", %{state: state} do
       ref = make_ref()
       from = {self(), ref}
-      state_with_pending = %{state | pending_calls: [from], claude_pid: :mock_pid}
+
+      state_with_pending = %{
+        state
+        | pending_calls: [from],
+          claude_pid: :mock_pid
+      }
 
       El.Session.handle_info({:EXIT, :mock_pid, :crash}, state_with_pending)
 
@@ -587,21 +715,31 @@ defmodule El.Session.Spec do
     end
 
     test "preserves state on unknown message", %{state: state} do
-      {:noreply, returned_state} = El.Session.handle_info(:unknown_message, state)
+      {:noreply, returned_state} =
+        El.Session.handle_info(:unknown_message, state)
 
       assert returned_state == state
     end
 
-    test "adds crash entry to state.messages on abnormal EXIT", %{state: state} do
-      {:noreply, returned_state} =
-        El.Session.handle_info({:EXIT, :mock_pid, :killed}, %{state | claude_pid: :mock_pid})
+    test "adds crash entry to state.messages on abnormal EXIT", %{
+      state: state
+    } do
+      updated_state = %{state | claude_pid: :mock_pid}
 
-      assert [{"crash", "session died", ":killed", %{}}] = returned_state.messages
+      {:noreply, returned_state} =
+        El.Session.handle_info({:EXIT, :mock_pid, :killed}, updated_state)
+
+      assert [{"crash", "session died", ":killed", %{}}] =
+               returned_state.messages
     end
 
-    test "does not store crash entry on normal EXIT reason", %{state: state} do
+    test "does not store crash entry on normal EXIT reason", %{
+      state: state
+    } do
+      updated_state = %{state | claude_pid: :mock_pid}
+
       {:noreply, returned_state} =
-        El.Session.handle_info({:EXIT, :mock_pid, :normal}, %{state | claude_pid: :mock_pid})
+        El.Session.handle_info({:EXIT, :mock_pid, :normal}, updated_state)
 
       assert returned_state.messages == []
     end
@@ -609,9 +747,16 @@ defmodule El.Session.Spec do
 
   describe "terminate/2" do
     test "stores crash entry on abnormal exit", %{state: state} do
-      El.Session.terminate(:kill, %{state | store_module: MockVerifyingStore})
+      updated_state = %{state | store_module: MockVerifyingStore}
+      El.Session.terminate(:kill, updated_state)
 
-      assert_received {:store_message, :test_session, {"crash", "Session crashed", ":kill", %{}}}
+      expected_msg = {
+        :store_message,
+        :test_session,
+        {"crash", "Session crashed", ":kill", %{}}
+      }
+
+      assert_received ^expected_msg
     end
 
     test "does not store entry on normal exit", %{state: state} do
@@ -624,6 +769,24 @@ defmodule El.Session.Spec do
 
     test "does not store entry on shutdown with reason", %{state: state} do
       El.Session.terminate({:shutdown, :reason}, state)
+    end
+  end
+
+  describe "handle_call/2 :agent" do
+    test "returns nil when no agent in opts", %{state: state} do
+      {:reply, agent, _returned_state} =
+        El.Session.handle_call(:agent, :from, state)
+
+      assert agent == nil
+    end
+
+    test "returns agent when set in opts", %{state: state} do
+      state_with_agent = %{state | opts: [agent: "kent"]}
+
+      {:reply, agent, _returned_state} =
+        El.Session.handle_call(:agent, :from, state_with_agent)
+
+      assert agent == "kent"
     end
   end
 
@@ -675,7 +838,8 @@ defmodule El.Session.Spec do
       assert returned_state.messages == []
     end
 
-    test "deletes DETS messages via El.Application.delete_session_messages", %{state: state} do
+    test "deletes DETS messages via El.Application.delete_session_messages",
+         %{state: state} do
       El.Session.handle_call(:clear, :from, %{
         state
         | claude_module: MockSessionModule,
@@ -705,7 +869,10 @@ defmodule MockSessionStore do
 end
 
 defmodule MockLoadingStore do
-  def load_messages(:test_session), do: [{"tell", "old_message", "old_response", %{}}]
+  def load_messages(:test_session) do
+    [{"tell", "old_message", "old_response", %{}}]
+  end
+
   def store_message(_, _), do: :ok
   def delete_message(_, _), do: :ok
   def delete_session_messages(_), do: :ok

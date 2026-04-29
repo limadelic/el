@@ -1,9 +1,9 @@
 defmodule El do
-  defp registry, do: Application.get_env(:el, :registry, Registry)
-  defp supervisor, do: Application.get_env(:el, :supervisor, DynamicSupervisor)
-  defp session, do: Application.get_env(:el, :session, El.Session)
-  defp app, do: Application.get_env(:el, :app, El.Application)
-  defp monitor, do: Application.get_env(:el, :monitor, El.ProcessMonitor)
+  def registry, do: Application.get_env(:el, :registry, Registry)
+  def supervisor, do: Application.get_env(:el, :supervisor, DynamicSupervisor)
+  def session, do: Application.get_env(:el, :session, El.Session)
+  def app, do: Application.get_env(:el, :app, El.Application)
+  def monitor, do: Application.get_env(:el, :monitor, El.ProcessMonitor)
 
   def start(name, opts \\ []) when is_atom(name) do
     start_if_needed(name, opts, registry().lookup(El.Registry, name))
@@ -14,44 +14,54 @@ defmodule El do
   end
 
   defp start_if_needed(name, opts, []) do
-    filtered_opts = Keyword.drop(opts, [:registry, :supervisor, :monitor, :app])
-    supervisor().start_child(El.SessionSupervisor, {El.Session, {name, filtered_opts}})
+    filtered_opts = filter_session_opts(opts)
+    start_session_child(name, filtered_opts)
     name
   end
 
+  defp start_session_child(name, opts) do
+    supervisor().start_child(El.SessionSupervisor, session_spec(name, opts))
+  end
+
+  defp session_spec(name, opts) do
+    %{
+      id: name,
+      start: {El.Session.Api, :start_link, [{name, opts}]},
+      restart: :temporary
+    }
+  end
+
+  defp filter_session_opts(opts) do
+    Keyword.drop(opts, [:registry, :supervisor, :monitor, :app])
+  end
+
   def tell(name, message) do
-    session().tell(name, message)
+    session_api().tell(name, message)
   end
 
   def ask(name, message) do
-    session().ask(name, message)
+    session_api().ask(name, message)
   end
 
   def log(name) do
-    session().log(name)
+    session_api().log(name)
   end
 
   def log(name, count) do
-    session().log(name, count)
+    session_api().log(name, count)
   end
 
   def clear(name) do
-    session().clear(name)
+    session_api().clear(name)
   end
 
-  def tell_ask(name, target, message) do
-    session().tell_ask(name, target, message)
-  end
-
-  def ask_tell(name, target, message) do
-    session().ask_tell(name, target, message)
-  end
+  def tell_ask(name, target, message), do: session_api().tell_ask(name, target, message)
+  def ask_tell(name, target, message), do: session_api().ask_tell(name, target, message)
+  def agent(name), do: session_api().agent(name)
+  defp session_api, do: Application.get_env(:el, :session_api, El.Session.Api)
 
   def exit(name) do
-    case name do
-      :all -> ls() |> Enum.each(&El.exit/1)
-      _ -> do_exit(name)
-    end
+    El.Lifecycle.exit(name)
   end
 
   def exit_pattern(pattern) do
@@ -64,39 +74,25 @@ defmodule El do
     ls() |> Enum.filter(&match_pattern?(&1, pattern)) |> Enum.each(&El.clear/1)
   end
 
-  def log_pattern(pattern, count) do
-    ls()
-    |> Enum.filter(&match_pattern?(&1, pattern))
-    |> Enum.flat_map(fn name ->
-      case session().log(name, count) do
-        :not_found -> []
-        entries -> entries
-      end
-    end)
+  def log_pattern(pattern, count),
+    do:
+      ls() |> Enum.filter(&match_pattern?(&1, pattern)) |> Enum.flat_map(&log_entries(&1, count))
+
+  defp log_entries(name, count) do
+    name |> session_api().log(count) |> filter_found()
   end
+
+  defp filter_found(:not_found), do: []
+  defp filter_found(entries), do: entries
 
   defp match_pattern?(name, pattern) do
     name_str = Atom.to_string(name)
-    regex_pattern = pattern |> String.replace("*", ".*") |> String.replace("?", ".")
+    regex_pattern = pattern_to_regex(pattern)
     Regex.match?(~r/^#{regex_pattern}$/, name_str)
   end
 
-  defp do_exit(name) do
-    exit_if_found(name, registry().lookup(El.Registry, name))
-  rescue
-    _ -> :ok
-  end
-
-  defp exit_if_found(name, [{pid, _}]) do
-    ref = Process.monitor(pid)
-    supervisor().terminate_child(El.SessionSupervisor, pid)
-    monitor().wait_for_down(ref, name)
-  end
-
-  defp exit_if_found(name, []) do
-    app().delete_session_messages(name)
-    :not_found
-  end
+  defp pattern_to_regex(pattern),
+    do: pattern |> String.replace("*", ".*") |> String.replace("?", ".")
 
   def ls do
     registry().select(El.Registry, [{{:"$1", :_, :_}, [], [:"$1"]}])

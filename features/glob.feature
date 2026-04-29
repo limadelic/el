@@ -1,35 +1,35 @@
-@el_dude @el_duder
+@el_donny @el_donner
 Feature: Glob
 
   Scenario: All
     * > el ls:
-      | dude  |
-      | duder |
+      | donny  |
+      | donner |
     * > el exit
     * > el ls:
-      | (dude)  |
-      | (duder) |
+      | (donny)  |
+      | (donner) |
 
   @el_kenny
   Scenario: Pattern
-    * > el dud* exit
+    * > el donn* exit
     * > el ls:
-      | kenny   |
-      | (dude)  |
-      | (duder) |
+      | kenny    |
+      | (donny)  |
+      | (donner) |
 
   Scenario: Clear
-    * > el dude 1 + 1
-    * > el duder 2 + 2
-    * > el dud* clear
-    * > el dude log:
+    * > el donny 1 + 1
+    * > el donner 2 + 2
+    * > el donn* clear
+    * > el donny log:
       | (1 + 1) |
-    * > el duder log:
+    * > el donner log:
       | (2 + 2) |
 
   Scenario: Log
-    * > el dude 1 + 1
-    * > el duder 2 + 2
-    * > el dud* log:
+    * > el donny 1 + 1
+    * > el donner 2 + 2
+    * > el donn* log:
       | 1 + 1 |
       | 2 + 2 |

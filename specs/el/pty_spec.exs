@@ -65,7 +65,14 @@ defmodule El.PTY.Spec do
 
   describe "handle_cast/2" do
     setup do
-      {:ok, state: %{pty: :mock_port, tty_out: :mock_file, file: MockFile, port: MockPort}}
+      state = %{
+        pty: :mock_port,
+        tty_out: :mock_file,
+        file: MockFile,
+        port: MockPort
+      }
+
+      {:ok, state: state}
     end
 
     test "injects message to port via command", %{state: state} do
@@ -86,7 +93,14 @@ defmodule El.PTY.Spec do
 
   describe "handle_info/2" do
     setup do
-      {:ok, state: %{pty: :mock_port, tty_out: :mock_file, file: MockFile, port: MockPort}}
+      state = %{
+        pty: :mock_port,
+        tty_out: :mock_file,
+        file: MockFile,
+        port: MockPort
+      }
+
+      {:ok, state: state}
     end
 
     test "writes port data to tty_out", %{state: state} do
@@ -101,17 +115,20 @@ defmodule El.PTY.Spec do
     end
 
     test "returns noreply on data message", %{state: state} do
-      {:noreply, returned} = El.PTY.handle_info({:mock_port, {:data, "x"}}, state)
+      msg = {:mock_port, {:data, "x"}}
+      {:noreply, returned} = El.PTY.handle_info(msg, state)
       assert returned == state
     end
 
     test "stops on exit_status message", %{state: state} do
-      {:stop, :normal, returned} = El.PTY.handle_info({:mock_port, {:exit_status, 0}}, state)
+      msg = {:mock_port, {:exit_status, 0}}
+      {:stop, :normal, returned} = El.PTY.handle_info(msg, state)
       assert returned == state
     end
 
     test "handles stdin message by sending to port", %{state: state} do
-      El.PTY.handle_info({:stdin, "user input"}, state)
+      msg = {:stdin, "user input"}
+      El.PTY.handle_info(msg, state)
       assert_received {:port_command, :mock_port, "user input"}
     end
   end

@@ -4,7 +4,7 @@ defmodule El.MixProject do
   def project do
     [
       app: :el,
-      version: "0.1.88",
+      version: "0.1.101",
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
       test_paths: ["specs"],
@@ -13,6 +13,7 @@ defmodule El.MixProject do
         &String.ends_with?(&1, "_test.exs"),
         &String.ends_with?(&1, "_spec.exs")
       ],
+      test_coverage: [tool: ExCoveralls, summary: [threshold: 0]],
       deps: deps(),
       releases: [
         el: [
@@ -20,7 +21,6 @@ defmodule El.MixProject do
           overlays: ["rel/overlays"]
         ]
       ],
-      escript: [main_module: El.CLI],
       package: package()
     ]
   end
@@ -52,6 +52,7 @@ defmodule El.MixProject do
     [
       {:claude_code, "~> 0.36"},
       {:mox, "~> 1.0", only: :test},
+      {:excoveralls, "~> 0.18", only: :test},
       {:credo, "~> 1.7", runtime: false}
     ]
   end

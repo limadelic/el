@@ -16,6 +16,7 @@ defmodule El.Behaviours.Session do
   @callback clear(term()) :: term()
   @callback tell_ask(term(), term(), term()) :: term()
   @callback ask_tell(term(), term(), term()) :: term()
+  @callback agent(term()) :: term()
 end
 
 defmodule El.Behaviours.App do
@@ -39,4 +40,9 @@ defmodule El.Behaviours.El do
   @callback ls() :: term()
   @callback tell_ask(term(), term(), term()) :: term()
   @callback ask_tell(term(), term(), term()) :: term()
+  @callback agent(term()) :: term()
+end
+
+defmodule El.Behaviours.FileSystem do
+  @callback exists?(String.t()) :: boolean()
 end

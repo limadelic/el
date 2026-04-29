@@ -8,8 +8,23 @@ done
 SCRIPT_DIR="$(cd "$(dirname "$SOURCE")" && pwd)"
 RELEASE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+case "$RELEASE_ROOT" in
+  */_build/dev/*) export DEV=1 ;;
+esac
+
 case "$1" in
-  start|daemon|stop|restart|pid|remote)
+  restart)
+    if [ -n "$DEV" ]; then
+      PROJECT_ROOT="$(cd "$RELEASE_ROOT/../../../.." && pwd)"
+      if [ ! -f "$PROJECT_ROOT/mix.exs" ]; then
+        echo "Cannot find project root" >&2
+        exit 1
+      fi
+      (cd "$PROJECT_ROOT" && mix release --overwrite >/dev/null 2>&1) || exit 1
+    fi
+    exec "$RELEASE_ROOT/bin/el" restart
+    ;;
+  start|daemon|stop|pid|remote)
     exec "$RELEASE_ROOT/bin/el" "$@"
     ;;
   --version|-v|"")
@@ -37,7 +52,7 @@ case "$1" in
 
     "$RELEASE_ROOT/bin/el" rpc "El.CLI.dispatch([$args])" 2>/dev/null
     if [ $? -ne 0 ]; then
-      "$RELEASE_ROOT/bin/el" daemon
+      "$RELEASE_ROOT/bin/el" daemon >/dev/null 2>&1
       n=0
       while [ $n -lt 10 ]; do
         "$RELEASE_ROOT/bin/el" rpc "El.CLI.dispatch([$args])" 2>/dev/null && exit 0

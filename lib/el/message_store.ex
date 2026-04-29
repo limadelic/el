@@ -21,4 +21,11 @@ defmodule El.MessageStore do
     backend = Application.get_env(:el, :dets_backend, El.DetsBackend)
     backend.lookup(:message_store, name) |> Enum.map(fn {_key, entry} -> entry end)
   end
+
+  def session_names do
+    backend = Application.get_env(:el, :dets_backend, El.DetsBackend)
+    backend.foldl(:message_store, MapSet.new(), &add_session_name/2) |> MapSet.to_list()
+  end
+
+  defp add_session_name({name, _}, acc), do: MapSet.put(acc, name)
 end

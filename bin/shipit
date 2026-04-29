@@ -1,13 +1,16 @@
 #!/bin/bash
 set -e
+set -o pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
 COMMIT_MSG="${1:?Usage: bin/shipit \"commit message\"}"
 
+{
+
 echo "Step 1: Running tests..."
-mix test
+mix test --cover
 echo "✓ Tests passed"
 
 echo ""
@@ -16,18 +19,28 @@ mix format --check-formatted
 echo "✓ Formatting check passed"
 
 echo ""
-echo "Step 3: Committing changes..."
+echo "Step 3: Running credo..."
+mix credo --strict
+echo "✓ Credo passed"
+
+echo ""
+echo "Step 4: Committing changes..."
 git add -A
 git diff --cached --quiet || git commit -m "$COMMIT_MSG"
 echo "✓ Changes committed"
 
 echo ""
-echo "Step 4: Pushing current branch..."
+echo "Step 5: Pushing current branch..."
 git push
 echo "✓ Branch pushed"
 
 echo ""
-echo "Step 5: Bumping patch version..."
+echo "Step 6: Running cucumber dev..."
+bundle exec cucumber -p dev
+echo "✓ Cucumber dev passed"
+
+echo ""
+echo "Step 7: Bumping patch version..."
 CURRENT_VERSION=$(grep 'version:' mix.exs | sed 's/.*version: "\(.*\)".*/\1/')
 MAJOR_MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f1-2)
 PATCH=$(echo "$CURRENT_VERSION" | cut -d. -f3)
@@ -41,30 +54,30 @@ git push
 echo "✓ Version bumped to $NEW_VERSION"
 
 echo ""
-echo "Step 6: Building release..."
+echo "Step 8: Building release..."
 MIX_ENV=prod mix release el --overwrite
 echo "✓ Release built"
 
 echo ""
-echo "Step 7: Creating tarball..."
+echo "Step 9: Creating tarball..."
 TARBALL_NAME="el-$NEW_VERSION.tar.gz"
 tar -czf "_build/prod/$TARBALL_NAME" -C _build/prod/rel el
 echo "✓ Tarball created: _build/prod/$TARBALL_NAME"
 
 echo ""
-echo "Step 8: Creating GitHub release..."
+echo "Step 10: Creating GitHub release..."
 GITHUB_TOKEN=$GITHUB_LIMADELIC gh release create "v$NEW_VERSION" "_build/prod/$TARBALL_NAME" \
   --title "v$NEW_VERSION" \
   --notes "Release $NEW_VERSION"
 echo "✓ GitHub release created"
 
 echo ""
-echo "Step 9: Publishing to hex.pm..."
+echo "Step 11: Publishing to hex.pm..."
 mix hex.publish package --yes
 echo "✓ Published to hex.pm"
 
 echo ""
-echo "Step 10: Updating homebrew tap..."
+echo "Step 12: Updating homebrew tap..."
 SHA256=$(shasum -a 256 "_build/prod/$TARBALL_NAME" | awk '{print $1}')
 
 TEMPLATE_PATH="rel/formula.rb.template"
@@ -86,9 +99,26 @@ cd "$PROJECT_ROOT"
 echo "✓ Homebrew tap updated"
 
 echo ""
-echo "Step 11: Installing new version..."
+echo "Step 13: Installing new version..."
 brew upgrade limadelic/tap/el 2>/dev/null || brew install limadelic/tap/el
 echo "✓ New version installed"
 
 echo ""
-echo "🚀 Release $NEW_VERSION complete!"
+echo "Step 14: Verifying installed version..."
+INSTALLED_VERSION=$(el -v 2>/dev/null | tr -d 'v')
+if [ "$INSTALLED_VERSION" != "$NEW_VERSION" ]; then
+  echo "✗ FATAL: 'el -v' reports v${INSTALLED_VERSION} but expected v${NEW_VERSION}"
+  echo "  $(which el) is not the homebrew binary"
+  exit 1
+fi
+echo "✓ Verified: el -v = v$NEW_VERSION at $(which el)"
+
+echo ""
+echo "Step 15: Running cucumber prod..."
+bundle exec cucumber
+echo "✓ Cucumber prod passed"
+
+echo ""
+echo "Release $NEW_VERSION complete!"
+
+} 2>&1 | tee /tmp/shipit.log

@@ -117,12 +117,32 @@ defmodule El.ClaudeCode.Spec do
 
       El.ClaudeCode.start_link(session_module: ResumeOmittedTest)
     end
+
+    test "includes setting_sources in session options" do
+      defmodule SettingSourcesTest do
+        def start_link(opts) do
+          assert opts[:setting_sources] == ["user", "project", "local"]
+          {:ok, self()}
+        end
+      end
+
+      El.ClaudeCode.start_link(session_module: SettingSourcesTest)
+    end
   end
 
   describe "stream/2" do
+    @tag timeout: 1000
     test "delegates to session module" do
-      result = El.ClaudeCode.stream(:pid, "prompt")
-      assert result != nil
+      defmodule StreamDelegationTest do
+        def stream(pid, prompt) do
+          assert pid == :test_pid
+          assert prompt == "test prompt"
+          {:ok, "streamed"}
+        end
+      end
+
+      result = El.ClaudeCode.stream(:test_pid, "test prompt", session_module: StreamDelegationTest)
+      assert result == {:ok, "streamed"}
     end
   end
 end

@@ -11,6 +11,10 @@ defmodule El.PTY do
 
   def run(name, opts \\ []) do
     {:ok, pid} = start_link(name, "claude --dangerously-skip-permissions", opts)
+    wait_for_process(pid)
+  end
+
+  defp wait_for_process(pid) do
     ref = Process.monitor(pid)
 
     receive do
@@ -20,25 +24,45 @@ defmodule El.PTY do
 
   @impl true
   def init({cmd, opts}) do
-    file_module = Keyword.get(opts, :file, File)
-    port_module = Keyword.get(opts, :port, Port)
+    modules = extract_modules(opts)
+    pty = open_pty(modules.port, cmd)
+    setup_io(modules.file, pty, modules)
+  end
 
-    pty =
-      port_module.open({:spawn, "script -q /dev/null #{cmd}"}, [:binary, :stream, :exit_status])
+  defp extract_modules(opts) do
+    %{
+      file: Keyword.get(opts, :file, File),
+      port: Keyword.get(opts, :port, Port)
+    }
+  end
 
+  defp setup_io(file_module, pty, modules) do
     {:ok, tty_out} = file_module.open(~c"/dev/tty", [:write, :binary, :raw])
-    me = self()
+    spawn_stdin_reader(file_module, self())
+    {:ok, %{pty: pty, tty_out: tty_out, file: modules.file, port: modules.port}}
+  end
 
+  defp open_pty(port_module, cmd) do
+    spawn_cmd = "script -q /dev/null #{cmd}"
+    port_module.open({:spawn, spawn_cmd}, pty_opts())
+  end
+
+  defp pty_opts do
+    [:binary, :stream, :exit_status]
+  end
+
+  defp spawn_stdin_reader(file_module, parent) do
     spawn_link(fn ->
       {:ok, tty_in} = file_module.open(~c"/dev/tty", [:read, :binary, :raw])
-      stdin_loop(tty_in, me, file_module)
+      stdin_loop(tty_in, parent, file_module)
     end)
-
-    {:ok, %{pty: pty, tty_out: tty_out, file: file_module, port: port_module}}
   end
 
   @impl true
-  def handle_info({port, {:data, data}}, %{pty: port, file: file_module} = state) do
+  def handle_info(
+        {port, {:data, data}},
+        %{pty: port, file: file_module} = state
+      ) do
     file_module.write(state.tty_out, data)
     {:noreply, state}
   end
