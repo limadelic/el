@@ -2,24 +2,23 @@
 set -e
 set -o pipefail
 
-cd "$(dirname "${BASH_SOURCE[0]}")"
-
-{
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
 
 echo "--- Test"
-mix test --cover
+mix test --cover || exit 1
 
 echo "--- Format"
-mix format --check-formatted
+mix format --check-formatted || exit 1
 
 echo "--- Credo"
-mix credo --strict
+mix credo --strict || exit 1
 
 echo "--- Restart dev"
-./el restart
+./el restart || exit 1
 
 echo "--- Cucumber dev"
-bundle exec cucumber -p dev
+bundle exec cucumber -p dev || exit 1
 
 echo "--- Bump version"
 CURRENT=$(grep 'version:' mix.exs | sed 's/.*version: "\(.*\)".*/\1/')
@@ -28,22 +27,22 @@ PATCH=$(echo "$CURRENT" | cut -d. -f3)
 VERSION="$MAJOR_MINOR.$((PATCH + 1))"
 sed -i '' "s/version: \"$CURRENT\"/version: \"$VERSION\"/" mix.exs
 git add mix.exs
-git commit -m "v$VERSION"
-git push
+git commit -m "v$VERSION" || exit 1
+git push || exit 1
 
 echo "--- Build release"
-MIX_ENV=prod mix release el --overwrite
+MIX_ENV=prod mix release el --overwrite || exit 1
 
 echo "--- Tarball"
 TARBALL="_build/prod/el-$VERSION.tar.gz"
-tar -czf "$TARBALL" -C _build/prod/rel el
+tar -czf "$TARBALL" -C _build/prod/rel el || exit 1
 
 echo "--- GitHub release"
 GITHUB_TOKEN=$GITHUB_LIMADELIC gh release create "v$VERSION" "$TARBALL" \
-  --title "v$VERSION" --notes "v$VERSION"
+  --title "v$VERSION" --notes "v$VERSION" || exit 1
 
 echo "--- Hex publish"
-mix hex.publish package --yes
+mix hex.publish package --yes || exit 1
 
 echo "--- Homebrew tap"
 SHA256=$(shasum -a 256 "$TARBALL" | awk '{print $1}')
@@ -54,15 +53,15 @@ TAP="$(brew --repository limadelic/tap)"
 echo "$FORMULA" > "$TAP/Formula/el.rb"
 cd "$TAP"
 git add Formula/el.rb
-git commit -m "el $VERSION"
-GITHUB_TOKEN=$GITHUB_LIMADELIC git push
-cd "$(dirname "${BASH_SOURCE[0]}")"
+git commit -m "el $VERSION" || exit 1
+GITHUB_TOKEN=$GITHUB_LIMADELIC git push || exit 1
+cd "$ROOT"
 
 echo "--- Install"
-brew upgrade limadelic/tap/el 2>/dev/null || brew install limadelic/tap/el
+brew upgrade limadelic/tap/el 2>/dev/null || brew install limadelic/tap/el || exit 1
 
 echo "--- Restart prod"
-el restart
+el restart || exit 1
 
 echo "--- Verify"
 INSTALLED=$(el -v 2>/dev/null | tr -d 'v')
@@ -73,9 +72,7 @@ fi
 echo "el v$VERSION at $(which el)"
 
 echo "--- Cucumber prod"
-bundle exec cucumber
+bundle exec cucumber || exit 1
 
 echo ""
 echo "Shipped v$VERSION"
-
-} 2>&1 | tee /tmp/shipit.log

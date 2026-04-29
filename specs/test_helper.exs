@@ -52,9 +52,6 @@ defmodule TestClaudeCode do
   end
 end
 
-ExUnit.after_suite(fn _results ->
-  System.halt(0)
-end)
 
 defmodule ModelCaptureModule do
   def start_link(opts) do
