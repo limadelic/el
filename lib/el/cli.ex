@@ -7,13 +7,6 @@ defmodule El.CLI do
 
   defp el, do: Application.get_env(:el, :el_module, El)
 
-  defp detect_and_merge_agent(name, opts) do
-    opts ++ agent_opt(El.AgentDetector.detect_agent(name))
-  end
-
-  defp agent_opt(nil), do: []
-  defp agent_opt(agent), do: [agent: agent]
-
   def main(["--daemon" | _] = args) do
     Daemon.start_daemon_node()
     dispatch(args)
@@ -54,12 +47,12 @@ defmodule El.CLI do
   end
 
   def execute(:start, [name]) do
-    opts = detect_and_merge_agent(name, Start.start_opts(nil))
+    opts = Start.detect_and_merge_agent(name, Start.start_opts(nil))
     Start.handle_find_daemon_for_start(name, opts, el())
   end
 
   def execute(:start, [name, "-m", model | rest]) do
-    opts = detect_and_merge_agent(name, Start.start_opts(model))
+    opts = Start.detect_and_merge_agent(name, Start.start_opts(model))
     Start.handle_find_daemon_with_rest(name, opts, rest, el())
   end
 

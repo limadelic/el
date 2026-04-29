@@ -8,6 +8,13 @@ defmodule El.CLI.Start do
   def normalize_model(""), do: nil
   def normalize_model(model), do: model
 
+  def detect_and_merge_agent(name, opts) do
+    opts ++ agent_opt(El.AgentDetector.detect_agent(name))
+  end
+
+  defp agent_opt(nil), do: []
+  defp agent_opt(agent), do: [agent: agent]
+
   def handle_find_daemon_for_start(name, opts, el) do
     # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
     name_atom = String.to_atom(name)
