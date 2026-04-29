@@ -7,14 +7,14 @@ Feature: Agent support
       | opus |
     * > el kenny exit
 
-  @el_kent
   Scenario: Implicit agent detection from session name
     * > el kent "who are you and what model are you?":
       | kent |
-      | haiku |
+      | opus |
+    * > el kent exit
 
-  @el_lisa
   Scenario: Lisa agent with sonnet model
     * > el lisa "who are you and what model are you?":
       | lisa |
       | sonnet |
+    * > el lisa exit
