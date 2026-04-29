@@ -13,8 +13,11 @@ defmodule El.CLI.Messaging do
 
   def handle_msg(name_atom, msg, name, el_module) do
     result = el_module.ask(name_atom, msg)
-    Output.handle_result(result, name)
+    Output.handle_result(result, resolve_name(el_module.agent(name_atom), name))
   end
+
+  defp resolve_name(nil, fallback), do: fallback
+  defp resolve_name(agent, _fallback), do: agent
 
   def execute_tell_ask(name, target, words, el_module) do
     # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom

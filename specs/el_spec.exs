@@ -59,6 +59,13 @@ defmodule El.Spec do
     end
   end
 
+  describe "agent/1" do
+    test "delegates to El.Session.Api.agent" do
+      expect(El.MockSessionApi, :agent, fn :kent -> "kent" end)
+      assert El.agent(:kent) == "kent"
+    end
+  end
+
   describe "exit/1" do
     test "returns ok when session found and terminated" do
       expect(El.MockRegistry, :lookup, fn El.Registry, :kent ->

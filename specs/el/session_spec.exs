@@ -772,6 +772,24 @@ defmodule El.Session.Spec do
     end
   end
 
+  describe "handle_call/2 :agent" do
+    test "returns nil when no agent in opts", %{state: state} do
+      {:reply, agent, _returned_state} =
+        El.Session.handle_call(:agent, :from, state)
+
+      assert agent == nil
+    end
+
+    test "returns agent when set in opts", %{state: state} do
+      state_with_agent = %{state | opts: [agent: "kent"]}
+
+      {:reply, agent, _returned_state} =
+        El.Session.handle_call(:agent, :from, state_with_agent)
+
+      assert agent == "kent"
+    end
+  end
+
   describe "handle_call/2 :clear" do
     test "stops old claude process", %{state: state} do
       {:ok, old_pid} = Agent.start_link(fn -> nil end)

@@ -43,4 +43,10 @@ defmodule El.Session.Api do
   def alive?(name) do
     Registry.alive?(name)
   end
+
+  def agent(name) do
+    GenServer.call(Registry.via_tuple(name), :agent, 5_000)
+  catch
+    :exit, _ -> nil
+  end
 end

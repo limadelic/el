@@ -57,6 +57,7 @@ defmodule El do
 
   def tell_ask(name, target, message), do: session_api().tell_ask(name, target, message)
   def ask_tell(name, target, message), do: session_api().ask_tell(name, target, message)
+  def agent(name), do: session_api().agent(name)
   defp session_api, do: Application.get_env(:el, :session_api, El.Session.Api)
 
   def exit(name) do

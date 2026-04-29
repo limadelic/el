@@ -226,6 +226,36 @@ defmodule El.CLI.Spec do
       capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "5"]) end)
     end
 
+    test "execute :msg auto-starts session with agent detection" do
+      stub(El.MockFileSystem, :exists?, fn path ->
+        String.contains?(path, "session.md")
+      end)
+
+      expect(El.MockEl, :start, fn :session, [agent: "session"] -> :ok end)
+      expect(El.MockEl, :ask, fn :session, "hello world" -> "reply" end)
+      expect(El.MockEl, :agent, fn :session -> "session" end)
+
+      output =
+        capture_io(fn -> El.CLI.execute(:msg, ["session", "hello", "world"]) end)
+
+      assert output =~ "session"
+      assert output =~ "reply"
+    end
+
+    test "execute :msg without agent uses session name" do
+      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      expect(El.MockEl, :ask, fn :session, "hello" -> "reply" end)
+      expect(El.MockEl, :agent, fn :session -> nil end)
+
+      output =
+        capture_io(fn -> El.CLI.execute(:msg, ["session", "hello"]) end)
+
+      assert output =~ "session"
+      assert output =~ "reply"
+    end
+
     test "execute :start calls AgentDetector.detect_agent and merges agent into opts" do
       stub(El.MockFileSystem, :exists?, fn path ->
         String.contains?(path, "my_session.md")

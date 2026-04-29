@@ -18,6 +18,14 @@ defmodule El.Session.CallHandler do
     {:reply, response, Store.store_relay_entry(state, entry)}
   end
 
+  def handle(:agent, _from, state) do
+    {:reply, Keyword.get(state.opts, :agent), state}
+  end
+
+  def handle(:info, _from, state) do
+    {:reply, %{messages: length(state.messages)}, state}
+  end
+
   def handle(:clear, _from, state) do
     Claude.stop_claude(state.claude_pid)
     Ask.reset_session(state) |> reply_ok()

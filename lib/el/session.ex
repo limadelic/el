@@ -85,9 +85,10 @@ defmodule El.Session do
   end
 
   @impl true
-  def handle_call(:info, _from, state) do
-    {:reply, %{messages: length(state.messages)}, state}
-  end
+  def handle_call(:agent, from, state), do: CallHandler.handle(:agent, from, state)
+
+  @impl true
+  def handle_call(:info, from, state), do: CallHandler.handle(:info, from, state)
 
   @impl true
   def handle_info(msg, state) do
