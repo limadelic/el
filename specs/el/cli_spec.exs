@@ -98,12 +98,9 @@ defmodule El.CLI.Spec do
   describe "execute/2" do
     setup do
       Application.put_env(:el, :file_system, El.MockFileSystem)
-      old_env = System.get_env("CLAUDE_CODE_SUBAGENT_MODEL")
-      System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
 
       on_exit(fn ->
         Application.delete_env(:el, :file_system)
-        if old_env, do: System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", old_env)
       end)
 
       :ok
@@ -317,66 +314,45 @@ defmodule El.CLI.Spec do
       end)
     end
 
-    test "execute :start uses CLAUDE_CODE_SUBAGENT_MODEL env var when no model or agent" do
+    test "execute :start uses context model when no model or agent" do
       stub(El.MockFileSystem, :exists?, fn _path -> false end)
-      old_env = System.get_env("CLAUDE_CODE_SUBAGENT_MODEL")
-      System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
-      on_exit(fn ->
-        if old_env, do: System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", old_env), else: System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
-      end)
 
       expect(El.MockEl, :start, fn :my_session, [model: "sonnet"] -> :ok end)
 
       capture_io(fn ->
-        El.CLI.execute(:start, ["my_session"])
+        El.CLI.execute(:start, ["my_session"], %{model: "sonnet"})
       end)
     end
 
-    test "execute :start ignores CLAUDE_CODE_SUBAGENT_MODEL env var when model provided" do
+    test "execute :start ignores context model when model provided" do
       stub(El.MockFileSystem, :exists?, fn _path -> false end)
-      old_env = System.get_env("CLAUDE_CODE_SUBAGENT_MODEL")
-      System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
-      on_exit(fn ->
-        if old_env, do: System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", old_env), else: System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
-      end)
 
       expect(El.MockEl, :start, fn :my_session, [model: "opus"] -> :ok end)
 
       capture_io(fn ->
-        El.CLI.execute(:start, ["my_session", "-m", "opus"])
+        El.CLI.execute(:start, ["my_session", "-m", "opus"], %{model: "sonnet"})
       end)
     end
 
-    test "execute :start ignores CLAUDE_CODE_SUBAGENT_MODEL env var when agent detected" do
+    test "execute :start ignores context model when agent detected" do
       stub(El.MockFileSystem, :exists?, fn path ->
         String.contains?(path, "my_session.md")
-      end)
-
-      old_env = System.get_env("CLAUDE_CODE_SUBAGENT_MODEL")
-      System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
-      on_exit(fn ->
-        if old_env, do: System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", old_env), else: System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
       end)
 
       expect(El.MockEl, :start, fn :my_session, [agent: "my_session"] -> :ok end)
 
       capture_io(fn ->
-        El.CLI.execute(:start, ["my_session"])
+        El.CLI.execute(:start, ["my_session"], %{model: "sonnet"})
       end)
     end
 
-    test "execute :start ignores unset CLAUDE_CODE_SUBAGENT_MODEL env var" do
+    test "execute :start ignores nil context model" do
       stub(El.MockFileSystem, :exists?, fn _path -> false end)
-      old_env = System.get_env("CLAUDE_CODE_SUBAGENT_MODEL")
-      System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
-      on_exit(fn ->
-        if old_env, do: System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", old_env)
-      end)
 
       expect(El.MockEl, :start, fn :my_session, [] -> :ok end)
 
       capture_io(fn ->
-        El.CLI.execute(:start, ["my_session"])
+        El.CLI.execute(:start, ["my_session"], %{model: nil})
       end)
     end
   end

@@ -15,13 +15,13 @@ defmodule El.CLI.Handlers do
     Start.start_daemon_node_for(name, model, el)
   end
 
-  def handle_start([name], _context, el) do
-    opts = Start.detect_and_merge_agent(name, Start.start_opts(nil))
+  def handle_start([name], context, el) do
+    opts = Start.detect_and_merge_agent(name, Start.start_opts(nil), context)
     Start.handle_find_daemon_for_start(name, opts, el)
   end
 
-  def handle_start([name, "-m", model | rest], _context, el) do
-    opts = Start.detect_and_merge_agent(name, Start.start_opts(model))
+  def handle_start([name, "-m", model | rest], context, el) do
+    opts = Start.detect_and_merge_agent(name, Start.start_opts(model), context)
     Start.handle_find_daemon_with_rest(name, opts, rest, el)
   end
 
@@ -38,8 +38,8 @@ defmodule El.CLI.Handlers do
     Messaging.execute_ask_tell(name, target, words, el)
   end
 
-  def handle_msg([name, word | more_words], _context, el) do
-    opts = Start.detect_and_merge_agent(name, Start.start_opts(nil))
+  def handle_msg([name, word | more_words], context, el) do
+    opts = Start.detect_and_merge_agent(name, Start.start_opts(nil), context)
     # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
     el.start(String.to_atom(name), opts)
     Messaging.execute_msg(name, [word | more_words], el)

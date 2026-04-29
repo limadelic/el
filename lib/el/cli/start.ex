@@ -8,23 +8,23 @@ defmodule El.CLI.Start do
   def normalize_model(""), do: nil
   def normalize_model(model), do: model
 
-  def detect_and_merge_agent(name, opts) do
+  def detect_and_merge_agent(name, opts, context) do
     merged = opts ++ agent_opt(El.AgentDetector.detect_agent(name))
-    merged ++ env_model(merged)
+    merged ++ env_model(merged, context)
   end
 
   defp agent_opt(nil), do: []
   defp agent_opt(agent), do: [agent: agent]
 
-  defp env_model(opts) do
-    env_model_for(Keyword.get(opts, :model), Keyword.get(opts, :agent))
+  defp env_model(opts, context) do
+    env_model_for(Keyword.get(opts, :model), Keyword.get(opts, :agent), context)
   end
 
-  defp env_model_for(nil, nil) do
-    subagent_model(System.get_env("CLAUDE_CODE_SUBAGENT_MODEL"))
+  defp env_model_for(nil, nil, context) do
+    subagent_model(Map.get(context, :model))
   end
 
-  defp env_model_for(_, _), do: []
+  defp env_model_for(_, _, _), do: []
 
   defp subagent_model(nil), do: []
   defp subagent_model(model), do: [model: model]
