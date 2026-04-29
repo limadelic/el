@@ -31,10 +31,6 @@ defmodule El.CLI.Router do
     :start
   end
 
-  def parse_route([<<c, _::binary>>, "-a", _agent]) when c != ?- do
-    :start
-  end
-
   def parse_route([<<c, _::binary>>, _word | _more_words]) when c != ?- do
     :msg
   end
