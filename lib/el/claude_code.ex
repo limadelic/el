@@ -17,6 +17,7 @@ defmodule El.ClaudeCode do
   defp build_final_opts(session_opts, remaining_opts, opts) do
     session_opts
     |> add_model(remaining_opts[:model])
+    |> add_agent(remaining_opts[:agent])
     |> add_resume_if_present(opts)
   end
 
@@ -42,6 +43,14 @@ defmodule El.ClaudeCode do
 
   defp add_model(session_opts, model) do
     session_opts ++ [model: model]
+  end
+
+  defp add_agent(session_opts, nil) do
+    session_opts
+  end
+
+  defp add_agent(session_opts, agent) do
+    session_opts ++ [agent: agent]
   end
 
   defp extract_session_id(opts) do
