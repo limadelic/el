@@ -5,10 +5,10 @@ Feature: Agent support
       | kent |
     * > el session1 exit
 
+  @el_kent
   Scenario: Implicit agent detection from session name
-    * > el kent "do something":
+    * > el kent "say ok":
       | kent |
-    * > el kent exit
 
   Scenario: Agent not found uses default session
     * > el unknown "task":
