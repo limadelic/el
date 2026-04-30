@@ -814,9 +814,13 @@ defmodule El.CLI.Spec do
       refute output =~ "msgs:"
     end
 
-    test "renders cwd and id in two-column format on first two rows" do
+    defp setup_cwd_id_session do
       expect(El.MockEl, :start, fn :session, [] -> :ok end)
       stub(El.MockSessionApi, :info, fn :session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: "/abcd/efgh", id: "abc123def456"} end)
+    end
+
+    test "renders name in two-column format" do
+      setup_cwd_id_session()
 
       output =
         capture_io(fn ->
@@ -824,13 +828,37 @@ defmodule El.CLI.Spec do
         end)
 
       assert output =~ "name:  session"
+    end
+
+    test "renders cwd in two-column format" do
+      setup_cwd_id_session()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
       assert output =~ "cwd: /abcd/efgh"
+    end
+
+    test "renders id in two-column format" do
+      setup_cwd_id_session()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
       assert output =~ "id: …123def456"
     end
 
-    test "renders name with cwd in two-column first row for anom case" do
+    defp setup_anom_case do
       expect(El.MockEl, :start, fn :anom, [] -> :ok end)
       stub(El.MockSessionApi, :info, fn :anom -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: "/a/b/c/d/e/f/g/h", id: "xyz789abc123"} end)
+    end
+
+    test "renders name with cwd in two-column first row" do
+      setup_anom_case()
 
       output =
         capture_io(fn ->
@@ -838,17 +866,71 @@ defmodule El.CLI.Spec do
         end)
 
       assert output =~ "name:  anom"
+    end
+
+    test "renders truncated cwd path" do
+      setup_anom_case()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
+        end)
+
       assert output =~ "cwd: …d/e/f/g/h"
+    end
+
+    test "renders truncated id in anom case" do
+      setup_anom_case()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
+        end)
+
       assert output =~ "id: …789abc123"
+    end
+
+    test "omits agent row for anom" do
+      setup_anom_case()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
+        end)
+
       refute output =~ "agent:"
+    end
+
+    test "omits model row for anom" do
+      setup_anom_case()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
+        end)
+
       refute output =~ "model:"
+    end
+
+    test "omits msgs row for anom" do
+      setup_anom_case()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
+        end)
+
       refute output =~ "msgs:"
     end
 
-    test "renders agent with id in second row for agent sessions" do
+    defp setup_agent_kent_session do
       expect(El.MockEl, :start, fn :kent, [agent: "kent"] -> :ok end)
       expect(El.MockSessionApi, :ask, fn :kent, "who are you?" -> "response" end)
       stub(El.MockSessionApi, :info, fn :kent -> %{messages: 0, last_prompt: nil, last_response: nil, model: "opus", cwd: "/verylong/path/name", id: "kent1234567890"} end)
+    end
+
+    test "renders name for agent sessions" do
+      setup_agent_kent_session()
 
       output =
         capture_io(fn ->
@@ -856,9 +938,49 @@ defmodule El.CLI.Spec do
         end)
 
       assert output =~ "name:  kent"
+    end
+
+    test "renders truncated cwd for agent sessions" do
+      setup_agent_kent_session()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl)
+        end)
+
       assert output =~ "cwd: …path/name"
+    end
+
+    test "renders agent with id in second row for agent sessions" do
+      setup_agent_kent_session()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl)
+        end)
+
       assert output =~ "agent: kent"
+    end
+
+    test "renders truncated id for agent sessions" do
+      setup_agent_kent_session()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl)
+        end)
+
       assert output =~ "id: …234567890"
+    end
+
+    test "renders model for agent sessions" do
+      setup_agent_kent_session()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl)
+        end)
+
       assert output =~ "model: opus"
     end
   end
