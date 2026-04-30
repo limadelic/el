@@ -100,13 +100,13 @@ defmodule El.CLI.Start do
   defp add_msgs(rows, messages), do: rows ++ ["msgs:  #{messages}"]
 
   defp add_prompt_separator(rows, nil), do: rows
-  defp add_prompt_separator(rows, _prompt), do: rows ++ [String.duplicate("─", 46)]
+  defp add_prompt_separator(rows, _prompt), do: rows ++ [String.duplicate("─", 42)]
 
   defp add_prompt(rows, nil), do: rows
   defp add_prompt(rows, prompt), do: rows ++ ["> #{prompt}"]
 
   defp add_response_separator(rows, nil), do: rows
-  defp add_response_separator(rows, _response), do: rows ++ [String.duplicate("─", 46)]
+  defp add_response_separator(rows, _response), do: rows ++ [String.duplicate("─", 42)]
 
   defp add_response_lines(rows, nil), do: rows
   defp add_response_lines(rows, response), do: rows ++ format_response(response)
@@ -120,18 +120,18 @@ defmodule El.CLI.Start do
     [top_border()] ++ Enum.map(rows, &frame_row/1) ++ [bottom_border()]
   end
 
-  defp top_border, do: "╭" <> String.duplicate("─", 48) <> "╮"
-  defp bottom_border, do: "╰" <> String.duplicate("─", 48) <> "╯"
+  defp top_border, do: "╭" <> String.duplicate("─", 44) <> "╮"
+  defp bottom_border, do: "╰" <> String.duplicate("─", 44) <> "╯"
 
   defp frame_row(content) do
-    padded = String.pad_trailing(content, 46)
+    padded = String.pad_trailing(content, 42)
     "│ " <> padded <> " │"
   end
 
   def format_response(nil), do: []
   def format_response(response) do
     response
-    |> wrap_text(46)
+    |> wrap_text(42)
     |> cap_lines(2)
   end
 

@@ -804,11 +804,11 @@ defmodule El.CLI.Spec do
       assert El.CLI.Start.format_response("kent") == ["kent"]
     end
 
-    test "wraps at 46 characters with word awareness" do
+    test "wraps at 42 characters with word awareness" do
       text = "I'm Dude, man. The rug that ties this whole stack together."
       result = El.CLI.Start.format_response(text)
 
-      assert result == ["I'm Dude, man. The rug that ties this whole", "stack together."]
+      assert result == ["I'm Dude, man. The rug that ties this", "whole stack together."]
     end
 
     test "caps at 2 lines maximum" do
@@ -818,10 +818,10 @@ defmodule El.CLI.Spec do
       assert length(result) == 2
     end
 
-    test "respects 46 character line width" do
+    test "respects 42 character line width" do
       text = "I'm Dude, man. The rug that ties this whole stack together."
       result = El.CLI.Start.format_response(text)
-      assert Enum.all?(result, fn line -> String.length(line) <= 46 end)
+      assert Enum.all?(result, fn line -> String.length(line) <= 42 end)
     end
 
     test "preserves short lines under 46 chars" do
