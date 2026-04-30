@@ -271,7 +271,7 @@ defmodule El.CLI.Spec do
       end)
     end
 
-    test "execute :start with -m model calls AgentDetector.detect_agent and merges agent" do
+    test "execute :start with -m model calls merge_session_opts with explicit model" do
       stub(El.MockFileSystem, :exists?, fn path ->
         String.contains?(path, "my_session.md")
       end)
