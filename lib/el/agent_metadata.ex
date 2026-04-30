@@ -23,11 +23,11 @@ defmodule El.AgentMetadata do
   end
 
   defp read_from_path(file_path) do
-    case File.read(file_path) do
-      {:ok, content} -> extract_model_from_frontmatter(content)
-      {:error, _} -> nil
-    end
+    read_result(File.read(file_path))
   end
+
+  defp read_result({:ok, content}), do: extract_model_from_frontmatter(content)
+  defp read_result({:error, _}), do: nil
 
   defp normalize_name(name) when is_atom(name), do: Atom.to_string(name)
   defp normalize_name(name) when is_binary(name), do: name
