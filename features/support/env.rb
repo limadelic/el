@@ -1,11 +1,6 @@
 require "rspec/expectations"
 
-@boot_done = false
-
-Before do
-  next if @boot_done
-  @boot_done = true
-
+BeforeAll do
   bin = ENV["DEV"] ? "./el" : "/opt/homebrew/bin/el"
 
   if ENV["DEV"]
