@@ -103,8 +103,8 @@ defmodule El.CLI.Start do
     Application.get_env(:el, :session_api, El.Session.Api)
   end
 
-  def box_frame([]), do: [top_border(), bottom_border()]
-  def box_frame(rows) do
+  defp box_frame([]), do: [top_border(), bottom_border()]
+  defp box_frame(rows) do
     [top_border()] ++ Enum.map(rows, &frame_row/1) ++ [bottom_border()]
   end
 
