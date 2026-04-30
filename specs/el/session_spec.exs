@@ -960,21 +960,20 @@ defmodule El.Session.Spec do
       assert reply.model == nil
     end
 
-    test "returns id from state.session_id", %{state: state} do
-      updated_state = %{state | session_id: "test-session-id"}
-
+    defp call_info_with_id_cwd(state) do
+      updated_state = %{state | session_id: "test-session-id", cwd: "/test/dir"}
       {:reply, reply, _returned_state} =
         El.Session.handle_call(:info, :from, updated_state)
+      reply
+    end
 
+    test "returns id from state.session_id", %{state: state} do
+      reply = call_info_with_id_cwd(state)
       assert reply.id == "test-session-id"
     end
 
     test "returns cwd from state.cwd", %{state: state} do
-      updated_state = %{state | cwd: "/test/dir"}
-
-      {:reply, reply, _returned_state} =
-        El.Session.handle_call(:info, :from, updated_state)
-
+      reply = call_info_with_id_cwd(state)
       assert reply.cwd == "/test/dir"
     end
   end
