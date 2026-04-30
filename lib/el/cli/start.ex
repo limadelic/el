@@ -79,11 +79,25 @@ defmodule El.CLI.Start do
   defp print_msgs(name) do
     info = session_api().info(String.to_atom(name))
     IO.puts("msgs #{info.messages}")
+    print_last_prompt(info.last_prompt)
+    print_last_response(info.last_response)
   end
+
+  defp print_last_prompt(nil), do: :ok
+  defp print_last_prompt(prompt), do: IO.puts("> #{prompt}")
+
+  defp print_last_response(nil), do: :ok
+  defp print_last_response(response), do: IO.puts(truncate_response(response))
 
   defp session_api do
     Application.get_env(:el, :session_api, El.Session.Api)
   end
+
+  defp truncate_response(response) when byte_size(response) > 80 do
+    String.slice(response, 0, 80) <> "..."
+  end
+
+  defp truncate_response(response), do: response
 
   def handle_find_daemon_with_rest(name, opts, rest, el) do
     name_atom = String.to_atom(name)

@@ -702,6 +702,69 @@ defmodule El.CLI.Spec do
       assert output =~ "msgs 5"
     end
 
+    test "prints last prompt when present" do
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 1, last_prompt: "who are you?", last_response: nil} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      assert output =~ "> who are you?"
+    end
+
+    test "prints last response when present" do
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 1, last_prompt: "who are you?", last_response: "I am an agent" } end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      assert output =~ "I am an agent"
+    end
+
+    test "truncates long response with ..." do
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      long_response = String.duplicate("x", 100)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 1, last_prompt: "who are you?", last_response: long_response} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      assert output =~ "..."
+      refute output =~ long_response
+    end
+
+    test "does not print prompt line when last_prompt is nil" do
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 0, last_prompt: nil, last_response: nil} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      refute output =~ ">"
+    end
+
+    test "does not print response line when last_response is nil" do
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 1, last_prompt: "hi", last_response: nil} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      assert output =~ "> hi"
+      refute output =~ "..."
+    end
+
     test "sends ping when agent in opts" do
       stub(El.MockEl, :start, fn :session, [agent: "kent"] -> :ok end)
       expect(El.MockSessionApi, :ask, fn :session, "who are you?" -> "response" end)
