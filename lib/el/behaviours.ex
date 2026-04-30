@@ -17,6 +17,7 @@ defmodule El.Behaviours.Session do
   @callback tell_ask(term(), term(), term()) :: term()
   @callback ask_tell(term(), term(), term()) :: term()
   @callback agent(term()) :: term()
+  @callback info(term()) :: term()
 end
 
 defmodule El.Behaviours.App do

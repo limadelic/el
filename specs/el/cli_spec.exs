@@ -98,6 +98,7 @@ defmodule El.CLI.Spec do
   describe "execute/2" do
     setup do
       Application.put_env(:el, :file_system, El.MockFileSystem)
+      stub(El.MockSessionApi, :info, fn _name -> %{messages: 0, last_prompt: nil, last_response: nil} end)
 
       on_exit(fn ->
         Application.delete_env(:el, :file_system)
@@ -602,6 +603,11 @@ defmodule El.CLI.Spec do
   end
 
   describe "El.CLI.Start.handle_find_daemon_for_start/3" do
+    setup do
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 0, last_prompt: nil, last_response: nil} end)
+      :ok
+    end
+
     test "prints agent when both agent and model in opts" do
       expect(El.MockEl, :start, fn :session, [agent: "kent", model: "opus"] -> :ok end)
 
@@ -667,9 +673,37 @@ defmodule El.CLI.Spec do
 
       refute output =~ "model"
     end
+
+    test "prints name from session name parameter" do
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      assert output =~ "name session"
+    end
+
+    test "prints msgs count from Session.Api.info" do
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 5, last_prompt: nil, last_response: nil} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      assert output =~ "msgs 5"
+    end
   end
 
   describe "El.CLI.Start.handle_find_daemon_with_rest/4" do
+    setup do
+      stub(El.MockSessionApi, :info, fn :kenny -> %{messages: 0, last_prompt: nil, last_response: nil} end)
+      :ok
+    end
+
     test "prints agent when -a flag with agent" do
       expect(El.MockEl, :start, fn :kenny, [agent: "kent"] -> :ok end)
 

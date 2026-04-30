@@ -52,12 +52,14 @@ defmodule El.CLI.Start do
   def handle_find_daemon_for_start(name, opts, el) do
     name_atom = String.to_atom(name)
     el.start(name_atom, opts)
-    print_session_info(opts)
+    print_session_info(name, opts)
   end
 
-  defp print_session_info(opts) do
+  defp print_session_info(name, opts) do
     print_agent_if_present(Keyword.get(opts, :agent))
     print_model_if_present(Keyword.get(opts, :model))
+    print_name(name)
+    print_msgs(name)
   end
 
   defp print_agent_if_present(nil), do: :ok
@@ -66,10 +68,21 @@ defmodule El.CLI.Start do
   defp print_model_if_present(nil), do: :ok
   defp print_model_if_present(model), do: IO.puts("model #{model}")
 
+  defp print_name(name), do: IO.puts("name #{name}")
+
+  defp print_msgs(name) do
+    info = session_api().info(String.to_atom(name))
+    IO.puts("msgs #{info.messages}")
+  end
+
+  defp session_api do
+    Application.get_env(:el, :session_api, El.Session.Api)
+  end
+
   def handle_find_daemon_with_rest(name, opts, rest, el) do
     name_atom = String.to_atom(name)
     el.start(name_atom, opts)
-    print_session_info(opts)
+    print_session_info(name, opts)
     dispatch_rest(rest, name)
   end
 
