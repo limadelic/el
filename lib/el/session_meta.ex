@@ -1,4 +1,9 @@
 defmodule El.SessionMeta do
+  @callback insert(term(), term(), term()) :: term()
+  @callback lookup(term()) :: term()
+  @callback delete(term()) :: term()
+  @callback close() :: term()
+
   def insert(name, agent, session_id) do
     backend = Application.get_env(:el, :dets_backend, El.DetsBackend)
     backend.insert(:session_meta, {name, session_id, agent})

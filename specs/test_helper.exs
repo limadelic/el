@@ -54,7 +54,7 @@ end
 Mox.defmock(El.MockSessionApi, for: El.Behaviours.Session)
 Mox.defmock(El.MockClaudeCode, for: El.Behaviours.ClaudeCode)
 Mox.defmock(El.MockStoreModule, for: El.Behaviours.Store)
-Mox.defmock(El.MockSessionMeta, for: El.Behaviours.SessionMeta)
+Mox.defmock(El.MockSessionMeta, for: El.SessionMeta)
 
 Application.put_env(:el, :registry, El.MockRegistry)
 Application.put_env(:el, :supervisor, El.MockSupervisor)

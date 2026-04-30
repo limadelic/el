@@ -62,11 +62,16 @@ defmodule El.Session.Spec do
   end
 
   describe "init/1" do
-    test "inserts session_id and agent into SessionMeta" do
-      Mox.expect(El.MockSessionMeta, :insert, fn name, agent, session_id ->
-        assert name == :my_session
-        assert agent == "kent"
-        assert is_binary(session_id)
+    setup do
+      Mox.stub(El.MockSessionMeta, :insert, fn _name, _agent, _session_id -> :ok end)
+      %{}
+    end
+
+    test "inserts with session name into SessionMeta" do
+      captured_args = {nil, nil, nil}
+
+      Mox.expect(El.MockSessionMeta, :insert, fn name, _agent, _session_id ->
+        send(self(), {:captured_name, name})
         :ok
       end)
 
@@ -78,6 +83,47 @@ defmodule El.Session.Spec do
 
       {:ok, _state, {:continue, :start_claude}} =
         El.Session.init({:my_session, opts})
+
+      assert_receive {:captured_name, name}
+      assert name == :my_session
+    end
+
+    test "inserts with agent into SessionMeta" do
+      Mox.expect(El.MockSessionMeta, :insert, fn _name, agent, _session_id ->
+        send(self(), {:captured_agent, agent})
+        :ok
+      end)
+
+      opts = [
+        claude_module: MockSessionModule,
+        agent: "kent",
+        session_meta: El.MockSessionMeta
+      ]
+
+      {:ok, _state, {:continue, :start_claude}} =
+        El.Session.init({:my_session, opts})
+
+      assert_receive {:captured_agent, agent}
+      assert agent == "kent"
+    end
+
+    test "inserts with binary session_id into SessionMeta" do
+      Mox.expect(El.MockSessionMeta, :insert, fn _name, _agent, session_id ->
+        send(self(), {:captured_session_id, session_id})
+        :ok
+      end)
+
+      opts = [
+        claude_module: MockSessionModule,
+        agent: "kent",
+        session_meta: El.MockSessionMeta
+      ]
+
+      {:ok, _state, {:continue, :start_claude}} =
+        El.Session.init({:my_session, opts})
+
+      assert_receive {:captured_session_id, session_id}
+      assert is_binary(session_id)
     end
 
     test "captures cwd in state" do
