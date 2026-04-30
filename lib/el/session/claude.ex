@@ -26,7 +26,7 @@ defmodule El.Session.Claude do
   end
 
   def ask(nil, _message) do
-    "(ClaudeCode unavailable)"
+    {"(ClaudeCode unavailable)", nil}
   end
 
   def ask(pid, message) do
@@ -38,8 +38,8 @@ defmodule El.Session.Claude do
   end
 
   defp safe_stream(pid, message) do
-    {result, _model} = pid |> stream_to_result(message)
-    nil_to_empty(result)
+    {result, model} = stream_to_result(pid, message)
+    {nil_to_empty(result), model}
   end
 
   defp nil_to_empty(nil), do: ""
@@ -65,7 +65,8 @@ defmodule El.Session.Claude do
   defp extract_model(_), do: nil
 
   def ask_work(pid, message, _routes) do
-    ask(pid, message)
+    {result, _model} = ask(pid, message)
+    result
   end
 
   def maybe_respawn_claude(%{claude_pid: nil} = state) do

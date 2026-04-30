@@ -47,3 +47,8 @@ end
 defmodule El.Behaviours.FileSystem do
   @callback exists?(String.t()) :: boolean()
 end
+
+defmodule El.Behaviours.ClaudeCode do
+  @callback stream(term(), term()) :: term()
+  @callback stream(term(), term(), list()) :: term()
+end

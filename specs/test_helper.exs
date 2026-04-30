@@ -48,6 +48,7 @@ defmodule NilAgentDetectorStub do
 end
 
 Mox.defmock(El.MockSessionApi, for: El.Behaviours.Session)
+Mox.defmock(El.MockClaudeCode, for: El.Behaviours.ClaudeCode)
 
 Application.put_env(:el, :registry, El.MockRegistry)
 Application.put_env(:el, :supervisor, El.MockSupervisor)
@@ -67,6 +68,32 @@ defmodule TestClaudeCode do
   def stream(_pid, message) do
     [text: message]
     |> Enum.into([])
+  end
+end
+
+defmodule MockClaudeCodeSession do
+  def stream(_pid, _message) do
+    [
+      %ClaudeCode.Message.SystemMessage.Init{
+        model: "test-model",
+        type: "system",
+        subtype: "init",
+        session_id: "test-session"
+      },
+      %ClaudeCode.Message.ResultMessage{
+        result: "test result",
+        type: "result",
+        subtype: "result",
+        is_error: false,
+        duration_ms: 0,
+        duration_api_ms: 0,
+        num_turns: 0,
+        session_id: "test-session",
+        total_cost_usd: 0.0,
+        usage: %{}
+      }
+    ]
+    |> Stream.concat([])
   end
 end
 
