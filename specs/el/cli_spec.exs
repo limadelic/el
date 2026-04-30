@@ -260,6 +260,19 @@ defmodule El.CLI.Spec do
       assert output =~ "reply"
     end
 
+    test "execute :msg prints boxed card after response" do
+      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      expect(El.MockEl, :ask, fn :session, "hello" -> "reply" end)
+      expect(El.MockEl, :agent, fn :session -> nil end)
+
+      output =
+        capture_io(fn -> El.CLI.execute(:msg, ["session", "hello"]) end)
+
+      assert output =~ "name:  session"
+    end
+
     test "execute :start uses merge_session_opts to combine agent and model" do
       stub(El.MockFileSystem, :exists?, fn path ->
         String.contains?(path, "my_session.md")

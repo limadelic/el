@@ -74,7 +74,7 @@ defmodule El.CLI.Start do
     result
   end
 
-  defp print_session_info(name, opts) do
+  def print_session_info(name, opts) do
     info = session_api().info(String.to_atom(name))
     rows = build_card_rows(name, opts, info)
     box_frame(rows) |> Enum.each(&IO.puts/1)

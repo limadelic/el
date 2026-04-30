@@ -51,6 +51,7 @@ defmodule El.CLI do
     opts = Start.detect_and_merge_agent(name, Start.start_opts(nil))
     el().start(String.to_atom(name), opts)
     Messaging.execute_msg(name, [word | more_words], el())
+    Start.print_session_info(name, opts)
   end
 
   def execute(:log, [name, "log"]), do: Log.execute_log(name, 1, el())
