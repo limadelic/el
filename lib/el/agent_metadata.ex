@@ -1,7 +1,8 @@
 defmodule El.AgentMetadata do
-  def model_for(agent_name, search_dir \\ nil) do
+  def model_for(agent_name, search_dir \\ nil)
+  def model_for(agent_name, nil), do: try_local_then_global(normalize_name(agent_name))
+  def model_for(agent_name, search_dir) do
     agent_name = normalize_name(agent_name)
-    search_dir = search_dir || default_search_dir()
     file_path = Path.join(search_dir, "#{agent_name}.md")
 
     case File.read(file_path) do
@@ -10,12 +11,30 @@ defmodule El.AgentMetadata do
     end
   end
 
+  defp try_local_then_global(agent_name) do
+    case read_from_path(local_path(agent_name)) do
+      nil -> read_from_path(global_path(agent_name))
+      model -> model
+    end
+  end
+
+  defp local_path(agent_name) do
+    Path.join([".claude", "agents", "#{agent_name}.md"])
+  end
+
+  defp global_path(agent_name) do
+    Path.expand("~/.claude/agents/#{agent_name}.md")
+  end
+
+  defp read_from_path(file_path) do
+    case File.read(file_path) do
+      {:ok, content} -> extract_model_from_frontmatter(content)
+      {:error, _} -> nil
+    end
+  end
+
   defp normalize_name(name) when is_atom(name), do: Atom.to_string(name)
   defp normalize_name(name) when is_binary(name), do: name
-
-  defp default_search_dir do
-    Path.expand("~/.claude/agents")
-  end
 
   defp extract_model_from_frontmatter(content) do
     content

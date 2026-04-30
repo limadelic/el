@@ -54,5 +54,20 @@ defmodule El.AgentMetadata.Spec do
 
       assert El.AgentMetadata.model_for("lisa", fixture_dir) == "sonnet"
     end
+
+    test "falls back to local path when no search_dir provided", %{fixture_dir: fixture_dir} do
+      local_file = Path.join([fixture_dir, ".claude", "agents", "lisa.md"])
+      File.mkdir_p!(Path.dirname(local_file))
+      File.write!(local_file, "---\nmodel: sonnet\n---\n# Lisa\n")
+
+      cwd = File.cwd!()
+      File.cd!(fixture_dir)
+
+      try do
+        assert El.AgentMetadata.model_for("lisa") == "sonnet"
+      after
+        File.cd!(cwd)
+      end
+    end
   end
 end
