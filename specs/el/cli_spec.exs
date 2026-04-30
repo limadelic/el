@@ -821,10 +821,7 @@ defmodule El.CLI.Spec do
     test "respects 46 character line width" do
       text = "I'm Dude, man. The rug that ties this whole stack together."
       result = El.CLI.Start.format_response(text)
-
-      Enum.each(result, fn line ->
-        assert String.length(line) <= 46
-      end)
+      assert Enum.all?(result, fn line -> String.length(line) <= 46 end)
     end
 
     test "preserves short lines under 46 chars" do
