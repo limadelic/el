@@ -737,6 +737,18 @@ defmodule El.CLI.Spec do
         end)
 
       assert output =~ "..."
+    end
+
+    test "does not print full long response when truncated" do
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      long_response = String.duplicate("x", 100)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 1, last_prompt: "who are you?", last_response: long_response} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
       refute output =~ long_response
     end
 
