@@ -133,7 +133,7 @@ defmodule El.CLI.Start do
     "│ " <> padded <> " │"
   end
 
-  def frame_pair_row(left, right) do
+  defp frame_pair_row(left, right) do
     right_block = truncate_right_block(right)
     left_len = String.length(left)
     right_len = String.length(right_block)

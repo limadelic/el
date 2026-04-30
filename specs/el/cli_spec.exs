@@ -876,39 +876,4 @@ defmodule El.CLI.Spec do
     end
   end
 
-  describe "El.CLI.Start.frame_pair_row/2" do
-    test "left-aligns left string and right-justifies right block" do
-      result = El.CLI.Start.frame_pair_row("name:  kent", "cwd: …/self/el")
-
-      assert result == "│ name:  kent                     cwd: …/self/el │"
-    end
-
-    test "truncates right value to 10 chars with leading … when longer" do
-      long_value = "/very/long/path/over/forty/chars"
-      result = El.CLI.Start.frame_pair_row("", "cwd: #{long_value}")
-
-      assert String.contains?(result, "cwd: …")
-      assert String.length(String.trim(result)) == 50
-    end
-
-    test "pads empty left with spaces" do
-      result = El.CLI.Start.frame_pair_row("", "id: abcd1234")
-
-      inner = String.slice(result, 2..47)
-      assert String.contains?(inner, "id:")
-    end
-
-    test "content area is exactly 46 chars (50 total with borders)" do
-      result = El.CLI.Start.frame_pair_row("name:  test", "model: haiku")
-
-      assert String.length(result) == 50
-    end
-
-    test "right block is right-justified to position 46" do
-      result = El.CLI.Start.frame_pair_row("x", "right")
-
-      inner = String.slice(result, 2..47)
-      assert String.ends_with?(String.trim_trailing(inner), "right")
-    end
-  end
 end
