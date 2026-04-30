@@ -475,7 +475,7 @@ defmodule El.CLI.Spec do
       assert Keyword.get(result, :model) == "opus"
     end
 
-    test "ignores env_model when agent detected" do
+    test "ignores env_model when agent detected - agent set" do
       stub(El.MockFileSystem, :exists?, fn path ->
         String.contains?(path, "session.md")
       end)
@@ -485,6 +485,17 @@ defmodule El.CLI.Spec do
       result = El.CLI.Start.merge_session_opts("session", nil, nil)
 
       assert Keyword.get(result, :agent) == "session"
+    end
+
+    test "ignores env_model when agent detected - model not set" do
+      stub(El.MockFileSystem, :exists?, fn path ->
+        String.contains?(path, "session.md")
+      end)
+
+      System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
+
+      result = El.CLI.Start.merge_session_opts("session", nil, nil)
+
       refute Keyword.has_key?(result, :model)
     end
 
