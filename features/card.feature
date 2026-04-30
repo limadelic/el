@@ -4,8 +4,8 @@ Feature: Agent card
     * > el kent:
       """
       ╭────────────────────────────────────────────────╮
-      │ name:  kent                                    │
-      │ agent: kent                                    │
+      │ name:  kent                     cwd: …/self/el │
+      │ agent: kent                              id: … │
       │ model: opus                                    │
       │ msgs:  1                                       │
       │ ────────────────────────────────────────────── │
@@ -22,8 +22,8 @@ Feature: Agent card
     * > el kent:
       """
       ╭────────────────────────────────────────────────╮
-      │ name:  kent                                    │
-      │ agent: kent                                    │
+      │ name:  kent                     cwd: …/self/el │
+      │ agent: kent                              id: … │
       │ model: opus                                    │
       │ msgs:  2                                       │
       │ ────────────────────────────────────────────── │
@@ -38,13 +38,15 @@ Feature: Agent card
     * > el anom:
       """
       ╭────────────────────────────────────────────────╮
-      │ name:  anom                                    │
+      │ name:  anom                     cwd: …/self/el │
+      │                                          id: … │
       ╰────────────────────────────────────────────────╯
       """
     * > el anom "who are you?":
       """
       ╭────────────────────────────────────────────────╮
-      │ name:  anom                                    │
+      │ name:  anom                     cwd: …/self/el │
+      │                                          id: … │
       │ model: haiku                                   │
       │ msgs:  1                                       │
       │ ────────────────────────────────────────────── │
