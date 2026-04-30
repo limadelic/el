@@ -103,6 +103,19 @@ defmodule El.CLI.Start do
     Application.get_env(:el, :session_api, El.Session.Api)
   end
 
+  def box_frame([]), do: [top_border(), bottom_border()]
+  def box_frame(rows) do
+    [top_border()] ++ Enum.map(rows, &frame_row/1) ++ [bottom_border()]
+  end
+
+  defp top_border, do: "╭" <> String.duplicate("─", 48) <> "╮"
+  defp bottom_border, do: "╰" <> String.duplicate("─", 48) <> "╯"
+
+  defp frame_row(content) do
+    padded = String.pad_trailing(content, 46)
+    "│ " <> padded <> " │"
+  end
+
   def format_response(nil), do: []
   def format_response(response) do
     response

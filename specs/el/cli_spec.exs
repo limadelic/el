@@ -831,6 +831,46 @@ defmodule El.CLI.Spec do
     end
   end
 
+  describe "El.CLI.Start.box_frame/1" do
+    test "returns top and bottom borders for empty list" do
+      result = El.CLI.Start.box_frame([])
+      assert result == ["╭────────────────────────────────────────────────╮", "╰────────────────────────────────────────────────╯"]
+    end
+
+    test "frames single content row with padding" do
+      result = El.CLI.Start.box_frame(["name:  kent"])
+      assert result == [
+        "╭────────────────────────────────────────────────╮",
+        "│ name:  kent                                    │",
+        "╰────────────────────────────────────────────────╯"
+      ]
+    end
+
+    test "frames multiple content rows" do
+      result = El.CLI.Start.box_frame(["name: kent", "model: opus"])
+      assert result == [
+        "╭────────────────────────────────────────────────╮",
+        "│ name: kent                                     │",
+        "│ model: opus                                    │",
+        "╰────────────────────────────────────────────────╯"
+      ]
+    end
+
+    test "pads short content to 46 characters" do
+      result = El.CLI.Start.box_frame(["hi"])
+      [_top, body, _bottom] = result
+      assert String.length(body) == 50
+    end
+
+    test "handles content exactly 46 characters" do
+      content = String.duplicate("a", 46)
+      result = El.CLI.Start.box_frame([content])
+      [_top, body, _bottom] = result
+      assert String.length(body) == 50
+      assert String.contains?(body, content)
+    end
+  end
+
   describe "El.CLI.Start.format_response/1" do
     test "returns empty list when nil" do
       assert El.CLI.Start.format_response(nil) == []
