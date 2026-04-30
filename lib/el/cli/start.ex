@@ -82,8 +82,8 @@ defmodule El.CLI.Start do
 
   defp build_card_rows(name, opts, info) do
     []
-    |> add_name(name)
-    |> add_agent(Keyword.get(opts, :agent))
+    |> add_name_cwd(name, info.cwd)
+    |> add_agent_id(Keyword.get(opts, :agent), info.id)
     |> add_model(Keyword.get(opts, :model), info.model)
     |> add_msgs(info.messages)
     |> add_prompt_separator(info.last_prompt)
@@ -92,10 +92,20 @@ defmodule El.CLI.Start do
     |> add_response_lines(info.last_response)
   end
 
-  defp add_name(rows, name), do: rows ++ ["name:  #{name}"]
+  defp add_name_cwd(rows, name, cwd) do
+    left = "name:  #{name}"
+    right = "cwd: #{cwd}"
+    rows ++ [frame_pair_row(left, right)]
+  end
 
-  defp add_agent(rows, nil), do: rows
-  defp add_agent(rows, agent), do: rows ++ ["agent: #{agent}"]
+  defp add_agent_id(rows, agent, id) do
+    left = agent_label(agent)
+    right = "id: #{id}"
+    rows ++ [frame_pair_row(left, right)]
+  end
+
+  defp agent_label(nil), do: ""
+  defp agent_label(agent), do: "agent: #{agent}"
 
   defp add_model(rows, nil, nil), do: rows
   defp add_model(rows, nil, info_model), do: rows ++ ["model: #{info_model}"]
@@ -122,7 +132,9 @@ defmodule El.CLI.Start do
 
   defp box_frame([]), do: [top_border(), bottom_border()]
   defp box_frame(rows) do
-    [top_border()] ++ Enum.map(rows, &frame_row/1) ++ [bottom_border()]
+    first_two = Enum.take(rows, 2)
+    rest = Enum.drop(rows, 2)
+    [top_border()] ++ first_two ++ Enum.map(rest, &frame_row/1) ++ [bottom_border()]
   end
 
   defp top_border, do: "╭" <> String.duplicate("─", 48) <> "╮"
