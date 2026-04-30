@@ -9,7 +9,8 @@ defmodule El.CLI.Start do
     model_opts = start_opts(explicit_model)
     agent = explicit_agent || El.AgentDetector.detect_agent(name)
     agent_opts = agent_opt(agent)
-    result = model_opts ++ agent_opts
+    agent_model_opts = agent_model_opt(agent, explicit_model)
+    result = model_opts ++ agent_opts ++ agent_model_opts
     result ++ env_model(result)
   end
 
@@ -20,6 +21,16 @@ defmodule El.CLI.Start do
 
   defp agent_opt(nil), do: []
   defp agent_opt(agent), do: [agent: agent]
+
+  defp agent_model_opt(nil, _), do: []
+  defp agent_model_opt(_, explicit_model) when explicit_model != nil, do: []
+  defp agent_model_opt(agent, nil) do
+    agent_metadata = Application.get_env(:el, :agent_metadata, El.AgentMetadata)
+    agent_model_for(agent_metadata.model_for(agent))
+  end
+
+  defp agent_model_for(nil), do: []
+  defp agent_model_for(model), do: [model: model]
 
   defp env_model(opts) do
     env_model_for(Keyword.get(opts, :model), Keyword.get(opts, :agent))

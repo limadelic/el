@@ -29,6 +29,15 @@ defmodule El.MessageStoreStub do
   def close, do: :ok
 end
 
+defmodule AgentMetadataStub do
+  def model_for("kent"), do: "opus"
+  def model_for(_), do: nil
+end
+
+defmodule NilAgentMetadataStub do
+  def model_for(_), do: nil
+end
+
 Mox.defmock(El.MockSessionApi, for: El.Behaviours.Session)
 
 Application.put_env(:el, :registry, El.MockRegistry)
