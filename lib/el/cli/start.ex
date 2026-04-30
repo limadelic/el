@@ -93,7 +93,7 @@ defmodule El.CLI.Start do
     Application.get_env(:el, :session_api, El.Session.Api)
   end
 
-  defp truncate_response(<<_::binary-size(80), _::binary>> = response) do
+  defp truncate_response(response) when byte_size(response) > 80 do
     String.slice(response, 0, 80) <> "..."
   end
 
