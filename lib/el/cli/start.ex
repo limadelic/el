@@ -63,15 +63,12 @@ defmodule El.CLI.Start do
 
   defp quiet_ask(name_atom) do
     {:ok, null_device} = File.open("/dev/null", [:write])
-    old_stdio = Process.group_leader()
-
-    try do
-      Process.group_leader(self(), null_device)
-      session_api().ask(name_atom, "who are you?")
-    after
-      Process.group_leader(self(), old_stdio)
-      File.close(null_device)
-    end
+    original = Process.group_leader()
+    Process.group_leader(self(), null_device)
+    result = session_api().ask(name_atom, "who are you?")
+    Process.group_leader(self(), original)
+    File.close(null_device)
+    result
   end
 
   defp print_session_info(name, opts) do
