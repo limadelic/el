@@ -4,12 +4,11 @@ defmodule El.AgentMetadata do
   def model_for(agent_name, search_dir) do
     agent_name = normalize_name(agent_name)
     file_path = Path.join(search_dir, "#{agent_name}.md")
-
-    case File.read(file_path) do
-      {:ok, content} -> extract_model_from_frontmatter(content)
-      {:error, _} -> nil
-    end
+    model_from_file(File.read(file_path))
   end
+
+  defp model_from_file({:ok, content}), do: extract_model_from_frontmatter(content)
+  defp model_from_file({:error, _}), do: nil
 
   defp try_local_then_global(agent_name) do
     read_from_path_with_fallback(
