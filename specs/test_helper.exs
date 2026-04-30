@@ -59,6 +59,7 @@ Application.put_env(:el, :session_api, El.MockSessionApi)
 Application.put_env(:el, :app, El.MockApp)
 Application.put_env(:el, :monitor, El.MockMonitor)
 Application.put_env(:el, :el_module, El.MockEl)
+Application.put_env(:el, :file_system, El.MockFileSystem)
 
 ExUnit.start(timeout: 10)
 
