@@ -421,6 +421,7 @@ defmodule El.CLI.Spec do
   describe "El.CLI.Start.merge_session_opts/3" do
     setup do
       Application.put_env(:el, :file_system, El.MockFileSystem)
+      stub(El.MockFileSystem, :exists?, fn _path -> false end)
 
       on_exit(fn ->
         Application.delete_env(:el, :file_system)
@@ -431,16 +432,12 @@ defmodule El.CLI.Spec do
     end
 
     test "with explicit_model prepends [model: explicit_model]" do
-      stub(El.MockFileSystem, :exists?, fn _path -> false end)
-
       result = El.CLI.Start.merge_session_opts("session", nil, "opus")
 
       assert Keyword.get(result, :model) == "opus"
     end
 
     test "with explicit_agent uses explicit_agent for agent:" do
-      stub(El.MockFileSystem, :exists?, fn _path -> false end)
-
       result = El.CLI.Start.merge_session_opts("session", "explicit", nil)
 
       assert Keyword.get(result, :agent) == "explicit"
@@ -457,16 +454,12 @@ defmodule El.CLI.Spec do
     end
 
     test "with no explicit_agent and no detected agent omits agent" do
-      stub(El.MockFileSystem, :exists?, fn _path -> false end)
-
       result = El.CLI.Start.merge_session_opts("session", nil, nil)
 
       refute Keyword.has_key?(result, :agent)
     end
 
     test "appends env_model when no model or agent" do
-      stub(El.MockFileSystem, :exists?, fn _path -> false end)
-
       System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
 
       result = El.CLI.Start.merge_session_opts("session", nil, nil)
@@ -475,8 +468,6 @@ defmodule El.CLI.Spec do
     end
 
     test "ignores env_model when explicit_model provided" do
-      stub(El.MockFileSystem, :exists?, fn _path -> false end)
-
       System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
 
       result = El.CLI.Start.merge_session_opts("session", nil, "opus")
@@ -498,8 +489,6 @@ defmodule El.CLI.Spec do
     end
 
     test "combines explicit_model and explicit_agent" do
-      stub(El.MockFileSystem, :exists?, fn _path -> false end)
-
       result = El.CLI.Start.merge_session_opts("session", "kent", "haiku")
 
       assert Keyword.get(result, :model) == "haiku"
@@ -507,13 +496,16 @@ defmodule El.CLI.Spec do
     end
 
     test "ignores env_model when explicit_agent provided" do
-      stub(El.MockFileSystem, :exists?, fn _path -> false end)
-
       System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
 
       result = El.CLI.Start.merge_session_opts("session", "explicit", nil)
 
       assert Keyword.get(result, :agent) == "explicit"
+    end
+
+    test "omits model when explicit_agent provided" do
+      result = El.CLI.Start.merge_session_opts("session", "explicit", nil)
+
       refute Keyword.has_key?(result, :model)
     end
   end
