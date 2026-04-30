@@ -59,7 +59,20 @@ defmodule El.CLI.Start do
   defp ping_if_agent(name_atom, opts), do: do_ping(name_atom, Keyword.get(opts, :agent))
 
   defp do_ping(_name_atom, nil), do: :ok
-  defp do_ping(name_atom, _agent), do: session_api().ask(name_atom, "who are you?")
+  defp do_ping(name_atom, _agent), do: quiet_ask(name_atom)
+
+  defp quiet_ask(name_atom) do
+    {:ok, null_device} = File.open("/dev/null", [:write])
+    old_stdio = Process.group_leader()
+
+    try do
+      Process.group_leader(self(), null_device)
+      session_api().ask(name_atom, "who are you?")
+    after
+      Process.group_leader(self(), old_stdio)
+      File.close(null_device)
+    end
+  end
 
   defp print_session_info(name, opts) do
     print_agent_if_present(Keyword.get(opts, :agent))
