@@ -32,7 +32,7 @@ defmodule El.Session do
   def init({name, opts}) do
     Process.flag(:trap_exit, true)
     {session_id, rest} = El.Session.Id.extract_resume_or_id(opts)
-    cwd = File.cwd!()
+    cwd = file_system(opts).cwd()
     {:ok, build_state(name, opts, rest, session_id, cwd), {:continue, :start_claude}}
   end
 
@@ -48,6 +48,10 @@ defmodule El.Session do
   defp modules_and_callbacks(o), do: get_opts(o)
 
   defp get_opts(o), do: @defaults |> Map.merge(Map.new(o))
+
+  defp file_system(opts) do
+    Keyword.get(opts, :file_system, Application.get_env(:el, :file_system, El.FileSystemImpl))
+  end
 
   @impl true
   def handle_continue(:start_claude, state) do

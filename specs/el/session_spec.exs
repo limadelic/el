@@ -60,13 +60,13 @@ defmodule El.Session.Spec do
 
   describe "init/1" do
     test "captures cwd in state" do
-      opts = [claude_module: MockSessionModule]
+      Mox.stub(El.MockFileSystem, :cwd, fn -> "/test/dir" end)
+      opts = [claude_module: MockSessionModule, file_system: El.MockFileSystem]
 
       {:ok, state, {:continue, :start_claude}} =
         El.Session.init({:my_session, opts})
 
-      assert is_binary(state.cwd)
-      assert String.length(state.cwd) > 0
+      assert state.cwd == "/test/dir"
     end
 
     test "stores session name in state" do

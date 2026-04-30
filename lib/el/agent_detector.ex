@@ -5,6 +5,10 @@ defmodule El.AgentDetector do
     check_paths(fs, paths(name))
   end
 
+  def cwd(fs \\ file_system_impl()) do
+    fs.cwd()
+  end
+
   def detect_agent(name, fs \\ file_system_impl()) do
     paths(name) |> Enum.find(&fs.exists?/1) |> found(name)
   end

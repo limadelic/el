@@ -46,6 +46,7 @@ end
 
 defmodule El.Behaviours.FileSystem do
   @callback exists?(String.t()) :: boolean()
+  @callback cwd() :: String.t()
 end
 
 defmodule El.Behaviours.ClaudeCode do
