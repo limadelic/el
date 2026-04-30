@@ -25,7 +25,7 @@ defmodule El.CLI do
   end
 
   def execute(:start, [name]) do
-    opts = Start.detect_and_merge_agent(name, Start.start_opts(nil))
+    opts = Start.merge_session_opts(name)
     Start.handle_find_daemon_for_start(name, opts, el())
   end
 
