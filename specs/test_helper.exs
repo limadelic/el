@@ -38,6 +38,15 @@ defmodule NilAgentMetadataStub do
   def model_for(_), do: nil
 end
 
+defmodule AgentDetectorStub do
+  def detect_agent("kent"), do: "kent"
+  def detect_agent(_), do: nil
+end
+
+defmodule NilAgentDetectorStub do
+  def detect_agent(_), do: nil
+end
+
 Mox.defmock(El.MockSessionApi, for: El.Behaviours.Session)
 
 Application.put_env(:el, :registry, El.MockRegistry)

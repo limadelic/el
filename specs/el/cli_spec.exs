@@ -521,13 +521,14 @@ defmodule El.CLI.Spec do
     end
 
     test "merges model from agent metadata when agent detected and explicit_model is nil" do
-      stub(El.MockFileSystem, :exists?, fn path ->
-        String.contains?(path, "kent.md")
-      end)
-
+      System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
+      Application.put_env(:el, :agent_detector, AgentDetectorStub)
       Application.put_env(:el, :agent_metadata, AgentMetadataStub)
 
-      on_exit(fn -> Application.delete_env(:el, :agent_metadata) end)
+      on_exit(fn ->
+        Application.delete_env(:el, :agent_detector)
+        Application.delete_env(:el, :agent_metadata)
+      end)
 
       result = El.CLI.Start.merge_session_opts("kent", nil, nil)
 
@@ -535,13 +536,14 @@ defmodule El.CLI.Spec do
     end
 
     test "omits model from agent metadata if model_for returns nil" do
-      stub(El.MockFileSystem, :exists?, fn path ->
-        String.contains?(path, "agent.md")
-      end)
-
+      System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
+      Application.put_env(:el, :agent_detector, NilAgentDetectorStub)
       Application.put_env(:el, :agent_metadata, NilAgentMetadataStub)
 
-      on_exit(fn -> Application.delete_env(:el, :agent_metadata) end)
+      on_exit(fn ->
+        Application.delete_env(:el, :agent_detector)
+        Application.delete_env(:el, :agent_metadata)
+      end)
 
       result = El.CLI.Start.merge_session_opts("agent", nil, nil)
 
