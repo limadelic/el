@@ -73,7 +73,7 @@
           {Credo.Check.Readability.VariableNames, []},
           {Credo.Check.Refactor.FunctionArity, [max_arity: 5]},
           {Credo.Check.Refactor.CyclomaticComplexity, [max_complexity: 1]},
-          {Credo.Check.Design.DuplicatedCode, []},
+          {Credo.Check.Design.DuplicatedCode, mass_threshold: 3},
           {El.Credo.MaxFunctionLines, [max_lines: 5]},
           {El.Credo.MaxModuleLines, [max_lines: 100]},
           {Credo.Check.Warning.Dbg, []},
