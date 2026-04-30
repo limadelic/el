@@ -266,6 +266,7 @@ defmodule El.CLI.Spec do
       end)
 
       expect(El.MockEl, :start, fn :my_session, [agent: "my_session"] -> :ok end)
+      expect(El.MockSessionApi, :ask, fn :my_session, "who are you?" -> "response" end)
 
       capture_io(fn ->
         El.CLI.execute(:start, ["my_session"])
@@ -344,6 +345,7 @@ defmodule El.CLI.Spec do
       end)
 
       expect(El.MockEl, :start, fn :my_session, [agent: "my_session"] -> :ok end)
+      expect(El.MockSessionApi, :ask, fn :my_session, "who are you?" -> "response" end)
 
       System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
 
@@ -610,6 +612,7 @@ defmodule El.CLI.Spec do
 
     test "prints agent when both agent and model in opts" do
       expect(El.MockEl, :start, fn :session, [agent: "kent", model: "opus"] -> :ok end)
+      expect(El.MockSessionApi, :ask, fn :session, "who are you?" -> "response" end)
 
       output =
         capture_io(fn ->
@@ -621,6 +624,7 @@ defmodule El.CLI.Spec do
 
     test "prints model when both agent and model in opts" do
       expect(El.MockEl, :start, fn :session, [agent: "kent", model: "opus"] -> :ok end)
+      expect(El.MockSessionApi, :ask, fn :session, "who are you?" -> "response" end)
 
       output =
         capture_io(fn ->
@@ -632,6 +636,7 @@ defmodule El.CLI.Spec do
 
     test "prints agent when only agent in opts" do
       expect(El.MockEl, :start, fn :session, [agent: "kent"] -> :ok end)
+      expect(El.MockSessionApi, :ask, fn :session, "who are you?" -> "response" end)
 
       output =
         capture_io(fn ->
@@ -695,6 +700,24 @@ defmodule El.CLI.Spec do
         end)
 
       assert output =~ "msgs 5"
+    end
+
+    test "sends default who-are-you ping when agent is in opts" do
+      expect(El.MockEl, :start, fn :session, [agent: "kent"] -> :ok end)
+      expect(El.MockSessionApi, :ask, fn :session, "who are you?" -> "response" end)
+
+      capture_io(fn ->
+        El.CLI.Start.handle_find_daemon_for_start("session", [agent: "kent"], El.MockEl)
+      end)
+    end
+
+    test "does not send ping when agent is not in opts" do
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      expect(El.MockSessionApi, :ask, 0, fn _, _ -> "response" end)
+
+      capture_io(fn ->
+        El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+      end)
     end
   end
 

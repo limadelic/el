@@ -52,7 +52,15 @@ defmodule El.CLI.Start do
   def handle_find_daemon_for_start(name, opts, el) do
     name_atom = String.to_atom(name)
     el.start(name_atom, opts)
+    ping_if_agent(name_atom, opts)
     print_session_info(name, opts)
+  end
+
+  defp ping_if_agent(name_atom, opts) do
+    case Keyword.get(opts, :agent) do
+      nil -> :ok
+      _agent -> session_api().ask(name_atom, "who are you?")
+    end
   end
 
   defp print_session_info(name, opts) do
