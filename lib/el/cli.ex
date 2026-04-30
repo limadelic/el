@@ -35,7 +35,7 @@ defmodule El.CLI do
   end
 
   def execute(:start, [name, "-a", agent | rest]) do
-    opts = Start.agent_opts(agent)
+    opts = Start.merge_session_opts(name, agent, nil)
     Start.handle_find_daemon_with_rest(name, opts, rest, el())
   end
 
