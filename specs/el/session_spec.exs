@@ -859,6 +859,63 @@ defmodule El.Session.Spec do
       assert reply == :ok
     end
   end
+
+  describe "handle_call/2 :info" do
+    test "returns message count when messages exist", %{state: state} do
+      state_with_messages = %{state | messages: [{"ask", "q1", "a1", %{}}, {"tell", "q2", "a2", %{}}]}
+
+      {:reply, reply, _returned_state} =
+        El.Session.handle_call(:info, :from, state_with_messages)
+
+      assert reply.messages == 2
+    end
+
+    test "returns zero message count when no messages", %{state: state} do
+      {:reply, reply, _returned_state} =
+        El.Session.handle_call(:info, :from, state)
+
+      assert reply.messages == 0
+    end
+
+    test "returns nil last_prompt when messages empty", %{state: state} do
+      {:reply, reply, _returned_state} =
+        El.Session.handle_call(:info, :from, state)
+
+      assert reply.last_prompt == nil
+    end
+
+    test "returns nil last_response when messages empty", %{state: state} do
+      {:reply, reply, _returned_state} =
+        El.Session.handle_call(:info, :from, state)
+
+      assert reply.last_response == nil
+    end
+
+    test "returns last message prompt", %{state: state} do
+      state_with_messages = %{state | messages: [{"ask", "first", "a1", %{}}, {"tell", "second", "a2", %{}}]}
+
+      {:reply, reply, _returned_state} =
+        El.Session.handle_call(:info, :from, state_with_messages)
+
+      assert reply.last_prompt == "second"
+    end
+
+    test "returns last message response", %{state: state} do
+      state_with_messages = %{state | messages: [{"ask", "first", "a1", %{}}, {"tell", "second", "response2", %{}}]}
+
+      {:reply, reply, _returned_state} =
+        El.Session.handle_call(:info, :from, state_with_messages)
+
+      assert reply.last_response == "response2"
+    end
+
+    test "returns state unchanged", %{state: state} do
+      {:reply, _reply, returned_state} =
+        El.Session.handle_call(:info, :from, state)
+
+      assert returned_state == state
+    end
+  end
 end
 
 defmodule MockSessionStore do

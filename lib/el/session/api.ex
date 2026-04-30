@@ -49,4 +49,10 @@ defmodule El.Session.Api do
   catch
     _ -> nil
   end
+
+  def info(name) do
+    GenServer.call(Registry.via_tuple(name), :info, 5_000)
+  catch
+    _ -> nil
+  end
 end
