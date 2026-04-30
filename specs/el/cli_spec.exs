@@ -610,31 +610,18 @@ defmodule El.CLI.Spec do
       :ok
     end
 
-    test "prints agent when both agent and model in opts" do
-      expect(El.MockEl, :start, fn :session, [agent: "kent", model: "opus"] -> :ok end)
-      expect(El.MockSessionApi, :ask, fn :session, "who are you?" -> "response" end)
+    test "renders boxed output with name in first row" do
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("session", [agent: "kent", model: "opus"], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
         end)
 
-      assert output =~ "agent kent"
+      assert output =~ "name:  session"
     end
 
-    test "prints model when both agent and model in opts" do
-      expect(El.MockEl, :start, fn :session, [agent: "kent", model: "opus"] -> :ok end)
-      expect(El.MockSessionApi, :ask, fn :session, "who are you?" -> "response" end)
-
-      output =
-        capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("session", [agent: "kent", model: "opus"], El.MockEl)
-        end)
-
-      assert output =~ "model opus"
-    end
-
-    test "prints agent when only agent in opts" do
+    test "renders boxed output with agent when present in opts" do
       expect(El.MockEl, :start, fn :session, [agent: "kent"] -> :ok end)
       expect(El.MockSessionApi, :ask, fn :session, "who are you?" -> "response" end)
 
@@ -643,10 +630,10 @@ defmodule El.CLI.Spec do
           El.CLI.Start.handle_find_daemon_for_start("session", [agent: "kent"], El.MockEl)
         end)
 
-      assert output =~ "agent kent"
+      assert output =~ "agent: kent"
     end
 
-    test "prints model when only model in opts" do
+    test "renders boxed output with model when present in opts" do
       expect(El.MockEl, :start, fn :session, [model: "opus"] -> :ok end)
 
       output =
@@ -654,43 +641,10 @@ defmodule El.CLI.Spec do
           El.CLI.Start.handle_find_daemon_for_start("session", [model: "opus"], El.MockEl)
         end)
 
-      assert output =~ "model opus"
+      assert output =~ "model: opus"
     end
 
-    test "does not print agent when neither agent nor model in opts" do
-      expect(El.MockEl, :start, fn :session, [] -> :ok end)
-
-      output =
-        capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
-        end)
-
-      refute output =~ "agent"
-    end
-
-    test "does not print model when neither agent nor model in opts" do
-      expect(El.MockEl, :start, fn :session, [] -> :ok end)
-
-      output =
-        capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
-        end)
-
-      refute output =~ "model"
-    end
-
-    test "prints name from session name parameter" do
-      expect(El.MockEl, :start, fn :session, [] -> :ok end)
-
-      output =
-        capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
-        end)
-
-      assert output =~ "name session"
-    end
-
-    test "prints msgs count from Session.Api.info" do
+    test "renders boxed output with msgs count" do
       expect(El.MockEl, :start, fn :session, [] -> :ok end)
       stub(El.MockSessionApi, :info, fn :session -> %{messages: 5, last_prompt: nil, last_response: nil} end)
 
@@ -699,10 +653,10 @@ defmodule El.CLI.Spec do
           El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
         end)
 
-      assert output =~ "msgs 5"
+      assert output =~ "msgs:  5"
     end
 
-    test "prints last prompt when present" do
+    test "renders boxed output with prompt when present" do
       expect(El.MockEl, :start, fn :session, [] -> :ok end)
       stub(El.MockSessionApi, :info, fn :session -> %{messages: 1, last_prompt: "who are you?", last_response: nil} end)
 
@@ -714,9 +668,9 @@ defmodule El.CLI.Spec do
       assert output =~ "> who are you?"
     end
 
-    test "prints last response when present" do
+    test "renders boxed output with response when present" do
       expect(El.MockEl, :start, fn :session, [] -> :ok end)
-      stub(El.MockSessionApi, :info, fn :session -> %{messages: 1, last_prompt: "who are you?", last_response: "I am an agent" } end)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 1, last_prompt: "who are you?", last_response: "I am an agent"} end)
 
       output =
         capture_io(fn ->
@@ -726,35 +680,30 @@ defmodule El.CLI.Spec do
       assert output =~ "I am an agent"
     end
 
-    test "truncates long response with ..." do
+    test "omits agent row when agent not in opts" do
       expect(El.MockEl, :start, fn :session, [] -> :ok end)
-      long_response = String.duplicate("x", 100)
-      stub(El.MockSessionApi, :info, fn :session -> %{messages: 1, last_prompt: "who are you?", last_response: long_response} end)
 
       output =
         capture_io(fn ->
           El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
         end)
 
-      assert output =~ "..."
+      refute output =~ "agent:"
     end
 
-    test "does not print full long response when truncated" do
+    test "omits model row when model not in opts" do
       expect(El.MockEl, :start, fn :session, [] -> :ok end)
-      long_response = String.duplicate("x", 100)
-      stub(El.MockSessionApi, :info, fn :session -> %{messages: 1, last_prompt: "who are you?", last_response: long_response} end)
 
       output =
         capture_io(fn ->
           El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
         end)
 
-      refute output =~ long_response
+      refute output =~ "model:"
     end
 
-    test "does not print prompt line when last_prompt is nil" do
+    test "omits prompt separator and prompt when last_prompt is nil" do
       expect(El.MockEl, :start, fn :session, [] -> :ok end)
-      stub(El.MockSessionApi, :info, fn :session -> %{messages: 0, last_prompt: nil, last_response: nil} end)
 
       output =
         capture_io(fn ->
@@ -764,17 +713,32 @@ defmodule El.CLI.Spec do
       refute output =~ ">"
     end
 
-    test "does not print response line when last_response is nil" do
+    test "wraps long response using format_response" do
       expect(El.MockEl, :start, fn :session, [] -> :ok end)
-      stub(El.MockSessionApi, :info, fn :session -> %{messages: 1, last_prompt: "hi", last_response: nil} end)
+      long_response = "I'm Dude, man. The rug that ties this whole stack together."
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 1, last_prompt: "who are you?", last_response: long_response} end)
 
       output =
         capture_io(fn ->
           El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
         end)
 
-      assert output =~ "> hi"
-      refute output =~ "..."
+      assert output =~ "stack together."
+    end
+
+    test "caps response at 2 lines" do
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      long_response = "This is a very long response that will definitely wrap across multiple lines when formatted with word awareness at 46 characters per line"
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 1, last_prompt: "who are you?", last_response: long_response} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      lines = String.split(output, "\n")
+      response_lines = Enum.filter(lines, fn line -> String.contains?(line, ["definitely", "word", "awareness"]) end)
+      assert length(response_lines) <= 2
     end
 
     test "sends ping when agent in opts" do
@@ -802,7 +766,7 @@ defmodule El.CLI.Spec do
       :ok
     end
 
-    test "prints agent when -a flag with agent" do
+    test "renders boxed output with agent when provided" do
       expect(El.MockEl, :start, fn :kenny, [agent: "kent"] -> :ok end)
 
       output =
@@ -810,10 +774,10 @@ defmodule El.CLI.Spec do
           El.CLI.Start.handle_find_daemon_with_rest("kenny", [agent: "kent"], [], El.MockEl)
         end)
 
-      assert output =~ "agent kent"
+      assert output =~ "agent: kent"
     end
 
-    test "prints model when agent has default model" do
+    test "renders boxed output with model when agent has default model" do
       Application.put_env(:el, :agent_metadata, AgentMetadataStub)
 
       on_exit(fn ->
@@ -827,7 +791,7 @@ defmodule El.CLI.Spec do
           El.CLI.Start.handle_find_daemon_with_rest("kenny", [agent: "kent", model: "opus"], [], El.MockEl)
         end)
 
-      assert output =~ "model opus"
+      assert output =~ "model: opus"
     end
   end
 

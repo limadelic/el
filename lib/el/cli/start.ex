@@ -72,32 +72,44 @@ defmodule El.CLI.Start do
   end
 
   defp print_session_info(name, opts) do
-    print_agent_if_present(Keyword.get(opts, :agent))
-    print_model_if_present(Keyword.get(opts, :model))
-    print_name(name)
-    print_msgs(name)
-  end
-
-  defp print_agent_if_present(nil), do: :ok
-  defp print_agent_if_present(agent), do: IO.puts("agent #{agent}")
-
-  defp print_model_if_present(nil), do: :ok
-  defp print_model_if_present(model), do: IO.puts("model #{model}")
-
-  defp print_name(name), do: IO.puts("name #{name}")
-
-  defp print_msgs(name) do
     info = session_api().info(String.to_atom(name))
-    IO.puts("msgs #{info.messages}")
-    print_last_prompt(info.last_prompt)
-    print_last_response(info.last_response)
+    rows = build_card_rows(name, opts, info)
+    box_frame(rows) |> Enum.each(&IO.puts/1)
   end
 
-  defp print_last_prompt(nil), do: :ok
-  defp print_last_prompt(prompt), do: IO.puts("> #{prompt}")
+  defp build_card_rows(name, opts, info) do
+    []
+    |> add_name(name)
+    |> add_agent(Keyword.get(opts, :agent))
+    |> add_model(Keyword.get(opts, :model))
+    |> add_msgs(info.messages)
+    |> add_prompt_separator(info.last_prompt)
+    |> add_prompt(info.last_prompt)
+    |> add_response_separator(info.last_response)
+    |> add_response_lines(info.last_response)
+  end
 
-  defp print_last_response(nil), do: :ok
-  defp print_last_response(response), do: IO.puts(truncate_response(response))
+  defp add_name(rows, name), do: rows ++ ["name:  #{name}"]
+
+  defp add_agent(rows, nil), do: rows
+  defp add_agent(rows, agent), do: rows ++ ["agent: #{agent}"]
+
+  defp add_model(rows, nil), do: rows
+  defp add_model(rows, model), do: rows ++ ["model: #{model}"]
+
+  defp add_msgs(rows, messages), do: rows ++ ["msgs:  #{messages}"]
+
+  defp add_prompt_separator(rows, nil), do: rows
+  defp add_prompt_separator(rows, _prompt), do: rows ++ [String.duplicate("─", 46)]
+
+  defp add_prompt(rows, nil), do: rows
+  defp add_prompt(rows, prompt), do: rows ++ ["> #{prompt}"]
+
+  defp add_response_separator(rows, nil), do: rows
+  defp add_response_separator(rows, _response), do: rows ++ [String.duplicate("─", 46)]
+
+  defp add_response_lines(rows, nil), do: rows
+  defp add_response_lines(rows, response), do: rows ++ format_response(response)
 
   defp session_api do
     Application.get_env(:el, :session_api, El.Session.Api)
@@ -153,10 +165,6 @@ defmodule El.CLI.Start do
   end
 
   defp cap_lines(lines, max), do: Enum.take(lines, max)
-
-  defp truncate_response(response), do: do_truncate(String.length(response), response)
-  defp do_truncate(length, response) when length > 80, do: String.slice(response, 0, 80) <> "..."
-  defp do_truncate(_length, response), do: response
 
   def handle_find_daemon_with_rest(name, opts, rest, el) do
     name_atom = String.to_atom(name)
