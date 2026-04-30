@@ -48,8 +48,6 @@ defmodule El.CLI do
   end
 
   def execute(:msg, [name, word | more_words]) do
-    opts = Start.detect_and_merge_agent(name, Start.start_opts(nil))
-    el().start(String.to_atom(name), opts)
     Messaging.execute_msg(name, [word | more_words], el())
   end
 
