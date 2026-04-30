@@ -23,14 +23,16 @@ defmodule El.Session.Ask do
   end
 
   def finalize_ask(state, from, ref, message, response, model) do
-    Store.delete_ask_entry(state, message, ref)
-    Store.store_ask_entry(state, {"ask", message, response, metadata_for(model)})
+    store_module = Application.get_env(:el, :store_module, Store)
+    store_module.delete_ask_entry(state, message, ref)
+    store_module.store_ask_entry(state, {"ask", message, response, metadata_for(model)})
     Claude.safe_reply(from, response)
     finalize_ask_state(state, from, ref, message, response, model)
   end
 
   defp finalize_ask_state(state, from, ref, message, response, model) do
-    new_messages = Store.replace_ask(state.messages, ref, message, response, model)
+    store_module = Application.get_env(:el, :store_module, Store)
+    new_messages = store_module.replace_ask(state.messages, ref, message, response, model)
     new_pending = List.delete(state.pending_calls, from)
     %{state | messages: new_messages, pending_calls: new_pending}
   end

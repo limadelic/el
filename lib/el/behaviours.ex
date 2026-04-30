@@ -52,3 +52,11 @@ defmodule El.Behaviours.ClaudeCode do
   @callback stream(term(), term()) :: term()
   @callback stream(term(), term(), list()) :: term()
 end
+
+defmodule El.Behaviours.Store do
+  @callback delete_ask_entry(term(), term(), term()) :: term()
+  @callback store_ask_entry(term(), term()) :: term()
+  @callback replace_ask(term(), term(), term(), term(), term()) :: term()
+  @callback delete_message(term(), term()) :: term()
+  @callback store_message(term(), term()) :: term()
+end
