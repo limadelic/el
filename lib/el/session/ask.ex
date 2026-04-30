@@ -22,18 +22,21 @@ defmodule El.Session.Ask do
     GenServer.cast(server_pid, {:complete_ask, from, message, response, ref, model})
   end
 
-  def finalize_ask(state, from, ref, message, response, _model) do
+  def finalize_ask(state, from, ref, message, response, model) do
     Store.delete_ask_entry(state, message, ref)
-    Store.store_ask_entry(state, {"ask", message, response, %{}})
+    Store.store_ask_entry(state, {"ask", message, response, metadata_for(model)})
     Claude.safe_reply(from, response)
-    finalize_ask_state(state, from, ref, message, response)
+    finalize_ask_state(state, from, ref, message, response, model)
   end
 
-  defp finalize_ask_state(state, from, ref, message, response) do
-    new_messages = Store.replace_ask(state.messages, ref, message, response)
+  defp finalize_ask_state(state, from, ref, message, response, model) do
+    new_messages = Store.replace_ask(state.messages, ref, message, response, model)
     new_pending = List.delete(state.pending_calls, from)
     %{state | messages: new_messages, pending_calls: new_pending}
   end
+
+  defp metadata_for(nil), do: %{}
+  defp metadata_for(model), do: %{model: model}
 
   def reset_session(state) do
     state

@@ -44,7 +44,7 @@ defmodule El.Session.Ask.Spec do
   end
 
   describe "finalize_ask/6" do
-    test "accepts model as sixth parameter and finalize with state" do
+    test "stores model in message metadata when model is provided" do
       state = %{
         name: :test_session,
         messages: [],
@@ -56,6 +56,22 @@ defmodule El.Session.Ask.Spec do
       ref = make_ref()
 
       returned_state = El.Session.Ask.finalize_ask(state, from, ref, "question", "answer", "claude-3")
+
+      assert returned_state.messages == [{"ask", "question", "answer", %{model: "claude-3"}}]
+    end
+
+    test "stores empty metadata when model is nil" do
+      state = %{
+        name: :test_session,
+        messages: [],
+        pending_calls: [self()],
+        store_module: MockStore
+      }
+
+      from = {self(), make_ref()}
+      ref = make_ref()
+
+      returned_state = El.Session.Ask.finalize_ask(state, from, ref, "question", "answer", nil)
 
       assert returned_state.messages == [{"ask", "question", "answer", %{}}]
     end
