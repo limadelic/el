@@ -56,10 +56,13 @@ defmodule El.CLI.Start do
     print_session_info(name, opts)
   end
 
-  defp ping_if_agent(name_atom, opts), do: do_ping(name_atom, Keyword.get(opts, :agent))
+  defp ping_if_agent(name_atom, opts) do
+    do_ping(name_atom, Keyword.get(opts, :agent), session_api().info(name_atom))
+  end
 
-  defp do_ping(_name_atom, nil), do: :ok
-  defp do_ping(name_atom, _agent), do: quiet_ask(name_atom)
+  defp do_ping(_name_atom, nil, _info), do: :ok
+  defp do_ping(_name_atom, _agent, %{messages: messages}) when messages > 0, do: :ok
+  defp do_ping(name_atom, _agent, _info), do: quiet_ask(name_atom)
 
   defp quiet_ask(name_atom) do
     {:ok, null_device} = File.open("/dev/null", [:write])

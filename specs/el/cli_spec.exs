@@ -758,6 +758,16 @@ defmodule El.CLI.Spec do
         El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
       end)
     end
+
+    test "does not send ping when session has existing messages" do
+      stub(El.MockEl, :start, fn :session, [agent: "kent"] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 5, last_prompt: nil, last_response: nil} end)
+      expect(El.MockSessionApi, :ask, 0, fn _, _ -> "response" end)
+
+      capture_io(fn ->
+        El.CLI.Start.handle_find_daemon_for_start("session", [agent: "kent"], El.MockEl)
+      end)
+    end
   end
 
   describe "El.CLI.Start.handle_find_daemon_with_rest/4" do
