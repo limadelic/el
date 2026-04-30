@@ -56,12 +56,10 @@ defmodule El.CLI.Start do
     print_session_info(name, opts)
   end
 
-  defp ping_if_agent(name_atom, opts) do
-    case Keyword.get(opts, :agent) do
-      nil -> :ok
-      _agent -> session_api().ask(name_atom, "who are you?")
-    end
-  end
+  defp ping_if_agent(name_atom, opts), do: do_ping(name_atom, Keyword.get(opts, :agent))
+
+  defp do_ping(_name_atom, nil), do: :ok
+  defp do_ping(name_atom, _agent), do: session_api().ask(name_atom, "who are you?")
 
   defp print_session_info(name, opts) do
     print_agent_if_present(Keyword.get(opts, :agent))

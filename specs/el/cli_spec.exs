@@ -702,8 +702,8 @@ defmodule El.CLI.Spec do
       assert output =~ "msgs 5"
     end
 
-    test "sends default who-are-you ping when agent is in opts" do
-      expect(El.MockEl, :start, fn :session, [agent: "kent"] -> :ok end)
+    test "sends ping when agent in opts" do
+      stub(El.MockEl, :start, fn :session, [agent: "kent"] -> :ok end)
       expect(El.MockSessionApi, :ask, fn :session, "who are you?" -> "response" end)
 
       capture_io(fn ->
@@ -711,8 +711,8 @@ defmodule El.CLI.Spec do
       end)
     end
 
-    test "does not send ping when agent is not in opts" do
-      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+    test "does not send ping when no agent in opts" do
+      stub(El.MockEl, :start, fn :session, [] -> :ok end)
       expect(El.MockSessionApi, :ask, 0, fn _, _ -> "response" end)
 
       capture_io(fn ->
