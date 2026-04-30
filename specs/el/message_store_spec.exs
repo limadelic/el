@@ -42,7 +42,7 @@ defmodule El.MessageStore.Spec do
 
       result = El.MessageStore.session_names()
 
-      assert result == [:dude, :kent]
+      assert Enum.sort(result) == [:dude, :kent]
     end
   end
 end
