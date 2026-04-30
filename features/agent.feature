@@ -14,7 +14,7 @@ Feature: Agent support
 
   Scenario: Model override agent detection from name
     * > el kent -m haiku:
-      | agent | kent |
+      | agent | kent  |
       | model | haiku |
     * > el kent exit
 
