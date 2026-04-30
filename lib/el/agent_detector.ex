@@ -2,7 +2,7 @@ defmodule El.AgentDetector do
   @behaviour El.Behaviours.FileSystem
 
   def exists?(name, fs \\ file_system_impl()) do
-    check_paths(fs, [global_path(name), local_path(name)])
+    check_paths(fs, paths(name))
   end
 
   def detect_agent(name, fs \\ file_system_impl()) do
@@ -10,7 +10,7 @@ defmodule El.AgentDetector do
   end
 
   defp paths(name) do
-    [global_path(name), local_path(name)]
+    [El.Agent.Paths.global_path(name), El.Agent.Paths.local_path(name)]
   end
 
   defp found(nil, _), do: nil
@@ -18,15 +18,6 @@ defmodule El.AgentDetector do
 
   defp check_paths(fs, paths) do
     Enum.any?(paths, &fs.exists?/1)
-  end
-
-  defp global_path(name) do
-    home = System.get_env("HOME")
-    Path.join([home, ".claude", "agents", "#{name}.md"])
-  end
-
-  defp local_path(name) do
-    Path.join([".claude", "agents", "#{name}.md"])
   end
 
   defp file_system_impl do

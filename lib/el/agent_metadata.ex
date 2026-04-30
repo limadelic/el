@@ -12,18 +12,17 @@ defmodule El.AgentMetadata do
   end
 
   defp try_local_then_global(agent_name) do
-    case read_from_path(local_path(agent_name)) do
-      nil -> read_from_path(global_path(agent_name))
+    read_from_path_with_fallback(
+      El.Agent.Paths.local_path(agent_name),
+      El.Agent.Paths.global_path(agent_name)
+    )
+  end
+
+  defp read_from_path_with_fallback(local, global) do
+    case read_from_path(local) do
+      nil -> read_from_path(global)
       model -> model
     end
-  end
-
-  defp local_path(agent_name) do
-    Path.join([".claude", "agents", "#{agent_name}.md"])
-  end
-
-  defp global_path(agent_name) do
-    Path.expand("~/.claude/agents/#{agent_name}.md")
   end
 
   defp read_from_path(file_path) do
