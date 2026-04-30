@@ -860,17 +860,15 @@ defmodule El.Session.Spec do
     end
   end
 
-  describe "handle_call/2 :info" do
-    test "returns empty info map when GenServer call fails" do
-      result = try do
-        GenServer.call({:via, :whatever, :fake}, :info, 5_000)
-      catch
-        _, _ -> %{messages: 0, last_prompt: nil, last_response: nil}
-      end
+  describe "Api.info/1" do
+    test "returns default info when session does not exist" do
+      result = El.Session.Api.info(:nonexistent_session)
 
       assert result == %{messages: 0, last_prompt: nil, last_response: nil}
     end
+  end
 
+  describe "handle_call/2 :info" do
     test "returns message count when messages exist", %{state: state} do
       state_with_messages = %{state | messages: [{"ask", "q1", "a1", %{}}, {"tell", "q2", "a2", %{}}]}
 
