@@ -91,6 +91,11 @@ defmodule El.Application.Spec do
     assert dir == "~/.el"
   end
 
+  test "init_message_store opens session_meta table alongside message_store" do
+    El.Application.init_message_store()
+    assert :dets.info(:session_meta) != :undefined
+  end
+
   describe "restore_sessions/0" do
     test "starts sessions from message store" do
       {:ok, _pid} = Agent.start_link(fn -> [] end, name: RestoreSessionsStubEl)

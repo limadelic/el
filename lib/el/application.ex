@@ -19,6 +19,7 @@ defmodule El.Application do
 
   @impl true
   def stop(_state) do
+    :dets.close(:session_meta)
     message_store = Application.get_env(:el, :message_store, El.MessageStore)
     message_store.close()
   end
@@ -46,9 +47,11 @@ defmodule El.Application do
 
   def init_message_store do
     dir = store_dir()
-    path = Path.expand("#{dir}/messages.dets") |> String.to_charlist()
+    messages_path = Path.expand("#{dir}/messages.dets") |> String.to_charlist()
+    session_meta_path = Path.expand("#{dir}/session_meta.dets") |> String.to_charlist()
     File.mkdir_p!(Path.expand(dir))
-    {:ok, _} = :dets.open_file(:message_store, file: path, type: :bag)
+    {:ok, _} = :dets.open_file(:message_store, file: messages_path, type: :bag)
+    {:ok, _} = :dets.open_file(:session_meta, file: session_meta_path, type: :bag)
   end
 
   defp store_dir, do: store_dir(El.CLI.Daemon.dev?())
