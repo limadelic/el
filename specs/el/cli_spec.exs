@@ -816,7 +816,7 @@ defmodule El.CLI.Spec do
 
     defp setup_cwd_id_session do
       expect(El.MockEl, :start, fn :session, [] -> :ok end)
-      stub(El.MockSessionApi, :info, fn :session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: "/abcd/efgh", id: "abc123def456"} end)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: "/abc/def", id: "abc123def456"} end)
     end
 
     test "renders name in two-column format" do
@@ -838,7 +838,7 @@ defmodule El.CLI.Spec do
           El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
         end)
 
-      assert output =~ "cwd: /abcd/efgh"
+      assert output =~ "cwd: /abc/def"
     end
 
     test "renders id in two-column format" do
@@ -849,7 +849,7 @@ defmodule El.CLI.Spec do
           El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
         end)
 
-      assert output =~ "id: …123def456"
+      assert output =~ "id: …23def456"
     end
 
     defp setup_anom_case do
@@ -876,7 +876,7 @@ defmodule El.CLI.Spec do
           El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
         end)
 
-      assert output =~ "cwd: …d/e/f/g/h"
+      assert output =~ "cwd: …/e/f/g/h"
     end
 
     test "renders truncated id in anom case" do
@@ -887,7 +887,7 @@ defmodule El.CLI.Spec do
           El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
         end)
 
-      assert output =~ "id: …789abc123"
+      assert output =~ "id: …89abc123"
     end
 
     test "omits agent row for anom" do
@@ -948,7 +948,7 @@ defmodule El.CLI.Spec do
           El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl)
         end)
 
-      assert output =~ "cwd: …path/name"
+      assert output =~ "cwd: …ath/name"
     end
 
     test "renders agent with id in second row for agent sessions" do
@@ -970,7 +970,7 @@ defmodule El.CLI.Spec do
           El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl)
         end)
 
-      assert output =~ "id: …234567890"
+      assert output =~ "id: …34567890"
     end
 
     test "renders model for agent sessions" do

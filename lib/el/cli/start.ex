@@ -164,7 +164,7 @@ defmodule El.CLI.Start do
   end
 
   defp truncate_value(value) do
-    truncate_with_ellipsis(value, 10)
+    truncate_with_ellipsis(value, 9)
   end
 
   defp truncate_with_ellipsis(text, max_len) do
