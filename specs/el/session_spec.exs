@@ -6,6 +6,7 @@ defmodule El.Session.Spec do
       name: :test_session,
       claude_pid: nil,
       session_id: "test-session-id",
+      cwd: "/test/dir",
       messages: [],
       pending_calls: [],
       claude_module: MockSessionModule,
@@ -874,7 +875,7 @@ defmodule El.Session.Spec do
     test "returns default info when session does not exist" do
       result = El.Session.Api.info(:nonexistent_session)
 
-      assert result == %{messages: 0, last_prompt: nil, last_response: nil, model: nil}
+      assert result == %{messages: 0, last_prompt: nil, last_response: nil, model: nil, id: nil, cwd: nil}
     end
   end
 
@@ -957,6 +958,24 @@ defmodule El.Session.Spec do
         El.Session.handle_call(:info, :from, state_with_messages)
 
       assert reply.model == nil
+    end
+
+    test "returns id from state.session_id", %{state: state} do
+      updated_state = %{state | session_id: "test-session-id"}
+
+      {:reply, reply, _returned_state} =
+        El.Session.handle_call(:info, :from, updated_state)
+
+      assert reply.id == "test-session-id"
+    end
+
+    test "returns cwd from state.cwd", %{state: state} do
+      updated_state = %{state | cwd: "/test/dir"}
+
+      {:reply, reply, _returned_state} =
+        El.Session.handle_call(:info, :from, updated_state)
+
+      assert reply.cwd == "/test/dir"
     end
   end
 end

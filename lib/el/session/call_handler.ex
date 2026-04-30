@@ -23,7 +23,7 @@ defmodule El.Session.CallHandler do
   end
 
   def handle(:info, _from, state) do
-    info = build_info(state.messages)
+    info = build_info(state.messages, state.session_id, state.cwd)
     {:reply, info, state}
   end
 
@@ -32,12 +32,12 @@ defmodule El.Session.CallHandler do
     Ask.reset_session(state) |> reply_ok()
   end
 
-  defp build_info([]) do
-    %{messages: 0, last_prompt: nil, last_response: nil, model: nil}
+  defp build_info([], session_id, cwd) do
+    %{messages: 0, last_prompt: nil, last_response: nil, model: nil, id: session_id, cwd: cwd}
   end
 
-  defp build_info(messages) do
-    %{messages: length(messages)} |> add_last_message(List.last(messages))
+  defp build_info(messages, session_id, cwd) do
+    %{messages: length(messages), id: session_id, cwd: cwd} |> add_last_message(List.last(messages))
   end
 
   defp add_last_message(info, {_type, prompt, response, metadata}) do
