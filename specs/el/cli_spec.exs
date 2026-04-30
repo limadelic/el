@@ -830,7 +830,7 @@ defmodule El.CLI.Spec do
       assert output =~ "name:  session"
     end
 
-    test "renders cwd in two-column format" do
+    test "omits cwd row when no second left row (no agent or model)" do
       setup_cwd_id_session()
 
       output =
@@ -838,7 +838,7 @@ defmodule El.CLI.Spec do
           El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
         end)
 
-      assert output =~ "cwd: /abc/def"
+      refute output =~ "cwd:"
     end
 
     test "renders id in two-column format" do
@@ -868,7 +868,7 @@ defmodule El.CLI.Spec do
       assert output =~ "name:  anom"
     end
 
-    test "renders truncated cwd path" do
+    test "omits cwd when anom has no model" do
       setup_anom_case()
 
       output =
@@ -876,7 +876,7 @@ defmodule El.CLI.Spec do
           El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
         end)
 
-      assert output =~ "cwd: …/e/f/g/h"
+      refute output =~ "cwd:"
     end
 
     test "renders truncated id in anom case" do
@@ -982,6 +982,60 @@ defmodule El.CLI.Spec do
         end)
 
       assert output =~ "model: opus"
+    end
+
+    test "pairs name with id in first row" do
+      setup_cwd_id_session()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      lines = String.split(output, "\n")
+      second_line = Enum.at(lines, 1)
+      assert second_line =~ "name:  session" && second_line =~ "id: …23def456"
+    end
+
+    test "pairs agent with cwd in second row" do
+      setup_agent_kent_session()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl)
+        end)
+
+      lines = String.split(output, "\n")
+      third_line = Enum.at(lines, 2)
+      assert third_line =~ "agent: kent" && third_line =~ "cwd: …ath/name"
+    end
+
+    test "pairs model with cwd when no agent" do
+      expect(El.MockEl, :start, fn :anom, [] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :anom -> %{messages: 0, last_prompt: nil, last_response: nil, model: "haiku", cwd: "/abc/def", id: "xyz789abc123"} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
+        end)
+
+      lines = String.split(output, "\n")
+      third_line = Enum.at(lines, 2)
+      assert third_line =~ "model: haiku" && third_line =~ "cwd: /abc/def"
+    end
+
+    test "drops cwd row when only name exists" do
+      expect(El.MockEl, :start, fn :anom, [] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :anom -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: "/abc/def", id: "xyz789abc123"} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
+        end)
+
+      lines = String.split(output, "\n")
+      box_lines = Enum.filter(lines, fn line -> String.starts_with?(line, "│") end)
+      assert length(box_lines) == 1
     end
   end
 

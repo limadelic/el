@@ -81,10 +81,13 @@ defmodule El.CLI.Start do
   end
 
   defp build_card_rows(name, opts, info) do
+    agent = Keyword.get(opts, :agent)
+    opts_model = Keyword.get(opts, :model)
+
     []
-    |> add_name_cwd(name, info.cwd)
-    |> add_agent_id(Keyword.get(opts, :agent), info.id)
-    |> add_model(Keyword.get(opts, :model), info.model)
+    |> add_name_id(name, info.id)
+    |> add_second_with_cwd(agent, opts_model, info.model, info.cwd)
+    |> add_model(opts_model, info.model)
     |> add_msgs(info.messages)
     |> add_prompt_separator(info.last_prompt)
     |> add_prompt(info.last_prompt)
@@ -92,20 +95,27 @@ defmodule El.CLI.Start do
     |> add_response_lines(info.last_response)
   end
 
-  defp add_name_cwd(rows, name, cwd) do
+  defp add_name_id(rows, name, id) do
     left = "name:  #{name}"
-    right = "cwd: #{cwd}"
-    rows ++ [frame_pair_row(left, right)]
-  end
-
-  defp add_agent_id(rows, agent, id) do
-    left = agent_label(agent)
     right = "id: #{id}"
     rows ++ [frame_pair_row(left, right)]
   end
 
-  defp agent_label(nil), do: ""
-  defp agent_label(agent), do: "agent: #{agent}"
+  defp add_second_with_cwd(rows, agent, opts_model, info_model, cwd) do
+    second_left = second_left_value(agent, opts_model, info_model)
+    do_add_second_with_cwd(rows, second_left, cwd)
+  end
+
+  defp second_left_value(agent, _, _) when agent != nil, do: "agent: #{agent}"
+  defp second_left_value(nil, opts_model, _) when opts_model != nil, do: "model: #{opts_model}"
+  defp second_left_value(nil, nil, info_model) when info_model != nil, do: "model: #{info_model}"
+  defp second_left_value(_, _, _), do: nil
+
+  defp do_add_second_with_cwd(rows, nil, _cwd), do: rows
+  defp do_add_second_with_cwd(rows, left, cwd) do
+    right = "cwd: #{cwd}"
+    rows ++ [frame_pair_row(left, right)]
+  end
 
   defp add_model(rows, nil, nil), do: rows
   defp add_model(rows, nil, info_model), do: rows ++ ["model: #{info_model}"]
