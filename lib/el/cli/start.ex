@@ -84,7 +84,7 @@ defmodule El.CLI.Start do
     []
     |> add_name(name)
     |> add_agent(Keyword.get(opts, :agent))
-    |> add_model(Keyword.get(opts, :model))
+    |> add_model(Keyword.get(opts, :model), info.model)
     |> add_msgs(info.messages)
     |> add_prompt_separator(info.last_prompt)
     |> add_prompt(info.last_prompt)
@@ -97,8 +97,9 @@ defmodule El.CLI.Start do
   defp add_agent(rows, nil), do: rows
   defp add_agent(rows, agent), do: rows ++ ["agent: #{agent}"]
 
-  defp add_model(rows, nil), do: rows
-  defp add_model(rows, model), do: rows ++ ["model: #{model}"]
+  defp add_model(rows, nil, nil), do: rows
+  defp add_model(rows, nil, info_model), do: rows ++ ["model: #{info_model}"]
+  defp add_model(rows, opts_model, _info_model), do: rows ++ ["model: #{opts_model}"]
 
   defp add_msgs(rows, 0), do: rows
   defp add_msgs(rows, count), do: rows ++ ["msgs:  #{count}"]
