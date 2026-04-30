@@ -18,11 +18,11 @@ defmodule El.Session.Ask do
 
   defp spawn_ask_task(state, ask_info, valid_routes, server_pid) do
     {from, message, ref} = ask_info
-    response = Claude.ask_work(state.claude_pid, message, valid_routes)
-    GenServer.cast(server_pid, {:complete_ask, from, message, response, ref})
+    {response, model} = Claude.ask_work(state.claude_pid, message, valid_routes)
+    GenServer.cast(server_pid, {:complete_ask, from, message, response, ref, model})
   end
 
-  def finalize_ask(state, from, ref, message, response) do
+  def finalize_ask(state, from, ref, message, response, _model) do
     Store.delete_ask_entry(state, message, ref)
     Store.store_ask_entry(state, {"ask", message, response, %{}})
     Claude.safe_reply(from, response)

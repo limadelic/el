@@ -387,7 +387,7 @@ defmodule El.Session.Spec do
     test "appends when no pending entry exists", %{state: state} do
       from = {self(), make_ref()}
       ref = make_ref()
-      cast_msg = {:complete_ask, from, "test", "response", ref}
+      cast_msg = {:complete_ask, from, "test", "response", ref, "claude-3"}
 
       {:noreply, returned_state} =
         El.Session.handle_cast(cast_msg, state)
@@ -401,7 +401,7 @@ defmodule El.Session.Spec do
       cast_ref = make_ref()
 
       El.Session.handle_cast(
-        {:complete_ask, from, "test", "the answer", cast_ref},
+        {:complete_ask, from, "test", "the answer", cast_ref, "claude-3"},
         state
       )
 
@@ -414,7 +414,7 @@ defmodule El.Session.Spec do
 
       {:noreply, returned_state} =
         El.Session.handle_cast(
-          {:complete_ask, from, "my question", "42", ref},
+          {:complete_ask, from, "my question", "42", ref, "claude-3"},
           state
         )
 
@@ -430,7 +430,7 @@ defmodule El.Session.Spec do
 
       {:noreply, returned_state} =
         El.Session.handle_cast(
-          {:complete_ask, from, "hello", "response", ref},
+          {:complete_ask, from, "hello", "response", ref, "claude-3"},
           pending_state
         )
 
@@ -451,7 +451,7 @@ defmodule El.Session.Spec do
           ]
       }
 
-      cast_msg = {:complete_ask, from, "question", "answer first", ref1}
+      cast_msg = {:complete_ask, from, "question", "answer first", ref1, "claude-3"}
 
       {:noreply, returned_state} =
         El.Session.handle_cast(cast_msg, pending_state)
@@ -469,7 +469,7 @@ defmodule El.Session.Spec do
       msg = [{"ask", "question", "", %{ref: ref}}]
       pending_state = %{state | messages: msg}
 
-      cast_msg = {:complete_ask, from, "question", "answer", ref}
+      cast_msg = {:complete_ask, from, "question", "answer", ref, "claude-3"}
 
       {:noreply, returned_state} =
         El.Session.handle_cast(cast_msg, pending_state)

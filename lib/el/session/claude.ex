@@ -65,8 +65,8 @@ defmodule El.Session.Claude do
   defp extract_model(_), do: nil
 
   def ask_work(pid, message, _routes) do
-    {result, _model} = ask(pid, message)
-    result
+    {result, model} = ask(pid, message)
+    {result, model}
   end
 
   def maybe_respawn_claude(%{claude_pid: nil} = state) do
