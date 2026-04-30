@@ -26,6 +26,7 @@ defmodule El.MessageStoreStub do
   def insert(_name, _entry), do: :ok
   def lookup(_name), do: []
   def delete(_name), do: :ok
+  def close, do: :ok
 end
 
 Mox.defmock(El.MockSessionApi, for: El.Behaviours.Session)
@@ -51,9 +52,6 @@ defmodule TestClaudeCode do
   end
 end
 
-ExUnit.after_suite(fn _results ->
-  System.halt(0)
-end)
 
 defmodule ModelCaptureModule do
   def start_link(opts) do

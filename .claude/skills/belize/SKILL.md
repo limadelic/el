@@ -1,17 +1,17 @@
-# GWT - Patterns & Practices
+---
+name: belize
+description: El acceptance testing DSL and rules
+---
 
-Lisa writes `.feature` files. Eric reviews them.
+# Belize (El)
 
-## Goal
+- Read global belize for the process and cast
+- This skill defines El's DSL and rules
 
-- Maximize reuse of existing DSL
-- Minimize step definitions - one step def for `>`
-- Cucumber (Ruby) compiles `.feature` files to tests
+## DSL
 
-## The DSL
-
-One operator: `>` - everything is a shell command.
-Gherkin keyword `*` keeps it neutral.
+- One operator: `>` — everything is a shell command
+- Gherkin keyword `*` keeps it neutral
 
 ### Start a session (zombie)
 ```gherkin
@@ -53,18 +53,18 @@ Gherkin keyword `*` keeps it neutral.
   | (dude) |
 ```
 
-`(name)` in a table means name should NOT be present.
+- `(name)` in a table means name should NOT be present
 
 ## Tables
 
 - Tables verify command output
 - No column headers until needed
 - One step handles `>` with or without tables
-- `el <name>` self-daemonizes - returns to shell immediately, no `&` needed
+- `el <name>` self-daemonizes, returns to shell immediately
 
 ## Scenarios
 
-- Declarative - WHAT not HOW
+- Declarative, WHAT not HOW
 - One outcome per scenario
 - Domain language: el, dude, elita, tell, ask, log, kill, ls
 - No incidental detail
@@ -93,4 +93,4 @@ features/
 - Creating new step definitions when `>` covers it
 - Imperative scenarios (implementation details)
 - Testing multiple outcomes in one scenario
-- Testing OTP internals - features test the CLI surface
+- Testing OTP internals, features test the CLI surface

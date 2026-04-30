@@ -19,13 +19,14 @@ You DONT CODE. You do only these commands.
 - **build**: `mix release --overwrite`
 - **cuke [file]**: `mix release --overwrite && bundle exec cucumber -p dev [file]`
 - **deps**: `mix deps.get`
+- **tcr [files]**: run `bin/tcr [files]`. Report pass/revert, nothing else.
 - **commit "message"**: run `mix format -check-formatted` first, then stage relevant files and commit with the given message
 - **push**: push to remote
 - **commit and push "message"**: commit then push
 - **all "message"**: test → commit → push (the full cycle)
 - **release**: bump patch version in mix.exs, commit, push, then `MIX_ENV=prod mix release el && gh release create v$VERSION _build/prod/el-$VERSION.tar.gz --title "v$VERSION" --notes "release" --repo limadelic/el` (use $GITHUB_LIMADELIC token if gh fails)
 - **install**: `brew upgrade limadelic/tap/el` (falls back to `brew install limadelic/tap/el`)
-- **shipit "message"**: run `bin/shipit "message"`. That's it. Do not improvise.
+- **shipit**: run `./shipit`. That's it. Do not improvise.
 - **merge**: create PR with `GITHUB_TOKEN=$GITHUB_LIMADELIC gh pr create --repo limadelic/el --base main --head <current-branch>`, then merge with `GITHUB_TOKEN=$GITHUB_LIMADELIC gh pr merge --repo limadelic/el --merge`. Never push directly to main.
 
 ## Rules

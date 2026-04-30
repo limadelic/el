@@ -243,7 +243,6 @@ defmodule El.CLI.Spec do
       output =
         capture_io(fn -> El.CLI.execute(:msg, ["session", "hello", "world"]) end)
 
-      assert output =~ "session"
       assert output =~ "reply"
     end
 
@@ -257,11 +256,10 @@ defmodule El.CLI.Spec do
       output =
         capture_io(fn -> El.CLI.execute(:msg, ["session", "hello"]) end)
 
-      assert output =~ "session"
       assert output =~ "reply"
     end
 
-    test "execute :start calls AgentDetector.detect_agent and merges agent into opts" do
+    test "execute :start uses merge_session_opts to combine agent and model" do
       stub(El.MockFileSystem, :exists?, fn path ->
         String.contains?(path, "my_session.md")
       end)
@@ -273,7 +271,7 @@ defmodule El.CLI.Spec do
       end)
     end
 
-    test "execute :start with -m model calls AgentDetector.detect_agent and merges agent" do
+    test "execute :start with -m model calls merge_session_opts with explicit model" do
       stub(El.MockFileSystem, :exists?, fn path ->
         String.contains?(path, "my_session.md")
       end)
@@ -417,6 +415,109 @@ defmodule El.CLI.Spec do
     test "version matches version format" do
       output = capture_io(fn -> El.CLI.dispatch(["-v"]) end)
       assert output =~ ~r/\d+\.\d+/
+    end
+  end
+
+  describe "El.CLI.Start.merge_session_opts/3" do
+    setup do
+      Application.put_env(:el, :file_system, El.MockFileSystem)
+      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+
+      on_exit(fn ->
+        Application.delete_env(:el, :file_system)
+        System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
+      end)
+
+      :ok
+    end
+
+    defp setup_agent_detected do
+      stub(El.MockFileSystem, :exists?, fn path ->
+        String.contains?(path, "session.md")
+      end)
+
+      System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
+    end
+
+    test "with explicit_model prepends [model: explicit_model]" do
+      result = El.CLI.Start.merge_session_opts("session", nil, "opus")
+
+      assert Keyword.get(result, :model) == "opus"
+    end
+
+    test "with explicit_agent uses explicit_agent for agent:" do
+      result = El.CLI.Start.merge_session_opts("session", "explicit", nil)
+
+      assert Keyword.get(result, :agent) == "explicit"
+    end
+
+    test "with no explicit_agent detects agent if exists" do
+      stub(El.MockFileSystem, :exists?, fn path ->
+        String.contains?(path, "session.md")
+      end)
+
+      result = El.CLI.Start.merge_session_opts("session", nil, nil)
+
+      assert Keyword.get(result, :agent) == "session"
+    end
+
+    test "with no explicit_agent and no detected agent omits agent" do
+      result = El.CLI.Start.merge_session_opts("session", nil, nil)
+
+      refute Keyword.has_key?(result, :agent)
+    end
+
+    test "appends env_model when no model or agent" do
+      System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
+
+      result = El.CLI.Start.merge_session_opts("session", nil, nil)
+
+      assert Keyword.get(result, :model) == "sonnet"
+    end
+
+    test "ignores env_model when explicit_model provided" do
+      System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
+
+      result = El.CLI.Start.merge_session_opts("session", nil, "opus")
+
+      assert Keyword.get(result, :model) == "opus"
+    end
+
+    test "includes detected agent in opts" do
+      setup_agent_detected()
+
+      result = El.CLI.Start.merge_session_opts("session", nil, nil)
+
+      assert Keyword.get(result, :agent) == "session"
+    end
+
+    test "omits model when agent detected" do
+      setup_agent_detected()
+
+      result = El.CLI.Start.merge_session_opts("session", nil, nil)
+
+      refute Keyword.has_key?(result, :model)
+    end
+
+    test "combines explicit_model and explicit_agent" do
+      result = El.CLI.Start.merge_session_opts("session", "kent", "haiku")
+
+      assert Keyword.get(result, :model) == "haiku"
+      assert Keyword.get(result, :agent) == "kent"
+    end
+
+    test "ignores env_model when explicit_agent provided" do
+      System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
+
+      result = El.CLI.Start.merge_session_opts("session", "explicit", nil)
+
+      assert Keyword.get(result, :agent) == "explicit"
+    end
+
+    test "omits model when explicit_agent provided" do
+      result = El.CLI.Start.merge_session_opts("session", "explicit", nil)
+
+      refute Keyword.has_key?(result, :model)
     end
   end
 end

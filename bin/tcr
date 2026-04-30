@@ -1,0 +1,19 @@
+#!/bin/bash
+set -euo pipefail
+
+files=("$@")
+
+if [ ${#files[@]} -eq 0 ]; then
+  echo "Usage: bin/tcr <files...>"
+  exit 1
+fi
+
+if mix test; then
+  git add "${files[@]}"
+  git commit -m "TCR: auto-commit"
+  echo "TCR: committed $(git rev-parse --short HEAD)"
+else
+  git checkout -- "${files[@]}"
+  echo "TCR: reverted"
+  exit 1
+fi

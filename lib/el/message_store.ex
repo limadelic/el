@@ -28,4 +28,8 @@ defmodule El.MessageStore do
   end
 
   defp add_session_name({name, _}, acc), do: MapSet.put(acc, name)
+
+  def close do
+    :dets.close(:message_store)
+  end
 end

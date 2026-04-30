@@ -2,11 +2,16 @@ defmodule El.CLI.Start do
   def start_opts(nil), do: []
   def start_opts(model), do: [model: model]
 
-  def agent_opts(nil), do: []
-  def agent_opts(agent), do: [agent: agent]
-
   def normalize_model(""), do: nil
   def normalize_model(model), do: model
+
+  def merge_session_opts(name, explicit_agent \\ nil, explicit_model \\ nil) do
+    model_opts = start_opts(explicit_model)
+    agent = explicit_agent || El.AgentDetector.detect_agent(name)
+    agent_opts = agent_opt(agent)
+    result = model_opts ++ agent_opts
+    result ++ env_model(result)
+  end
 
   def detect_and_merge_agent(name, opts) do
     merged = opts ++ agent_opt(El.AgentDetector.detect_agent(name))

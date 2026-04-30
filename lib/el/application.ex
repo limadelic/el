@@ -17,6 +17,12 @@ defmodule El.Application do
     {:ok, pid}
   end
 
+  @impl true
+  def stop(_state) do
+    message_store = Application.get_env(:el, :message_store, El.MessageStore)
+    message_store.close()
+  end
+
   def restore_sessions do
     el = Application.get_env(:el, :el_module, El)
     message_store = Application.get_env(:el, :message_store, El.MessageStore)
