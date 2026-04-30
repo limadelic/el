@@ -19,10 +19,7 @@ defmodule El.AgentMetadata do
   end
 
   defp read_from_path_with_fallback(local, global) do
-    case read_from_path(local) do
-      nil -> read_from_path(global)
-      model -> model
-    end
+    read_from_path(local) || read_from_path(global)
   end
 
   defp read_from_path(file_path) do
