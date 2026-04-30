@@ -1,13 +1,17 @@
 require "rspec/expectations"
 
-puts "=== mix release --overwrite ==="
-output = `mix release --overwrite 2>&1`
-abort("mix release failed:\n#{output}") unless output.include?("Release created")
+bin = ENV["DEV"] ? "./el" : "/opt/homebrew/bin/el"
 
-puts "=== ./el exit ==="
-system("./el exit") or abort("./el exit failed")
+if ENV["DEV"]
+  puts "=== mix release --overwrite ==="
+  output = `mix release --overwrite 2>&1`
+  abort("mix release failed:\n#{output}") unless output.include?("Release created")
+end
 
-puts "=== ./el restart ==="
-system("./el restart") or abort("./el restart failed")
+puts "=== #{bin} exit ==="
+system("#{bin} exit") or abort("#{bin} exit failed")
+
+puts "=== #{bin} restart ==="
+system("#{bin} restart") or abort("#{bin} restart failed")
 
 puts "=== boot complete ==="
