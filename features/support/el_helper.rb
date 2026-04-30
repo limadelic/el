@@ -12,17 +12,28 @@ module ElHelper
     output = el(args).strip
     expected_lines = expected.strip.split("\n").reject(&:empty?)
 
-    missing = expected_lines.reject do |expected_line|
+    missing_words = []
+
+    expected_lines.each do |expected_line|
       stripped = strip_box_chars(expected_line)
       words = stripped.split
 
-      next true if words.empty?
+      next if words.empty?
 
-      words.all? { |word| output.downcase.include?(word.downcase) }
+      words.each do |word|
+        unless output.downcase.include?(word.downcase)
+          missing_words << { word: word, source_line: expected_line }
+        end
+      end
     end
 
-    unless missing.empty?
-      raise "Expected lines not found in output:\n#{missing.join("\n")}\n\nActual output:\n#{output}"
+    unless missing_words.empty?
+      message = "Missing words in actual output:\n"
+      missing_words.each do |entry|
+        message += "  \"#{entry[:word]}\" (from line: \"#{entry[:source_line]}\")\n"
+      end
+      message += "\nActual output:\n#{output}"
+      raise message
     end
   end
 
