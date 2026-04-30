@@ -52,6 +52,10 @@ defmodule El.CLI.Start do
   def handle_find_daemon_for_start(name, opts, el) do
     name_atom = String.to_atom(name)
     el.start(name_atom, opts)
+    print_session_info(opts)
+  end
+
+  defp print_session_info(opts) do
     print_agent_if_present(Keyword.get(opts, :agent))
     print_model_if_present(Keyword.get(opts, :model))
   end
@@ -65,6 +69,7 @@ defmodule El.CLI.Start do
   def handle_find_daemon_with_rest(name, opts, rest, el) do
     name_atom = String.to_atom(name)
     el.start(name_atom, opts)
+    print_session_info(opts)
     dispatch_rest(rest, name)
   end
 

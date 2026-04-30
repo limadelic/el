@@ -668,4 +668,34 @@ defmodule El.CLI.Spec do
       refute output =~ "model"
     end
   end
+
+  describe "El.CLI.Start.handle_find_daemon_with_rest/4" do
+    test "prints agent when -a flag with agent" do
+      expect(El.MockEl, :start, fn :kenny, [agent: "kent"] -> :ok end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_with_rest("kenny", [agent: "kent"], [], El.MockEl)
+        end)
+
+      assert output =~ "agent kent"
+    end
+
+    test "prints model when agent has default model" do
+      Application.put_env(:el, :agent_metadata, AgentMetadataStub)
+
+      on_exit(fn ->
+        Application.delete_env(:el, :agent_metadata)
+      end)
+
+      expect(El.MockEl, :start, fn :kenny, [agent: "kent", model: "opus"] -> :ok end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_with_rest("kenny", [agent: "kent", model: "opus"], [], El.MockEl)
+        end)
+
+      assert output =~ "model opus"
+    end
+  end
 end
