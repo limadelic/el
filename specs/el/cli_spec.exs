@@ -602,7 +602,7 @@ defmodule El.CLI.Spec do
   end
 
   describe "El.CLI.Start.handle_find_daemon_for_start/3" do
-    test "prints agent and model when both in opts" do
+    test "prints agent when both agent and model in opts" do
       expect(El.MockEl, :start, fn :session, [agent: "kent", model: "opus"] -> :ok end)
 
       output =
@@ -611,6 +611,16 @@ defmodule El.CLI.Spec do
         end)
 
       assert output =~ "agent kent"
+    end
+
+    test "prints model when both agent and model in opts" do
+      expect(El.MockEl, :start, fn :session, [agent: "kent", model: "opus"] -> :ok end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [agent: "kent", model: "opus"], El.MockEl)
+        end)
+
       assert output =~ "model opus"
     end
 
@@ -636,7 +646,7 @@ defmodule El.CLI.Spec do
       assert output =~ "model opus"
     end
 
-    test "prints nothing extra when neither agent nor model in opts" do
+    test "does not print agent when neither agent nor model in opts" do
       expect(El.MockEl, :start, fn :session, [] -> :ok end)
 
       output =
@@ -645,6 +655,16 @@ defmodule El.CLI.Spec do
         end)
 
       refute output =~ "agent"
+    end
+
+    test "does not print model when neither agent nor model in opts" do
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
       refute output =~ "model"
     end
   end
