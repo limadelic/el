@@ -119,20 +119,19 @@ defmodule El.CLI.Start do
   defp build_lines([], _width, "", acc), do: Enum.reverse(acc)
   defp build_lines([], _width, current, acc), do: Enum.reverse([String.trim(current) | acc])
 
-  defp build_lines([word | rest], width, current, acc) do
-    new_text = String.trim(current <> " " <> word)
-    check_fits(String.length(new_text), width, word, rest, current, acc, new_text)
-  end
-
-  defp check_fits(length, width, _word, rest, _current, acc, new_text) when length <= width do
-    build_lines(rest, width, new_text, acc)
-  end
-
-  defp check_fits(_length, width, word, rest, current, acc, _new_text) when current == "" do
+  defp build_lines([word | rest], width, "", acc) do
     build_lines(rest, width, word, acc)
   end
 
-  defp check_fits(_length, width, word, rest, current, acc, _new_text) do
+  defp build_lines([word | rest], width, current, acc) do
+    add_word(word, rest, width, current, acc, String.trim(current <> " " <> word))
+  end
+
+  defp add_word(word, rest, width, _current, acc, new_line) when byte_size(new_line) <= width do
+    build_lines(rest, width, new_line, acc)
+  end
+
+  defp add_word(word, rest, width, current, acc, _new_line) do
     build_lines(rest, width, word, [String.trim(current) | acc])
   end
 
