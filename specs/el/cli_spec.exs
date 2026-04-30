@@ -550,4 +550,54 @@ defmodule El.CLI.Spec do
       refute Keyword.has_key?(result, :model)
     end
   end
+
+  describe "El.CLI.Start.detect_and_merge_agent/2" do
+    setup do
+      Application.put_env(:el, :file_system, El.MockFileSystem)
+      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+
+      on_exit(fn ->
+        Application.delete_env(:el, :file_system)
+        System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
+      end)
+
+      :ok
+    end
+
+    test "detects agent through injected detector" do
+      Application.put_env(:el, :agent_detector, AgentDetectorStub)
+
+      on_exit(fn ->
+        Application.delete_env(:el, :agent_detector)
+      end)
+
+      result = El.CLI.Start.detect_and_merge_agent("kent", [])
+
+      assert Keyword.get(result, :agent) == "kent"
+    end
+
+    test "includes opts in result" do
+      Application.put_env(:el, :agent_detector, NilAgentDetectorStub)
+
+      on_exit(fn ->
+        Application.delete_env(:el, :agent_detector)
+      end)
+
+      result = El.CLI.Start.detect_and_merge_agent("session", [model: "haiku"])
+
+      assert Keyword.get(result, :model) == "haiku"
+    end
+
+    test "handles nil agent from detector" do
+      Application.put_env(:el, :agent_detector, NilAgentDetectorStub)
+
+      on_exit(fn ->
+        Application.delete_env(:el, :agent_detector)
+      end)
+
+      result = El.CLI.Start.detect_and_merge_agent("session", [])
+
+      refute Keyword.has_key?(result, :agent)
+    end
+  end
 end

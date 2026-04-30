@@ -7,8 +7,7 @@ defmodule El.CLI.Start do
 
   def merge_session_opts(name, explicit_agent \\ nil, explicit_model \\ nil) do
     model_opts = start_opts(explicit_model)
-    agent_detector = Application.get_env(:el, :agent_detector, El.AgentDetector)
-    agent = explicit_agent || agent_detector.detect_agent(name)
+    agent = explicit_agent || agent_detector().detect_agent(name)
     agent_opts = agent_opt(agent)
     agent_model_opts = agent_model_opt(agent, explicit_model)
     result = model_opts ++ agent_opts ++ agent_model_opts
@@ -16,8 +15,12 @@ defmodule El.CLI.Start do
   end
 
   def detect_and_merge_agent(name, opts) do
-    merged = opts ++ agent_opt(El.AgentDetector.detect_agent(name))
+    merged = opts ++ agent_opt(agent_detector().detect_agent(name))
     merged ++ env_model(merged)
+  end
+
+  defp agent_detector do
+    Application.get_env(:el, :agent_detector, El.AgentDetector)
   end
 
   defp agent_opt(nil), do: []

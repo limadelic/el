@@ -1,20 +1,25 @@
 Feature: Agent support
 
   Scenario: Explicit agent flag
-    * > el kenny -a kent
-    * > el kenny "who are you and what model are you?":
-      | kent |
-      | opus |
+    * > el kenny -a kent:
+      | agent | kent |
+      | model | opus |
     * > el kenny exit
 
-  @el_kent
-  Scenario: Implicit agent detection from session name
-    * > el kent "who are you and what model are you?":
-      | kent |
-      | opus |
+  Scenario: Implicit agent detection from name
+    * > el kent:
+      | agent | kent |
+      | model | opus |
+    * > el kent exit
 
-  @el_lisa
+  Scenario: Model override agent detection from name
+    * > el kent -m haiku:
+      | agent | kent |
+      | model | haiku |
+    * > el kent exit
+
   Scenario: Lisa agent with sonnet model
-    * > el lisa "who are you and what model are you?":
-      | lisa   |
-      | sonnet |
+    * > el lisa:
+      | agent | lisa   |
+      | model | sonnet |
+    * > el lisa exit
