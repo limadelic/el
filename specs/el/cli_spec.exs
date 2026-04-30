@@ -431,6 +431,14 @@ defmodule El.CLI.Spec do
       :ok
     end
 
+    defp setup_agent_detected do
+      stub(El.MockFileSystem, :exists?, fn path ->
+        String.contains?(path, "session.md")
+      end)
+
+      System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
+    end
+
     test "with explicit_model prepends [model: explicit_model]" do
       result = El.CLI.Start.merge_session_opts("session", nil, "opus")
 
@@ -475,24 +483,16 @@ defmodule El.CLI.Spec do
       assert Keyword.get(result, :model) == "opus"
     end
 
-    test "ignores env_model when agent detected - agent set" do
-      stub(El.MockFileSystem, :exists?, fn path ->
-        String.contains?(path, "session.md")
-      end)
-
-      System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
+    test "includes detected agent in opts" do
+      setup_agent_detected()
 
       result = El.CLI.Start.merge_session_opts("session", nil, nil)
 
       assert Keyword.get(result, :agent) == "session"
     end
 
-    test "ignores env_model when agent detected - model not set" do
-      stub(El.MockFileSystem, :exists?, fn path ->
-        String.contains?(path, "session.md")
-      end)
-
-      System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
+    test "omits model when agent detected" do
+      setup_agent_detected()
 
       result = El.CLI.Start.merge_session_opts("session", nil, nil)
 
