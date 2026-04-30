@@ -16,7 +16,7 @@ module ElHelper
 
     expected_lines.each do |expected_line|
       stripped = strip_box_chars(expected_line)
-      words = stripped.split
+      words = stripped.split.reject { |w| w == "…" }
 
       next if words.empty?
 
