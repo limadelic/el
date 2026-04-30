@@ -41,8 +41,9 @@ defmodule El.MessageStore.Spec do
       Application.put_env(:el, :dets_backend, DetsBackendWithEntries)
 
       result = El.MessageStore.session_names()
+      sorted_result = Enum.sort(result)
 
-      assert Enum.sort(result) == [:dude, :kent]
+      assert sorted_result == [:dude, :kent]
     end
   end
 end
