@@ -18,25 +18,24 @@ defmodule El.AgentMetadata do
   end
 
   defp extract_model_from_frontmatter(content) do
-    case String.split(content, "---", parts: 3) do
-      [_, frontmatter, _] ->
-        parse_frontmatter(frontmatter)
-
-      _ ->
-        nil
-    end
+    content
+    |> String.split("---", parts: 3)
+    |> extract_frontmatter_parts()
   end
+
+  defp extract_frontmatter_parts([_, frontmatter, _]), do: parse_frontmatter(frontmatter)
+  defp extract_frontmatter_parts(_), do: nil
 
   defp parse_frontmatter(frontmatter) do
     lines = String.split(String.trim(frontmatter), "\n")
-
-    Enum.find_value(lines, fn line ->
-      trimmed = String.trim(line)
-
-      case String.split(trimmed, ":", parts: 2) do
-        ["model", value] -> String.trim(value)
-        _ -> nil
-      end
-    end)
+    Enum.find_value(lines, &extract_model_line/1)
   end
+
+  defp extract_model_line(line) do
+    trimmed = String.trim(line)
+    extract_model_value(String.split(trimmed, ":", parts: 2))
+  end
+
+  defp extract_model_value(["model", value]), do: String.trim(value)
+  defp extract_model_value(_), do: nil
 end

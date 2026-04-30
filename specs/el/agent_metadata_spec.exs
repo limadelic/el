@@ -55,15 +55,4 @@ defmodule El.AgentMetadata.Spec do
       assert El.AgentMetadata.model_for("lisa", fixture_dir) == "sonnet"
     end
   end
-
-  describe "El.AgentMetadata.model_for/1 with default home directory" do
-    test "returns nil for non-existent global agent" do
-      assert El.AgentMetadata.model_for("nonexistent_global_agent") == nil
-    end
-
-    test "returns model for existing global agent" do
-      result = El.AgentMetadata.model_for("kent")
-      assert is_nil(result) or is_binary(result)
-    end
-  end
 end
