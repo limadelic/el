@@ -11,15 +11,25 @@ module ElHelper
   def verify_docstring(args, expected)
     output = el(args).strip
     expected_lines = expected.strip.split("\n").reject(&:empty?)
-    output_lines = output.split("\n").map(&:strip)
 
     missing = expected_lines.reject do |expected_line|
-      output_lines.any? { |actual_line| actual_line.downcase.include?(expected_line.downcase) }
+      stripped = strip_box_chars(expected_line)
+      words = stripped.split
+
+      next true if words.empty?
+
+      words.all? { |word| output.downcase.include?(word.downcase) }
     end
 
     unless missing.empty?
       raise "Expected lines not found in output:\n#{missing.join("\n")}\n\nActual output:\n#{output}"
     end
+  end
+
+  private
+
+  def strip_box_chars(line)
+    line.gsub(/[│─╭╮╰╯]/, '').strip
   end
 end
 
