@@ -133,6 +133,40 @@ defmodule El.CLI.Start do
     "│ " <> padded <> " │"
   end
 
+  def frame_pair_row(left, right) do
+    right_block = truncate_right_block(right)
+    left_len = String.length(left)
+    right_len = String.length(right_block)
+    filler_len = max(0, 46 - left_len - right_len)
+    filler = String.duplicate(" ", filler_len)
+    content = left <> filler <> right_block
+    padded = String.pad_trailing(content, 46)
+    "│ " <> padded <> " │"
+  end
+
+  defp truncate_right_block(right) do
+    case String.split(right, ": ", parts: 2) do
+      [label, value] -> label <> ": " <> truncate_value(value)
+      _ -> right
+    end
+  end
+
+  defp truncate_value(value) do
+    truncate_with_ellipsis(value, 10)
+  end
+
+  defp truncate_with_ellipsis(text, max_len) do
+    text_len = String.length(text)
+    do_truncate(text_len, text, max_len)
+  end
+
+  defp do_truncate(len, text, max_len) when len <= max_len, do: text
+  defp do_truncate(_len, text, max_len) do
+    ellipsis = "…"
+    available = max_len - String.length(ellipsis)
+    ellipsis <> String.slice(text, -available..-1)
+  end
+
   def format_response(nil), do: []
   def format_response(response) do
     response
