@@ -93,13 +93,11 @@ defmodule El.CLI.Start do
     Application.get_env(:el, :session_api, El.Session.Api)
   end
 
-  defp truncate_response(response) do
-    if String.length(response) > 80 do
-      String.slice(response, 0, 80) <> "..."
-    else
-      response
-    end
+  defp truncate_response(<<_::binary-size(80), _::binary>> = response) do
+    String.slice(response, 0, 80) <> "..."
   end
+
+  defp truncate_response(response), do: response
 
   def handle_find_daemon_with_rest(name, opts, rest, el) do
     name_atom = String.to_atom(name)
