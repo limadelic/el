@@ -59,6 +59,16 @@ defmodule El.Session.Spec do
   end
 
   describe "init/1" do
+    test "captures cwd in state" do
+      opts = [claude_module: MockSessionModule]
+
+      {:ok, state, {:continue, :start_claude}} =
+        El.Session.init({:my_session, opts})
+
+      assert is_binary(state.cwd)
+      assert String.length(state.cwd) > 0
+    end
+
     test "stores session name in state" do
       opts = [claude_module: MockSessionModule]
 

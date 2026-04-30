@@ -22,6 +22,7 @@ defmodule El.Session do
     name: nil,
     claude_pid: nil,
     session_id: nil,
+    cwd: nil,
     messages: [],
     pending_calls: [],
     opts: []
@@ -31,17 +32,18 @@ defmodule El.Session do
   def init({name, opts}) do
     Process.flag(:trap_exit, true)
     {session_id, rest} = El.Session.Id.extract_resume_or_id(opts)
-    {:ok, build_state(name, opts, rest, session_id), {:continue, :start_claude}}
+    cwd = File.cwd!()
+    {:ok, build_state(name, opts, rest, session_id, cwd), {:continue, :start_claude}}
   end
 
-  defp build_state(name, opts, rest, session_id) do
-    base_state(name, session_id, opts)
+  defp build_state(name, opts, rest, session_id, cwd) do
+    base_state(name, session_id, cwd, opts)
     |> Map.merge(modules_and_callbacks(opts))
     |> Map.put(:claude_opts, Keyword.put(rest, :session_id, session_id))
   end
 
-  defp base_state(n, s, o),
-    do: @base_state_defaults |> Map.merge(%{name: n, session_id: s, opts: o})
+  defp base_state(n, s, c, o),
+    do: @base_state_defaults |> Map.merge(%{name: n, session_id: s, cwd: c, opts: o})
 
   defp modules_and_callbacks(o), do: get_opts(o)
 
