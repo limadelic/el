@@ -100,7 +100,8 @@ defmodule El.CLI.Start do
   defp add_model(rows, nil), do: rows
   defp add_model(rows, model), do: rows ++ ["model: #{model}"]
 
-  defp add_msgs(rows, messages), do: rows ++ ["msgs:  #{messages}"]
+  defp add_msgs(rows, 0), do: rows
+  defp add_msgs(rows, count), do: rows ++ ["msgs:  #{count}"]
 
   defp add_prompt_separator(rows, nil), do: rows
   defp add_prompt_separator(rows, _prompt), do: rows ++ [String.duplicate("─", 46)]

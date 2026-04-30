@@ -768,6 +768,18 @@ defmodule El.CLI.Spec do
         El.CLI.Start.handle_find_daemon_for_start("session", [agent: "kent"], El.MockEl)
       end)
     end
+
+    test "omits msgs row when messages count is zero" do
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 0, last_prompt: nil, last_response: nil} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      refute output =~ "msgs:"
+    end
   end
 
   describe "El.CLI.Start.handle_find_daemon_with_rest/4" do
