@@ -84,8 +84,7 @@ defmodule El.Session.Spec do
       {:ok, _state, {:continue, :start_claude}} =
         El.Session.init({:my_session, opts})
 
-      assert_receive {:captured_name, name}
-      assert name == :my_session
+      assert_receive {:captured_name, :my_session}
     end
 
     test "inserts with agent into SessionMeta" do
@@ -103,8 +102,7 @@ defmodule El.Session.Spec do
       {:ok, _state, {:continue, :start_claude}} =
         El.Session.init({:my_session, opts})
 
-      assert_receive {:captured_agent, agent}
-      assert agent == "kent"
+      assert_receive {:captured_agent, "kent"}
     end
 
     test "inserts with binary session_id into SessionMeta" do
@@ -122,8 +120,7 @@ defmodule El.Session.Spec do
       {:ok, _state, {:continue, :start_claude}} =
         El.Session.init({:my_session, opts})
 
-      assert_receive {:captured_session_id, session_id}
-      assert is_binary(session_id)
+      assert_receive {:captured_session_id, session_id} when is_binary(session_id)
     end
 
     test "captures cwd in state" do
