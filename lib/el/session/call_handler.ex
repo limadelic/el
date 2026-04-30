@@ -33,15 +33,15 @@ defmodule El.Session.CallHandler do
   end
 
   defp build_info([]) do
-    %{messages: 0, last_prompt: nil, last_response: nil}
+    %{messages: 0, last_prompt: nil, last_response: nil, model: nil}
   end
 
   defp build_info(messages) do
     %{messages: length(messages)} |> add_last_message(List.last(messages))
   end
 
-  defp add_last_message(info, {_type, prompt, response, _metadata}) do
-    Map.merge(info, %{last_prompt: prompt, last_response: response})
+  defp add_last_message(info, {_type, prompt, response, metadata}) do
+    Map.merge(info, %{last_prompt: prompt, last_response: response, model: Map.get(metadata, :model)})
   end
 
   defp reply_ok(new_state) do

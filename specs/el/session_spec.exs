@@ -864,7 +864,7 @@ defmodule El.Session.Spec do
     test "returns default info when session does not exist" do
       result = El.Session.Api.info(:nonexistent_session)
 
-      assert result == %{messages: 0, last_prompt: nil, last_response: nil}
+      assert result == %{messages: 0, last_prompt: nil, last_response: nil, model: nil}
     end
   end
 
@@ -922,6 +922,31 @@ defmodule El.Session.Spec do
         El.Session.handle_call(:info, :from, state)
 
       assert returned_state == state
+    end
+
+    test "returns nil model when messages empty", %{state: state} do
+      {:reply, reply, _returned_state} =
+        El.Session.handle_call(:info, :from, state)
+
+      assert reply.model == nil
+    end
+
+    test "returns model from last message metadata", %{state: state} do
+      state_with_messages = %{state | messages: [{"ask", "q1", "a1", %{model: "claude-3-haiku"}}, {"tell", "q2", "a2", %{model: "claude-3-opus"}}]}
+
+      {:reply, reply, _returned_state} =
+        El.Session.handle_call(:info, :from, state_with_messages)
+
+      assert reply.model == "claude-3-opus"
+    end
+
+    test "returns nil model when last message has no model in metadata", %{state: state} do
+      state_with_messages = %{state | messages: [{"ask", "q1", "a1", %{}}]}
+
+      {:reply, reply, _returned_state} =
+        El.Session.handle_call(:info, :from, state_with_messages)
+
+      assert reply.model == nil
     end
   end
 end
