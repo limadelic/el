@@ -600,4 +600,52 @@ defmodule El.CLI.Spec do
       refute Keyword.has_key?(result, :agent)
     end
   end
+
+  describe "El.CLI.Start.handle_find_daemon_for_start/3" do
+    test "prints agent and model when both in opts" do
+      expect(El.MockEl, :start, fn :session, [agent: "kent", model: "opus"] -> :ok end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [agent: "kent", model: "opus"], El.MockEl)
+        end)
+
+      assert output =~ "agent kent"
+      assert output =~ "model opus"
+    end
+
+    test "prints agent when only agent in opts" do
+      expect(El.MockEl, :start, fn :session, [agent: "kent"] -> :ok end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [agent: "kent"], El.MockEl)
+        end)
+
+      assert output =~ "agent kent"
+    end
+
+    test "prints model when only model in opts" do
+      expect(El.MockEl, :start, fn :session, [model: "opus"] -> :ok end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [model: "opus"], El.MockEl)
+        end)
+
+      assert output =~ "model opus"
+    end
+
+    test "prints nothing extra when neither agent nor model in opts" do
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      refute output =~ "agent"
+      refute output =~ "model"
+    end
+  end
 end
