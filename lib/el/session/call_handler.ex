@@ -27,22 +27,21 @@ defmodule El.Session.CallHandler do
     {:reply, info, state}
   end
 
-  defp build_info(messages) do
-    base_info = %{messages: length(messages)}
+  def handle(:clear, _from, state) do
+    Claude.stop_claude(state.claude_pid)
+    Ask.reset_session(state) |> reply_ok()
+  end
 
-    case messages do
-      [] -> Map.merge(base_info, %{last_prompt: nil, last_response: nil})
-      msgs -> add_last_message(base_info, List.last(msgs))
-    end
+  defp build_info([]) do
+    %{messages: 0, last_prompt: nil, last_response: nil}
+  end
+
+  defp build_info(messages) do
+    %{messages: length(messages)} |> add_last_message(List.last(messages))
   end
 
   defp add_last_message(info, {_type, prompt, response, _metadata}) do
     Map.merge(info, %{last_prompt: prompt, last_response: response})
-  end
-
-  def handle(:clear, _from, state) do
-    Claude.stop_claude(state.claude_pid)
-    Ask.reset_session(state) |> reply_ok()
   end
 
   defp reply_ok(new_state) do
