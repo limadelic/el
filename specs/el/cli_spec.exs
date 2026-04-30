@@ -494,8 +494,7 @@ defmodule El.CLI.Spec do
       result = El.CLI.Start.merge_session_opts("session", nil, nil)
 
       assert Keyword.get(result, :agent) == "session"
-      refute Keyword.has_key?(result, :model) or
-             Keyword.get(result, :model) == "sonnet"
+      refute Keyword.has_key?(result, :model)
     end
 
     test "combines explicit_model and explicit_agent" do

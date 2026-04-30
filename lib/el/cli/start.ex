@@ -10,17 +10,10 @@ defmodule El.CLI.Start do
 
   def merge_session_opts(name, explicit_agent \\ nil, explicit_model \\ nil) do
     model_opts = start_opts(explicit_model)
-    agent = explicit_agent || detect_agent_result(name)
+    agent = explicit_agent || El.AgentDetector.detect_agent(name)
     agent_opts = agent_opt(agent)
     result = model_opts ++ agent_opts
     result ++ env_model(result)
-  end
-
-  defp detect_agent_result(name) do
-    case El.AgentDetector.detect_agent(name) do
-      nil -> nil
-      detected -> detected
-    end
   end
 
   def detect_and_merge_agent(name, opts) do
