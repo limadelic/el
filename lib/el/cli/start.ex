@@ -103,6 +103,41 @@ defmodule El.CLI.Start do
     Application.get_env(:el, :session_api, El.Session.Api)
   end
 
+  def format_response(nil), do: []
+  def format_response(response) do
+    response
+    |> wrap_text(46)
+    |> cap_lines(2)
+  end
+
+  defp wrap_text(text, width) do
+    text
+    |> String.split(" ")
+    |> build_lines(width, "", [])
+  end
+
+  defp build_lines([], _width, "", acc), do: Enum.reverse(acc)
+  defp build_lines([], _width, current, acc), do: Enum.reverse([String.trim(current) | acc])
+
+  defp build_lines([word | rest], width, current, acc) do
+    new_text = String.trim(current <> " " <> word)
+    check_fits(String.length(new_text), width, word, rest, current, acc, new_text)
+  end
+
+  defp check_fits(length, width, _word, rest, _current, acc, new_text) when length <= width do
+    build_lines(rest, width, new_text, acc)
+  end
+
+  defp check_fits(_length, width, word, rest, current, acc, _new_text) when current == "" do
+    build_lines(rest, width, word, acc)
+  end
+
+  defp check_fits(_length, width, word, rest, current, acc, _new_text) do
+    build_lines(rest, width, word, [String.trim(current) | acc])
+  end
+
+  defp cap_lines(lines, max), do: Enum.take(lines, max)
+
   defp truncate_response(response), do: do_truncate(String.length(response), response)
   defp do_truncate(length, response) when length > 80, do: String.slice(response, 0, 80) <> "..."
   defp do_truncate(_length, response), do: response
