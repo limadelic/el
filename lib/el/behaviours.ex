@@ -61,3 +61,10 @@ defmodule El.Behaviours.Store do
   @callback delete_message(term(), term()) :: term()
   @callback store_message(term(), term()) :: term()
 end
+
+defmodule El.Behaviours.SessionMeta do
+  @callback insert(term(), term(), term()) :: term()
+  @callback lookup(term()) :: term()
+  @callback delete(term()) :: term()
+  @callback close() :: term()
+end

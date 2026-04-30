@@ -2,6 +2,8 @@ defmodule El.Session.Spec do
   use ExUnit.Case
 
   setup do
+    Mox.stub(El.MockSessionMeta, :insert, fn _, _, _ -> :ok end)
+
     state = %{
       name: :test_session,
       claude_pid: nil,
@@ -60,9 +62,27 @@ defmodule El.Session.Spec do
   end
 
   describe "init/1" do
+    test "inserts session_id and agent into SessionMeta" do
+      Mox.expect(El.MockSessionMeta, :insert, fn name, agent, session_id ->
+        assert name == :my_session
+        assert agent == "kent"
+        assert is_binary(session_id)
+        :ok
+      end)
+
+      opts = [
+        claude_module: MockSessionModule,
+        agent: "kent",
+        session_meta: El.MockSessionMeta
+      ]
+
+      {:ok, _state, {:continue, :start_claude}} =
+        El.Session.init({:my_session, opts})
+    end
+
     test "captures cwd in state" do
       Mox.stub(El.MockFileSystem, :cwd, fn -> "/test/dir" end)
-      opts = [claude_module: MockSessionModule, file_system: El.MockFileSystem]
+      opts = [claude_module: MockSessionModule, file_system: El.MockFileSystem, session_meta: El.MockSessionMeta]
 
       {:ok, state, {:continue, :start_claude}} =
         El.Session.init({:my_session, opts})
@@ -71,7 +91,7 @@ defmodule El.Session.Spec do
     end
 
     test "stores session name in state" do
-      opts = [claude_module: MockSessionModule]
+      opts = [claude_module: MockSessionModule, session_meta: El.MockSessionMeta]
 
       {:ok, state, {:continue, :start_claude}} =
         El.Session.init({:my_session, opts})
@@ -80,7 +100,7 @@ defmodule El.Session.Spec do
     end
 
     test "initializes messages as empty list" do
-      opts = [claude_module: MockSessionModule]
+      opts = [claude_module: MockSessionModule, session_meta: El.MockSessionMeta]
 
       {:ok, state, {:continue, :start_claude}} =
         El.Session.init({:test_session, opts})
@@ -89,7 +109,7 @@ defmodule El.Session.Spec do
     end
 
     test "stores claude_opts for continue phase" do
-      opts = [model: "test-model", claude_module: ModelCaptureModule]
+      opts = [model: "test-model", claude_module: ModelCaptureModule, session_meta: El.MockSessionMeta]
 
       {:ok, state, {:continue, :start_claude}} =
         El.Session.init({:test_session, opts})
@@ -98,7 +118,7 @@ defmodule El.Session.Spec do
     end
 
     test "stores agent in claude_opts" do
-      opts = [agent: "kent", claude_module: ModelCaptureModule]
+      opts = [agent: "kent", claude_module: ModelCaptureModule, session_meta: El.MockSessionMeta]
 
       {:ok, state, {:continue, :start_claude}} =
         El.Session.init({:test_session, opts})
@@ -107,7 +127,7 @@ defmodule El.Session.Spec do
     end
 
     test "generates and stores session_id" do
-      opts = [claude_module: MockSessionModule]
+      opts = [claude_module: MockSessionModule, session_meta: El.MockSessionMeta]
 
       {:ok, state, {:continue, :start_claude}} =
         El.Session.init({:test_session, opts})
@@ -116,7 +136,7 @@ defmodule El.Session.Spec do
     end
 
     test "stores nil claude_pid before continue" do
-      opts = [claude_module: MockSessionModule]
+      opts = [claude_module: MockSessionModule, session_meta: El.MockSessionMeta]
 
       {:ok, state, {:continue, :start_claude}} =
         El.Session.init({:test_session, opts})
@@ -125,7 +145,7 @@ defmodule El.Session.Spec do
     end
 
     test "stores default task_module" do
-      opts = [claude_module: MockSessionModule]
+      opts = [claude_module: MockSessionModule, session_meta: El.MockSessionMeta]
 
       {:ok, state, {:continue, :start_claude}} =
         El.Session.init({:test_session, opts})
@@ -136,7 +156,8 @@ defmodule El.Session.Spec do
     test "stores provided task_module" do
       opts = [
         claude_module: MockSessionModule,
-        task_module: MockSessionModule
+        task_module: MockSessionModule,
+        session_meta: El.MockSessionMeta
       ]
 
       {:ok, state, {:continue, :start_claude}} =
@@ -150,7 +171,8 @@ defmodule El.Session.Spec do
     test "calls claude_module.start_link with claude_opts" do
       opts = [
         claude_module: MockSessionModule,
-        store_module: MockSessionStore
+        store_module: MockSessionStore,
+        session_meta: El.MockSessionMeta
       ]
 
       {:ok, state, {:continue, :start_claude}} =
@@ -163,7 +185,7 @@ defmodule El.Session.Spec do
     end
 
     test "loads messages from El.Application" do
-      opts = [claude_module: MockSessionModule]
+      opts = [claude_module: MockSessionModule, session_meta: El.MockSessionMeta]
 
       {:ok, state, {:continue, :start_claude}} =
         El.Session.init({:test_session, opts})
@@ -180,7 +202,8 @@ defmodule El.Session.Spec do
     test "sets claude_pid to nil on start failure" do
       opts = [
         claude_module: FailingModule,
-        store_module: MockSessionStore
+        store_module: MockSessionStore,
+        session_meta: El.MockSessionMeta
       ]
 
       {:ok, state, {:continue, :start_claude}} =

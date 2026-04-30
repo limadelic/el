@@ -16,7 +16,8 @@ defmodule El.Session do
     task_module: Task,
     alive_fn: &El.Session.Api.alive?/1,
     registry_module: Registry,
-    store_module: El.Application
+    store_module: El.Application,
+    session_meta: El.SessionMeta
   }
   @base_state_defaults %{
     name: nil,
@@ -33,7 +34,10 @@ defmodule El.Session do
     Process.flag(:trap_exit, true)
     {session_id, rest} = El.Session.Id.extract_resume_or_id(opts)
     cwd = file_system(opts).cwd()
-    {:ok, build_state(name, opts, rest, session_id, cwd), {:continue, :start_claude}}
+    state = build_state(name, opts, rest, session_id, cwd)
+    agent = Keyword.get(opts, :agent)
+    session_meta(opts).insert(name, agent, session_id)
+    {:ok, state, {:continue, :start_claude}}
   end
 
   defp build_state(name, opts, rest, session_id, cwd) do
@@ -51,6 +55,10 @@ defmodule El.Session do
 
   defp file_system(opts) do
     Keyword.get(opts, :file_system, Application.get_env(:el, :file_system, El.FileSystemImpl))
+  end
+
+  defp session_meta(opts) do
+    Keyword.get(opts, :session_meta, Application.get_env(:el, :session_meta, El.SessionMeta))
   end
 
   @impl true
