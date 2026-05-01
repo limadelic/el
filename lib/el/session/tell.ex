@@ -28,7 +28,7 @@ defmodule El.Session.Tell do
   end
 
   defp process_tell_task(state, message, ref, server_pid) do
-    response = Claude.ask(state.claude_pid, message)
+    {response, _, _} = Claude.ask(state.claude_pid, message)
     GenServer.cast(server_pid, {:store_tell, ref, message, response})
   end
 end

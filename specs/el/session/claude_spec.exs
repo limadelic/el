@@ -19,12 +19,20 @@ defmodule El.Session.Claude.Spec do
   end
 
   describe "ask/2" do
-    test "returns tuple with model captured from Init event" do
-      assert {"test result", "test-model"} = El.Session.Claude.ask(:test_pid, "test")
+    test "returns result from ask" do
+      assert {"test result", _, _} = El.Session.Claude.ask(:test_pid, "test")
     end
 
-    test "returns error tuple and nil model when pid is nil" do
-      assert {"(ClaudeCode unavailable)", nil} = El.Session.Claude.ask(nil, "test")
+    test "captures model from Init event" do
+      assert {_, "test-model", _} = El.Session.Claude.ask(:test_pid, "test")
+    end
+
+    test "captures session_id from Init event" do
+      assert {_, _, "test-session-id"} = El.Session.Claude.ask(:test_pid, "test")
+    end
+
+    test "returns error tuple with nils when pid is nil" do
+      assert {"(ClaudeCode unavailable)", nil, nil} = El.Session.Claude.ask(nil, "test")
     end
   end
 end

@@ -26,7 +26,7 @@ defmodule El.Session.Claude do
   end
 
   def ask(nil, _message) do
-    {"(ClaudeCode unavailable)", nil}
+    {"(ClaudeCode unavailable)", nil, nil}
   end
 
   def ask(pid, message) do
@@ -38,8 +38,8 @@ defmodule El.Session.Claude do
   end
 
   defp safe_stream(pid, message) do
-    {result, model} = stream_to_result(pid, message)
-    {nil_to_empty(result), model}
+    {result, model, session_id} = stream_to_result(pid, message)
+    {nil_to_empty(result), model, session_id}
   end
 
   defp nil_to_empty(nil), do: ""
@@ -49,7 +49,8 @@ defmodule El.Session.Claude do
     events = pid |> El.ClaudeCode.stream(message) |> Enum.to_list()
     result = Enum.find_value(events, &extract_result/1)
     model = Enum.find_value(events, &extract_model/1)
-    {result, model}
+    session_id = Enum.find_value(events, &extract_session_id/1)
+    {result, model, session_id}
   end
 
   defp extract_result(%ClaudeCode.Message.ResultMessage{result: result}) do
@@ -64,9 +65,15 @@ defmodule El.Session.Claude do
 
   defp extract_model(_), do: nil
 
+  defp extract_session_id(%ClaudeCode.Message.SystemMessage.Init{session_id: session_id}) do
+    session_id
+  end
+
+  defp extract_session_id(_), do: nil
+
   def ask_work(pid, message, _routes) do
-    {result, model} = ask(pid, message)
-    {result, model}
+    {result, model, session_id} = ask(pid, message)
+    {result, model, session_id}
   end
 
   def maybe_respawn_claude(%{claude_pid: nil} = state) do

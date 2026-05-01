@@ -479,7 +479,7 @@ defmodule El.Session.Spec do
     test "appends when no pending entry exists", %{state: state} do
       from = {self(), make_ref()}
       ref = make_ref()
-      cast_msg = {:complete_ask, from, "test", "response", ref, "claude-3"}
+      cast_msg = {:complete_ask, from, "test", "response", ref, "claude-3", "session-123"}
 
       {:noreply, returned_state} =
         El.Session.handle_cast(cast_msg, state)
@@ -493,7 +493,7 @@ defmodule El.Session.Spec do
       cast_ref = make_ref()
 
       El.Session.handle_cast(
-        {:complete_ask, from, "test", "the answer", cast_ref, "claude-3"},
+        {:complete_ask, from, "test", "the answer", cast_ref, "claude-3", "session-123"},
         state
       )
 
@@ -506,7 +506,7 @@ defmodule El.Session.Spec do
 
       {:noreply, returned_state} =
         El.Session.handle_cast(
-          {:complete_ask, from, "my question", "42", ref, "claude-3"},
+          {:complete_ask, from, "my question", "42", ref, "claude-3", "session-123"},
           state
         )
 
@@ -522,7 +522,7 @@ defmodule El.Session.Spec do
 
       {:noreply, returned_state} =
         El.Session.handle_cast(
-          {:complete_ask, from, "hello", "response", ref, "claude-3"},
+          {:complete_ask, from, "hello", "response", ref, "claude-3", "session-123"},
           pending_state
         )
 
@@ -543,7 +543,7 @@ defmodule El.Session.Spec do
           ]
       }
 
-      cast_msg = {:complete_ask, from, "question", "answer first", ref1, "claude-3"}
+      cast_msg = {:complete_ask, from, "question", "answer first", ref1, "claude-3", "session-123"}
 
       {:noreply, returned_state} =
         El.Session.handle_cast(cast_msg, pending_state)
@@ -561,7 +561,7 @@ defmodule El.Session.Spec do
       msg = [{"ask", "question", "", %{ref: ref}}]
       pending_state = %{state | messages: msg}
 
-      cast_msg = {:complete_ask, from, "question", "answer", ref, "claude-3"}
+      cast_msg = {:complete_ask, from, "question", "answer", ref, "claude-3", "session-123"}
 
       {:noreply, returned_state} =
         El.Session.handle_cast(cast_msg, pending_state)

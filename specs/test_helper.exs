@@ -65,7 +65,7 @@ defmodule MockClaudeCodeSession do
         model: "test-model",
         type: "system",
         subtype: "init",
-        session_id: "test-session"
+        session_id: "test-session-id"
       },
       %ClaudeCode.Message.ResultMessage{
         result: "test result",
@@ -75,7 +75,7 @@ defmodule MockClaudeCodeSession do
         duration_ms: 0,
         duration_api_ms: 0,
         num_turns: 0,
-        session_id: "test-session",
+        session_id: "test-session-id",
         total_cost_usd: 0.0,
         usage: %{}
       }

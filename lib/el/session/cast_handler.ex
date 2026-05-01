@@ -17,7 +17,7 @@ defmodule El.Session.CastHandler do
     {:noreply, new_state}
   end
 
-  def handle({:complete_ask, from, message, response, ref, model}, state) do
+  def handle({:complete_ask, from, message, response, ref, model, _session_id}, state) do
     new_state = Ask.finalize_ask(state, from, ref, message, response, model)
     {:noreply, new_state}
   end

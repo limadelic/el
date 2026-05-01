@@ -15,16 +15,24 @@ defmodule El.Session.Ask.Spec do
   setup :verify_on_exit!
 
   describe "ask_work/3" do
-    test "returns tuple with result and model from Claude.ask" do
-      {result, model} = El.Session.Claude.ask_work(:test_pid, "test", [])
-
+    test "returns result from ask_work" do
+      {result, _, _} = El.Session.Claude.ask_work(:test_pid, "test", [])
       assert result == "test result"
+    end
+
+    test "returns model from ask_work" do
+      {_, model, _} = El.Session.Claude.ask_work(:test_pid, "test", [])
       assert model == "test-model"
+    end
+
+    test "returns session_id from ask_work" do
+      {_, _, session_id} = El.Session.Claude.ask_work(:test_pid, "test", [])
+      assert session_id == "test-session-id"
     end
   end
 
   describe "model plumbing end-to-end" do
-    test "model flows from ask_work through spawn_ask_task to complete_ask cast" do
+    test "model and session_id flow from ask_work through spawn_ask_task to complete_ask cast" do
       state = %{
         claude_pid: :test_pid,
         messages: [],
@@ -39,7 +47,7 @@ defmodule El.Session.Ask.Spec do
 
       assert_receive {:"$gen_cast",
                       {:complete_ask, _, "test message", "test result", _,
-                       "test-model"}},
+                       "test-model", "test-session-id"}},
                      100
     end
   end
