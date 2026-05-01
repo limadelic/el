@@ -67,7 +67,11 @@ defmodule El.Application do
     {:ok, _} = :dets.open_file(:session_meta, file: session_meta_path, type: :bag)
   end
 
-  defp store_dir, do: store_dir(El.CLI.Daemon.dev?())
+  defp store_dir do
+    daemon = Application.get_env(:el, :daemon, El.CLI.Daemon)
+    store_dir(daemon.dev?())
+  end
+
   defp store_dir(true), do: "~/.el/dev"
   defp store_dir(false), do: "~/.el"
 

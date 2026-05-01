@@ -4,10 +4,12 @@ defmodule El.Application.Spec do
   setup do
     original_el_module = Application.get_env(:el, :el_module)
     original_session_meta = Application.get_env(:el, :session_meta)
+    original_daemon = Application.get_env(:el, :daemon)
 
     on_exit(fn ->
       Application.delete_env(:el, :message_store)
       Application.delete_env(:el, :session_meta)
+      Application.delete_env(:el, :daemon)
 
       if original_el_module do
         Application.put_env(:el, :el_module, original_el_module)
@@ -20,9 +22,16 @@ defmodule El.Application.Spec do
       else
         Application.delete_env(:el, :session_meta)
       end
+
+      if original_daemon do
+        Application.put_env(:el, :daemon, original_daemon)
+      else
+        Application.delete_env(:el, :daemon)
+      end
     end)
 
     Application.put_env(:el, :message_store, El.MessageStoreStub)
+    Application.put_env(:el, :daemon, El.DaemonStub)
 
     [
       children: El.Application.children(),
@@ -99,6 +108,7 @@ defmodule El.Application.Spec do
     assert dir == "~/.el"
   end
 
+  @tag timeout: 5000
   test "init_message_store opens session_meta table alongside message_store" do
     El.Application.init_message_store()
     assert :dets.info(:session_meta) != :undefined
@@ -199,4 +209,8 @@ defmodule RestoreFallbackStubEl do
   def start(name, opts) do
     Agent.update(__MODULE__, &[{name, opts} | &1])
   end
+end
+
+defmodule El.DaemonStub do
+  def dev?, do: false
 end
