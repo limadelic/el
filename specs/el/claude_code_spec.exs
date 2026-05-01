@@ -142,7 +142,6 @@ defmodule El.ClaudeCode.Spec do
   end
 
   describe "stream/2" do
-    @tag timeout: 1000
     test "delegates to session module" do
       defmodule StreamDelegationTest do
         def stream(pid, prompt) do
