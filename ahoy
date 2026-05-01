@@ -1,0 +1,31 @@
+#!/bin/bash
+set -e
+set -o pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+
+VERSION=$(grep 'version:' mix.exs | sed 's/.*version: "\(.*\)".*/\1/')
+PROD_DEST="/opt/homebrew/Cellar/el/$VERSION/libexec"
+
+echo "--- Build dev"
+mix release --overwrite
+
+echo "--- Build prod"
+MIX_ENV=prod mix release el --overwrite
+
+echo "--- Override prod"
+mkdir -p "$PROD_DEST"
+rsync -a --delete _build/prod/rel/el/ "$PROD_DEST/"
+ln -sf "$PROD_DEST/bin/el_wrapper" /opt/homebrew/bin/el
+
+echo "--- Restart dev"
+./el exit || true
+./el restart
+
+echo "--- Restart prod"
+el exit || true
+el restart
+
+echo ""
+echo "Ahoy v$VERSION"
