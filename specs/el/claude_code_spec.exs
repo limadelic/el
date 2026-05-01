@@ -120,6 +120,15 @@ defmodule El.ClaudeCode.Spec do
 
       El.ClaudeCode.start_link(session_module: El.MockClaudeCodeSession)
     end
+
+    test "passes :resume to session module from env hook" do
+      Mox.expect(El.MockClaudeCodeSession, :start_link, fn opts ->
+        assert opts[:resume] == "session-abc"
+        {:ok, self()}
+      end)
+
+      El.ClaudeCode.start_link(session_id: "session-abc", resume: "session-abc")
+    end
   end
 
   describe "stream/2" do
