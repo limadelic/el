@@ -51,7 +51,7 @@ defmodule El.CLI do
     opts = Start.detect_and_merge_agent(name, Start.start_opts(nil))
     status = el().start(String.to_atom(name), opts)
     Messaging.execute_msg(name, [word | more_words], el())
-    if status == :created, do: Start.print_session_info(name, opts)
+    maybe_print_card(status, name, opts)
   end
 
   def execute(:log, [name, "log"]), do: Log.execute_log(name, 1, el())
@@ -72,4 +72,7 @@ defmodule El.CLI do
     el().exit(:all)
     IO.puts("exited all")
   end
+
+  defp maybe_print_card(:created, name, opts), do: Start.print_session_info(name, opts)
+  defp maybe_print_card(:already_running, _name, _opts), do: :ok
 end
