@@ -33,8 +33,8 @@ defmodule El.Application do
     |> Enum.each(&restore_session(&1, el, session_meta))
   end
 
-  defp restore_session(name, el, _session_meta, {:ok, _session_id, agent}) do
-    el.start(name, continue: true, agent: agent)
+  defp restore_session(name, el, _session_meta, {:ok, session_id, agent}) do
+    el.start(name, resume: session_id, agent: agent)
   end
 
   defp restore_session(name, el, _session_meta, {:error, :not_found}) do
