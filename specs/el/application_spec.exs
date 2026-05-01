@@ -3,14 +3,22 @@ defmodule El.Application.Spec do
 
   setup do
     original_el_module = Application.get_env(:el, :el_module)
+    original_session_meta = Application.get_env(:el, :session_meta)
 
     on_exit(fn ->
       Application.delete_env(:el, :message_store)
+      Application.delete_env(:el, :session_meta)
 
       if original_el_module do
         Application.put_env(:el, :el_module, original_el_module)
       else
         Application.delete_env(:el, :el_module)
+      end
+
+      if original_session_meta do
+        Application.put_env(:el, :session_meta, original_session_meta)
+      else
+        Application.delete_env(:el, :session_meta)
       end
     end)
 
@@ -102,11 +110,44 @@ defmodule El.Application.Spec do
 
       Application.put_env(:el, :message_store, RestoreSessionsStubStore)
       Application.put_env(:el, :el_module, RestoreSessionsStubEl)
+      Application.put_env(:el, :session_meta, RestoreSessionsStubSessionMeta)
 
       El.Application.restore_sessions()
 
       calls = Agent.get(RestoreSessionsStubEl, & &1)
       assert Enum.reverse(calls) == [:dude, :kent]
+    end
+
+    test "passes resume: and agent from SessionMeta.lookup on success" do
+      {:ok, _pid} = Agent.start_link(fn -> [] end, name: RestoreWithMetaStubEl)
+
+      Application.put_env(:el, :message_store, RestoreWithMetaStubStore)
+      Application.put_env(:el, :el_module, RestoreWithMetaStubEl)
+      Application.put_env(:el, :session_meta, RestoreWithMetaStubSessionMeta)
+
+      El.Application.restore_sessions()
+
+      calls = Agent.get(RestoreWithMetaStubEl, & &1)
+      assert Enum.reverse(calls) == [
+        {:dude, [resume: :session_id_1, agent: "agent_ref_1"]},
+        {:kent, [resume: :session_id_2, agent: "agent_ref_2"]}
+      ]
+    end
+
+    test "falls back to start without resume on SessionMeta.lookup error" do
+      {:ok, _pid} = Agent.start_link(fn -> [] end, name: RestoreFallbackStubEl)
+
+      Application.put_env(:el, :message_store, RestoreFallbackStubStore)
+      Application.put_env(:el, :el_module, RestoreFallbackStubEl)
+      Application.put_env(:el, :session_meta, RestoreFallbackStubSessionMeta)
+
+      El.Application.restore_sessions()
+
+      calls = Agent.get(RestoreFallbackStubEl, & &1)
+      assert Enum.reverse(calls) == [
+        {:dude, []},
+        {:kent, []}
+      ]
     end
   end
 
@@ -122,7 +163,40 @@ defmodule RestoreSessionsStubStore do
 end
 
 defmodule RestoreSessionsStubEl do
-  def start(name) do
+  def start(name, _opts \\ []) do
     Agent.update(__MODULE__, &[name | &1])
+  end
+end
+
+defmodule RestoreSessionsStubSessionMeta do
+  def lookup(_name), do: {:error, :not_found}
+end
+
+defmodule RestoreWithMetaStubStore do
+  def session_names, do: [:dude, :kent]
+end
+
+defmodule RestoreWithMetaStubSessionMeta do
+  def lookup(:dude), do: {:ok, :session_id_1, "agent_ref_1"}
+  def lookup(:kent), do: {:ok, :session_id_2, "agent_ref_2"}
+end
+
+defmodule RestoreWithMetaStubEl do
+  def start(name, opts) do
+    Agent.update(__MODULE__, &[{name, opts} | &1])
+  end
+end
+
+defmodule RestoreFallbackStubStore do
+  def session_names, do: [:dude, :kent]
+end
+
+defmodule RestoreFallbackStubSessionMeta do
+  def lookup(_name), do: {:error, :not_found}
+end
+
+defmodule RestoreFallbackStubEl do
+  def start(name, opts) do
+    Agent.update(__MODULE__, &[{name, opts} | &1])
   end
 end

@@ -27,9 +27,22 @@ defmodule El.Application do
   def restore_sessions do
     el = Application.get_env(:el, :el_module, El)
     message_store = Application.get_env(:el, :message_store, El.MessageStore)
+    session_meta = Application.get_env(:el, :session_meta, El.SessionMeta)
 
     message_store.session_names()
-    |> Enum.each(fn name -> el.start(name) end)
+    |> Enum.each(&restore_session(&1, el, session_meta))
+  end
+
+  defp restore_session(name, el, _session_meta, {:ok, session_id, agent}) do
+    el.start(name, resume: session_id, agent: agent)
+  end
+
+  defp restore_session(name, el, _session_meta, {:error, :not_found}) do
+    el.start(name, [])
+  end
+
+  defp restore_session(name, el, session_meta) do
+    restore_session(name, el, session_meta, session_meta.lookup(name))
   end
 
   def children do
