@@ -237,7 +237,7 @@ defmodule El.CLI.Spec do
         String.contains?(path, "session.md")
       end)
 
-      expect(El.MockEl, :start, fn :session, [agent: "session"] -> :ok end)
+      expect(El.MockEl, :start, fn :session, [agent: "session"] -> :created end)
       expect(El.MockEl, :ask, fn :session, "hello world" -> "reply" end)
       expect(El.MockEl, :agent, fn :session -> "session" end)
 
@@ -250,7 +250,7 @@ defmodule El.CLI.Spec do
     test "execute :msg without agent uses session name" do
       stub(El.MockFileSystem, :exists?, fn _path -> false end)
 
-      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      expect(El.MockEl, :start, fn :session, [] -> :created end)
       expect(El.MockEl, :ask, fn :session, "hello" -> "reply" end)
       expect(El.MockEl, :agent, fn :session -> nil end)
 
@@ -263,13 +263,41 @@ defmodule El.CLI.Spec do
     test "execute :msg prints boxed card after response" do
       stub(El.MockFileSystem, :exists?, fn _path -> false end)
 
-      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      expect(El.MockEl, :start, fn :session, [] -> :created end)
       expect(El.MockEl, :ask, fn :session, "hello" -> "reply" end)
       expect(El.MockEl, :agent, fn :session -> nil end)
 
       output =
         capture_io(fn -> El.CLI.execute(:msg, ["session", "hello"]) end)
 
+      assert output =~ "name:  session"
+    end
+
+    test "execute :msg skips card when session already running" do
+      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+
+      expect(El.MockEl, :start, fn :session, [] -> :already_running end)
+      expect(El.MockEl, :ask, fn :session, "hello" -> "reply" end)
+      expect(El.MockEl, :agent, fn :session -> nil end)
+
+      output =
+        capture_io(fn -> El.CLI.execute(:msg, ["session", "hello"]) end)
+
+      assert output =~ "reply"
+      refute output =~ "name:  session"
+    end
+
+    test "execute :msg shows card when session newly created" do
+      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+
+      expect(El.MockEl, :start, fn :session, [] -> :created end)
+      expect(El.MockEl, :ask, fn :session, "hello" -> "reply" end)
+      expect(El.MockEl, :agent, fn :session -> nil end)
+
+      output =
+        capture_io(fn -> El.CLI.execute(:msg, ["session", "hello"]) end)
+
+      assert output =~ "reply"
       assert output =~ "name:  session"
     end
 
