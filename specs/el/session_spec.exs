@@ -1,5 +1,7 @@
 defmodule El.Session.Spec do
   use ExUnit.Case
+  import Mox
+  setup :verify_on_exit!
 
   setup do
     Mox.stub(El.MockSessionMeta, :insert, fn _, _, _ -> :ok end)
