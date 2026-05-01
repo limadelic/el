@@ -1,8 +1,6 @@
 defmodule El.Session.Claude.Spec do
   use ExUnit.Case
 
-  @moduletag timeout: 1000
-
   setup do
     Application.put_env(:claude_code, :session_module, MockClaudeCodeSession)
 

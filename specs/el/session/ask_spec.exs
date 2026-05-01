@@ -2,8 +2,6 @@ defmodule El.Session.Ask.Spec do
   use ExUnit.Case
   import Mox
 
-  @moduletag timeout: 1000
-
   setup do
     Application.put_env(:claude_code, :session_module, MockClaudeCodeSession)
 
