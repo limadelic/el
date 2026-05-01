@@ -19,6 +19,7 @@ defmodule El.Session.Spec do
       end,
       registry_module: MockSessionModule,
       store_module: MockSessionStore,
+      session_meta: El.MockSessionMeta,
       opts: [],
       claude_opts: []
     }
@@ -540,6 +541,38 @@ defmodule El.Session.Spec do
         El.Session.handle_cast(cast_msg, pending_state)
 
       assert [{"ask", "question", "answer", %{}}] = returned_state.messages
+    end
+
+    test "updates state.session_id when Claude returns non-nil session_id", %{state: state} do
+      from = {self(), make_ref()}
+      ref = make_ref()
+
+      {:noreply, returned_state} =
+        El.Session.handle_cast(
+          {:complete_ask, from, "test", "response", ref, "claude-3", "claude-session-id"},
+          state
+        )
+
+      assert returned_state.session_id == "claude-session-id"
+    end
+
+    test "calls SessionMeta.insert with captured session_id", %{state: state} do
+      from = {self(), make_ref()}
+      ref = make_ref()
+      agent = "kent"
+      test_state = %{state | opts: [agent: agent]}
+
+      Mox.expect(El.MockSessionMeta, :insert, fn name, a, sid ->
+        assert name == :test_session
+        assert a == agent
+        assert sid == "claude-session-id"
+        :ok
+      end)
+
+      El.Session.handle_cast(
+        {:complete_ask, from, "test", "response", ref, "claude-3", "claude-session-id"},
+        test_state
+      )
     end
   end
 
