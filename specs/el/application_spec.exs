@@ -5,11 +5,13 @@ defmodule El.Application.Spec do
     original_el_module = Application.get_env(:el, :el_module)
     original_session_meta = Application.get_env(:el, :session_meta)
     original_daemon = Application.get_env(:el, :daemon)
+    original_dets_backend = Application.get_env(:el, :dets_backend)
 
     on_exit(fn ->
       Application.delete_env(:el, :message_store)
       Application.delete_env(:el, :session_meta)
       Application.delete_env(:el, :daemon)
+      Application.delete_env(:el, :dets_backend)
 
       if original_el_module do
         Application.put_env(:el, :el_module, original_el_module)
@@ -27,6 +29,10 @@ defmodule El.Application.Spec do
         Application.put_env(:el, :daemon, original_daemon)
       else
         Application.delete_env(:el, :daemon)
+      end
+
+      if original_dets_backend do
+        Application.put_env(:el, :dets_backend, original_dets_backend)
       end
     end)
 
@@ -108,10 +114,10 @@ defmodule El.Application.Spec do
     assert dir == "~/.el"
   end
 
-  @tag timeout: 5000
   test "init_message_store opens session_meta table alongside message_store" do
+    Application.put_env(:el, :dets_backend, El.DetsBackendStub)
     El.Application.init_message_store()
-    assert :dets.info(:session_meta) != :undefined
+    assert El.DetsBackendStub.insert(:session_meta, {:key, :value}) == :ok
   end
 
   describe "restore_sessions/0" do

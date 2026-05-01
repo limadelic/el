@@ -63,8 +63,9 @@ defmodule El.Application do
     messages_path = Path.expand("#{dir}/messages.dets") |> String.to_charlist()
     session_meta_path = Path.expand("#{dir}/session_meta.dets") |> String.to_charlist()
     File.mkdir_p!(Path.expand(dir))
-    {:ok, _} = :dets.open_file(:message_store, file: messages_path, type: :bag)
-    {:ok, _} = :dets.open_file(:session_meta, file: session_meta_path, type: :bag)
+    dets_backend = Application.get_env(:el, :dets_backend, :dets)
+    {:ok, _} = dets_backend.open_file(:message_store, file: messages_path, type: :bag)
+    {:ok, _} = dets_backend.open_file(:session_meta, file: session_meta_path, type: :bag)
   end
 
   defp store_dir do
