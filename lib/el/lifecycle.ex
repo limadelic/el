@@ -3,11 +3,13 @@ defmodule El.Lifecycle do
     El.ls() |> Enum.each(&El.Lifecycle.exit/1)
   end
 
-  def exit(name), do: do_exit(name)
+  def exit(name), do: do_exit(name, :normal)
 
-  defp do_exit(name) do
+  def exit(name, reason), do: do_exit(name, reason)
+
+  defp do_exit(name, reason) do
     name |> lookup() |> exit_found(name)
-    delete_stores(name)
+    delete_stores(name, reason)
   end
 
   defp lookup(name) do
@@ -30,9 +32,19 @@ defmodule El.Lifecycle do
     El.monitor().wait_for_down(ref, name)
   end
 
-  defp delete_stores(name) do
+  defp delete_stores(name, reason) when reason in [:normal, :shutdown] do
     El.app().delete_session_messages(name)
     session_meta = Application.get_env(:el, :session_meta, El.SessionMeta)
     session_meta.delete(name)
+  end
+
+  defp delete_stores(name, {:shutdown, _}) do
+    El.app().delete_session_messages(name)
+    session_meta = Application.get_env(:el, :session_meta, El.SessionMeta)
+    session_meta.delete(name)
+  end
+
+  defp delete_stores(_name, _reason) do
+    :ok
   end
 end

@@ -35,4 +35,13 @@ defmodule El.Lifecycle.Spec do
 
     El.Lifecycle.exit(:test_session)
   end
+
+  test "session_meta survives crash" do
+    expect(El.MockRegistry, :lookup, fn El.Registry, :crashed_session -> [] end)
+    stub(El.MockMonitor, :wait_for_down, fn _, _ -> :ok end)
+
+    El.Lifecycle.exit(:crashed_session, :crash)
+
+    verify!(El.MockSessionMeta)
+  end
 end
