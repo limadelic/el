@@ -6,6 +6,6 @@ Feature: Restart
     * > el restart
     * > el ls:
       | donny |
-    * > el donny "whare i said were u?":
+    * > el donny "where did i say u were?":
       | element |
     * > el donny exit
