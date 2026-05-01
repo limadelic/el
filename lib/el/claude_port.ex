@@ -17,10 +17,6 @@ defmodule El.ClaudePort do
     GenServer.call(pid, {:ask, message}, :infinity)
   end
 
-  def stream(pid, message) do
-    GenServer.call(pid, {:stream, message})
-  end
-
   @impl GenServer
   def init(opts) do
     cli_path = Application.get_env(:claude_code, :cli_path, :global)
@@ -74,25 +70,6 @@ defmodule El.ClaudePort do
       {:error, reason} ->
         Logger.error("ClaudePort ensure_connected failed: #{inspect(reason)}")
         {:reply, {"(unavailable)", nil, nil}, state}
-    end
-  end
-
-  def handle_call({:stream, message}, from, state) do
-    Logger.debug("ClaudePort.stream called with message: #{inspect(String.slice(message, 0, 100))}")
-    case ensure_connected(state) do
-      {:ok, connected_state} ->
-        session_id = connected_state.session_id
-        port = connected_state.port
-
-        ndjson = Input.user_message(message, session_id || "default")
-        Logger.debug("ClaudePort sending NDJSON: #{ndjson}")
-        Port.command(port, ndjson <> "\n")
-
-        new_state = %{connected_state | current_request_id: from}
-        {:noreply, new_state}
-
-      {:error, _reason} ->
-        {:reply, [], state}
     end
   end
 

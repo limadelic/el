@@ -28,37 +28,12 @@ defmodule El.Session.Claude do
   end
 
   def ask(pid, message) do
-    stream(pid, message)
-  end
-
-  defp stream(pid, message) do
-    safe_stream(pid, message)
-  end
-
-  defp safe_stream(pid, message) do
-    {result, model, session_id} = stream_to_result(pid, message)
+    {result, model, session_id} = El.ClaudePort.ask(pid, message)
     {nil_to_empty(result), model, session_id}
   end
 
   defp nil_to_empty(nil), do: ""
   defp nil_to_empty(result), do: result
-
-  defp stream_to_result(pid, message) do
-    events = El.ClaudePort.stream(pid, message) |> Enum.to_list()
-    result = Enum.find_value(events, &extract_result/1)
-    model = Enum.find_value(events, &extract_model/1)
-    session_id = Enum.find_value(events, &extract_session_id/1)
-    {result, model, session_id}
-  end
-
-  defp extract_result(%{"type" => "result", "result" => result}), do: result
-  defp extract_result(_), do: nil
-
-  defp extract_model(%{"type" => "system", "message_type" => "init", "model" => model}), do: model
-  defp extract_model(_), do: nil
-
-  defp extract_session_id(%{"type" => "system", "message_type" => "init", "session_id" => session_id}), do: session_id
-  defp extract_session_id(_), do: nil
 
   def ask_work(pid, message, _routes) do
     {result, model, session_id} = ask(pid, message)
