@@ -165,6 +165,22 @@ defmodule El.Application.Spec do
         {:kent, []}
       ]
     end
+
+    test "sends warmup tell after warm-restart" do
+      {:ok, _pid} = Agent.start_link(fn -> [] end, name: WarmupStubEl)
+
+      Application.put_env(:el, :message_store, WarmupStubStore)
+      Application.put_env(:el, :el_module, WarmupStubEl)
+      Application.put_env(:el, :session_meta, WarmupStubSessionMeta)
+
+      El.Application.restore_sessions()
+
+      calls = Agent.get(WarmupStubEl, & &1)
+      assert Enum.reverse(calls) == [
+        {:start, [:dude, [resume: :sid_1, agent: "a1"]]},
+        {:tell, [:dude, "continue if needed"]}
+      ]
+    end
   end
 
   describe "stop/1" do
@@ -181,6 +197,10 @@ end
 defmodule RestoreSessionsStubEl do
   def start(name, _opts \\ []) do
     Agent.update(__MODULE__, &[name | &1])
+  end
+
+  def tell(_name, _message) do
+    :ok
   end
 end
 
@@ -201,6 +221,10 @@ defmodule RestoreWithMetaStubEl do
   def start(name, opts) do
     Agent.update(__MODULE__, &[{name, opts} | &1])
   end
+
+  def tell(_name, _message) do
+    :ok
+  end
 end
 
 defmodule RestoreFallbackStubStore do
@@ -215,8 +239,30 @@ defmodule RestoreFallbackStubEl do
   def start(name, opts) do
     Agent.update(__MODULE__, &[{name, opts} | &1])
   end
+
+  def tell(_name, _message) do
+    :ok
+  end
 end
 
 defmodule El.DaemonStub do
   def dev?, do: false
+end
+
+defmodule WarmupStubStore do
+  def session_names, do: [:dude]
+end
+
+defmodule WarmupStubSessionMeta do
+  def lookup(:dude), do: {:ok, :sid_1, "a1"}
+end
+
+defmodule WarmupStubEl do
+  def start(name, opts) do
+    Agent.update(__MODULE__, &[{:start, [name, opts]} | &1])
+  end
+
+  def tell(name, message) do
+    Agent.update(__MODULE__, &[{:tell, [name, message]} | &1])
+  end
 end

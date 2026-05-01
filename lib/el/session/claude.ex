@@ -1,6 +1,4 @@
 defmodule El.Session.Claude do
-  require Logger
-
   def start(claude_module, opts) do
     start_claude_safe(claude_module.start_link(opts))
   end
