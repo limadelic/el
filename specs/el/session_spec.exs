@@ -153,6 +153,14 @@ defmodule El.Session.Spec do
       assert Keyword.get(state.claude_opts, :agent) == "kent"
     end
 
+    test "does not pre-seed :session_id in claude_opts" do
+      opts = [claude_module: MockSessionModule, session_meta: El.MockSessionMeta]
+
+      {:ok, state, {:continue, :start_claude}} =
+        El.Session.init({:test_session, opts})
+
+      refute Keyword.has_key?(state.claude_opts, :session_id)
+    end
 
     test "stores nil claude_pid before continue" do
       opts = [claude_module: MockSessionModule, session_meta: El.MockSessionMeta]
