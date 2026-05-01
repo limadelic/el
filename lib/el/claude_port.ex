@@ -169,9 +169,11 @@ defmodule El.ClaudePort do
         if !exe_path do
           {:error, "CLI executable not found: #{executable}"}
         else
+          env = System.get_env() |> Enum.map(fn {k, v} -> {String.to_charlist(k), String.to_charlist(v)} end)
           port_opts = [
             {:args, args},
             {:cd, String.to_charlist(cwd)},
+            {:env, env},
             :binary,
             :exit_status,
             :stderr_to_stdout
