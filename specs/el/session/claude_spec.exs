@@ -13,6 +13,13 @@ defmodule El.Session.Claude.Spec do
     :ok
   end
 
+  describe "resume_options/2" do
+    test "adds :resume to opts with session_id" do
+      assert [resume: "session-123", session_id: "session-123"] =
+        El.Session.Claude.resume_options([], "session-123")
+    end
+  end
+
   describe "ask/2" do
     test "returns tuple with model captured from Init event" do
       assert {"test result", "test-model"} = El.Session.Claude.ask(:test_pid, "test")
