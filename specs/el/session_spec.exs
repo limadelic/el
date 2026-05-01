@@ -208,6 +208,21 @@ defmodule El.Session.Spec do
 
       assert state.task_module == MockSessionModule
     end
+
+    test "puts :resume into claude_opts when given resume in opts" do
+      Mox.stub(El.MockFileSystem, :cwd, fn -> "/test/dir" end)
+      opts = [
+        resume: "my-resume-id",
+        claude_module: MockSessionModule,
+        file_system: El.MockFileSystem,
+        session_meta: El.MockSessionMeta
+      ]
+
+      {:ok, state, {:continue, :start_claude}} =
+        El.Session.init({:test_session, opts})
+
+      assert Keyword.get(state.claude_opts, :resume) == "my-resume-id"
+    end
   end
 
   describe "handle_continue/2 :start_claude" do

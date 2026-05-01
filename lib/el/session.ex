@@ -43,7 +43,21 @@ defmodule El.Session do
   defp build_state(name, opts, rest, session_id, cwd) do
     base_state(name, session_id, cwd, opts)
     |> Map.merge(modules_and_callbacks(opts))
-    |> Map.put(:claude_opts, Keyword.put(rest, :session_id, session_id))
+    |> Map.put(:claude_opts, build_claude_opts(rest, opts, session_id))
+  end
+
+  defp build_claude_opts(rest, opts, session_id) do
+    rest
+    |> Keyword.put(:session_id, session_id)
+    |> add_resume(Keyword.has_key?(opts, :resume), opts)
+  end
+
+  defp add_resume(claude_opts, true, opts) do
+    Keyword.put(claude_opts, :resume, Keyword.get(opts, :resume))
+  end
+
+  defp add_resume(claude_opts, false, _opts) do
+    claude_opts
   end
 
   defp base_state(n, s, c, o),
