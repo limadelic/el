@@ -39,14 +39,14 @@ defmodule El.Features.OnOffSpec do
       El.start(:dude, claude_module: TestClaudeCode)
     end
 
-    test "returns session name on success" do
-      assert El.start(:dude) == :dude
+    test "returns :created when starting new session" do
+      assert El.start(:dude) == :created
     end
 
-    test "returns name if session already registered" do
+    test "returns :already_running when session exists" do
       lookup_fn = fn El.Registry, :dude -> [{:existing_pid, :registered}] end
       expect(El.MockRegistry, :lookup, lookup_fn)
-      assert El.start(:dude) == :dude
+      assert El.start(:dude) == :already_running
     end
   end
 
