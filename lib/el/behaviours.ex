@@ -61,3 +61,8 @@ defmodule El.Behaviours.Store do
   @callback delete_message(term(), term()) :: term()
   @callback store_message(term(), term()) :: term()
 end
+
+defmodule El.Behaviours.ClaudeCodeSession do
+  @callback start_link(keyword()) :: {:ok, pid()} | {:error, term()}
+  @callback stream(pid(), binary()) :: Enumerable.t()
+end

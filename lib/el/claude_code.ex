@@ -22,7 +22,10 @@ defmodule El.ClaudeCode do
     |> add_resume_if_present(opts)
   end
 
-  defp extract_session_module(nil), do: @default_session_module
+  defp extract_session_module(nil) do
+    Application.get_env(:el, :claude_code_session_module, @default_session_module)
+  end
+
   defp extract_session_module(module), do: module
 
   defp base_session_opts(session_id, cli_path) do
