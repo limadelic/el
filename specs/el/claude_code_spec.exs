@@ -129,6 +129,15 @@ defmodule El.ClaudeCode.Spec do
 
       El.ClaudeCode.start_link(session_id: "session-abc", resume: "session-abc")
     end
+
+    test "omits session_id when not provided" do
+      Mox.expect(El.MockClaudeCodeSession, :start_link, fn opts ->
+        refute Keyword.has_key?(opts, :session_id)
+        {:ok, self()}
+      end)
+
+      El.ClaudeCode.start_link(session_module: El.MockClaudeCodeSession)
+    end
   end
 
   describe "stream/2" do
