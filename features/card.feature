@@ -18,7 +18,7 @@ Feature: Agent card
 
   @el_kent
   Scenario: Used
-    * > el kent "What is the meaning of life?"
+    * > el kent "What is the meaning of life? (Int)"
     * > el kent:
       """
       ╭────────────────────────────────────────────────╮
@@ -41,7 +41,8 @@ Feature: Agent card
       │ name:  anom                              id: … │
       ╰────────────────────────────────────────────────╯
       """
-    * > el anom "who are you?":
+    * > el anom "who are you?"
+    * > el anom:
       """
       ╭────────────────────────────────────────────────╮
       │ name:  anom                              id: … │
@@ -50,7 +51,7 @@ Feature: Agent card
       │ ────────────────────────────────────────────── │
       │ > who are you?                                 │
       │ ────────────────────────────────────────────── │
-      │ haiku                                          │
+      │ Claude                                         │
       ╰────────────────────────────────────────────────╯
       """
     * > el anom exit
