@@ -67,11 +67,8 @@ defmodule El.Session.Spec do
       %{}
     end
 
-    test "inserts with session name into SessionMeta" do
-      captured_args = {nil, nil, nil}
-
-      Mox.expect(El.MockSessionMeta, :insert, fn name, _agent, _session_id ->
-        send(self(), {:captured_name, name})
+    test "does not call SessionMeta.insert during init" do
+      Mox.expect(El.MockSessionMeta, :insert, 0, fn _name, _agent, _session_id ->
         :ok
       end)
 
@@ -83,44 +80,28 @@ defmodule El.Session.Spec do
 
       {:ok, _state, {:continue, :start_claude}} =
         El.Session.init({:my_session, opts})
-
-      assert_receive {:captured_name, :my_session}
     end
 
-    test "inserts with agent into SessionMeta" do
-      Mox.expect(El.MockSessionMeta, :insert, fn _name, agent, _session_id ->
-        send(self(), {:captured_agent, agent})
-        :ok
-      end)
+    test "sets session_id to nil when no resume option" do
+      opts = [claude_module: MockSessionModule, session_meta: El.MockSessionMeta]
 
-      opts = [
-        claude_module: MockSessionModule,
-        agent: "kent",
-        session_meta: El.MockSessionMeta
-      ]
-
-      {:ok, _state, {:continue, :start_claude}} =
+      {:ok, state, {:continue, :start_claude}} =
         El.Session.init({:my_session, opts})
 
-      assert_receive {:captured_agent, "kent"}
+      assert state.session_id == nil
     end
 
-    test "inserts with binary session_id into SessionMeta" do
-      Mox.expect(El.MockSessionMeta, :insert, fn _name, _agent, session_id ->
-        send(self(), {:captured_session_id, session_id})
-        :ok
-      end)
-
+    test "sets session_id to resume value when provided" do
       opts = [
         claude_module: MockSessionModule,
-        agent: "kent",
+        resume: "my-resume-id",
         session_meta: El.MockSessionMeta
       ]
 
-      {:ok, _state, {:continue, :start_claude}} =
+      {:ok, state, {:continue, :start_claude}} =
         El.Session.init({:my_session, opts})
 
-      assert_receive {:captured_session_id, session_id} when is_binary(session_id)
+      assert state.session_id == "my-resume-id"
     end
 
     test "captures cwd in state" do
@@ -169,14 +150,6 @@ defmodule El.Session.Spec do
       assert Keyword.get(state.claude_opts, :agent) == "kent"
     end
 
-    test "generates and stores session_id" do
-      opts = [claude_module: MockSessionModule, session_meta: El.MockSessionMeta]
-
-      {:ok, state, {:continue, :start_claude}} =
-        El.Session.init({:test_session, opts})
-
-      assert is_binary(state.session_id)
-    end
 
     test "stores nil claude_pid before continue" do
       opts = [claude_module: MockSessionModule, session_meta: El.MockSessionMeta]

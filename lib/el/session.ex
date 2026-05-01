@@ -35,8 +35,6 @@ defmodule El.Session do
     {session_id, rest} = El.Session.Id.extract_resume_or_id(opts)
     cwd = file_system(opts).cwd()
     state = build_state(name, opts, rest, session_id, cwd)
-    agent = Keyword.get(opts, :agent)
-    session_meta(opts).insert(name, agent, session_id)
     {:ok, state, {:continue, :start_claude}}
   end
 
@@ -69,10 +67,6 @@ defmodule El.Session do
 
   defp file_system(opts) do
     Keyword.get(opts, :file_system, Application.get_env(:el, :file_system, El.FileSystemImpl))
-  end
-
-  defp session_meta(opts) do
-    Keyword.get(opts, :session_meta, Application.get_env(:el, :session_meta, El.SessionMeta))
   end
 
   @impl true
