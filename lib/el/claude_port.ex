@@ -211,7 +211,7 @@ defmodule El.ClaudePort do
     end
   end
 
-  defp process_lines([], {result, model, sid}, _session_id), do: {:complete, result, model, sid}
+  defp process_lines([], _acc, _session_id), do: :incomplete
 
   defp process_lines([line | rest], {result, model, sid} = acc, session_id) do
     case Jason.decode(line) do
@@ -243,10 +243,10 @@ defmodule El.ClaudePort do
   defp is_result_message(%{"type" => "result"}), do: true
   defp is_result_message(_), do: false
 
-  defp has_model(%{"type" => "system", "message_type" => "init"}), do: true
+  defp has_model(%{"type" => "system", "subtype" => "init"}), do: true
   defp has_model(_), do: false
 
-  defp has_session_id(%{"type" => "system", "message_type" => "init"}), do: true
+  defp has_session_id(%{"type" => "system", "subtype" => "init"}), do: true
   defp has_session_id(_), do: false
 
   defp get_result(%{"type" => "result", "result" => result}), do: result
@@ -256,10 +256,10 @@ defmodule El.ClaudePort do
   end
   defp get_result(_), do: nil
 
-  defp get_model(%{"type" => "system", "message_type" => "init", "model" => model}), do: model
+  defp get_model(%{"type" => "system", "subtype" => "init", "model" => model}), do: model
   defp get_model(_), do: nil
 
-  defp get_session_id(%{"type" => "system", "message_type" => "init", "session_id" => session_id}), do: session_id
+  defp get_session_id(%{"type" => "system", "subtype" => "init", "session_id" => session_id}), do: session_id
   defp get_session_id(_), do: nil
 
   defp nil_to_empty(nil), do: ""
