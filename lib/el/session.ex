@@ -47,6 +47,7 @@ defmodule El.Session do
   defp build_claude_opts(rest, opts, _session_id) do
     rest
     |> add_resume(Keyword.has_key?(opts, :resume), opts)
+    |> add_continue(Keyword.has_key?(opts, :continue), opts)
   end
 
   defp add_resume(claude_opts, true, opts) do
@@ -54,6 +55,14 @@ defmodule El.Session do
   end
 
   defp add_resume(claude_opts, false, _opts) do
+    claude_opts
+  end
+
+  defp add_continue(claude_opts, true, opts) do
+    Keyword.put(claude_opts, :continue, Keyword.get(opts, :continue))
+  end
+
+  defp add_continue(claude_opts, false, _opts) do
     claude_opts
   end
 

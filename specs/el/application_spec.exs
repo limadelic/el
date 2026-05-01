@@ -134,7 +134,7 @@ defmodule El.Application.Spec do
       assert Enum.reverse(calls) == [:dude, :kent]
     end
 
-    test "passes resume: and agent from SessionMeta.lookup on success" do
+    test "passes continue: true and agent from SessionMeta.lookup on success" do
       {:ok, _pid} = Agent.start_link(fn -> [] end, name: RestoreWithMetaStubEl)
 
       Application.put_env(:el, :message_store, RestoreWithMetaStubStore)
@@ -145,8 +145,8 @@ defmodule El.Application.Spec do
 
       calls = Agent.get(RestoreWithMetaStubEl, & &1)
       assert Enum.reverse(calls) == [
-        {:dude, [resume: :session_id_1, agent: "agent_ref_1"]},
-        {:kent, [resume: :session_id_2, agent: "agent_ref_2"]}
+        {:dude, [continue: true, agent: "agent_ref_1"]},
+        {:kent, [continue: true, agent: "agent_ref_2"]}
       ]
     end
 
@@ -166,7 +166,7 @@ defmodule El.Application.Spec do
       ]
     end
 
-    test "sends warmup tell after warm-restart" do
+    test "warm-restart uses continue option and sends warmup tell" do
       {:ok, _pid} = Agent.start_link(fn -> [] end, name: WarmupStubEl)
 
       Application.put_env(:el, :message_store, WarmupStubStore)
@@ -177,7 +177,7 @@ defmodule El.Application.Spec do
 
       calls = Agent.get(WarmupStubEl, & &1)
       assert Enum.reverse(calls) == [
-        {:start, [:dude, [resume: :sid_1, agent: "a1"]]},
+        {:start, [:dude, [continue: true, agent: "a1"]]},
         {:tell, [:dude, "continue if needed"]}
       ]
     end
