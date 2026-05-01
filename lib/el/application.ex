@@ -35,7 +35,6 @@ defmodule El.Application do
 
   defp restore_session(name, el, _session_meta, {:ok, _session_id, agent}) do
     el.start(name, continue: true, agent: agent)
-    el.tell(name, "continue if needed")
   end
 
   defp restore_session(name, el, _session_meta, {:error, :not_found}) do

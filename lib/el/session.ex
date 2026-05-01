@@ -12,7 +12,7 @@ defmodule El.Session do
   alias El.Session.CallHandler
 
   @defaults %{
-    claude_module: El.ClaudeCode,
+    claude_module: El.ClaudePort,
     task_module: Task,
     alive_fn: &El.Session.Api.alive?/1,
     registry_module: Registry,

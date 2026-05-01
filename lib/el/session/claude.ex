@@ -44,30 +44,9 @@ defmodule El.Session.Claude do
   defp nil_to_empty(result), do: result
 
   defp stream_to_result(pid, message) do
-    events = pid |> El.ClaudeCode.stream(message) |> Enum.to_list()
-    result = Enum.find_value(events, &extract_result/1)
-    model = Enum.find_value(events, &extract_model/1)
-    session_id = Enum.find_value(events, &extract_session_id/1)
+    {result, model, session_id} = ask(pid, message)
     {result, model, session_id}
   end
-
-  defp extract_result(%ClaudeCode.Message.ResultMessage{result: result}) do
-    result
-  end
-
-  defp extract_result(_), do: nil
-
-  defp extract_model(%ClaudeCode.Message.SystemMessage.Init{model: model}) do
-    model
-  end
-
-  defp extract_model(_), do: nil
-
-  defp extract_session_id(%ClaudeCode.Message.SystemMessage.Init{session_id: session_id}) do
-    session_id
-  end
-
-  defp extract_session_id(_), do: nil
 
   def ask_work(pid, message, _routes) do
     {result, model, session_id} = ask(pid, message)
