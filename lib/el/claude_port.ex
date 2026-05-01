@@ -56,22 +56,40 @@ defmodule El.ClaudePort do
   end
 
   @impl GenServer
-  def handle_call({:ask, message}, _from, state) do
+  def handle_call({:ask, message}, from, state) do
+    Logger.debug("ClaudePort.ask called with message: #{inspect(String.slice(message, 0, 100))}")
     case ensure_connected(state) do
       {:ok, connected_state} ->
-        result = do_ask(connected_state, message)
-        {:reply, result, connected_state}
+        Logger.debug("ClaudePort connected, sending message")
+        session_id = connected_state.session_id
+        port = connected_state.port
 
-      {:error, _reason} ->
+        ndjson = Input.user_message(message, session_id || "default")
+        Logger.debug("ClaudePort sending NDJSON: #{ndjson}")
+        Port.command(port, ndjson <> "\n")
+
+        new_state = %{connected_state | current_request_id: from}
+        {:noreply, new_state}
+
+      {:error, reason} ->
+        Logger.error("ClaudePort ensure_connected failed: #{inspect(reason)}")
         {:reply, {"(unavailable)", nil, nil}, state}
     end
   end
 
-  def handle_call({:stream, message}, _from, state) do
+  def handle_call({:stream, message}, from, state) do
+    Logger.debug("ClaudePort.stream called with message: #{inspect(String.slice(message, 0, 100))}")
     case ensure_connected(state) do
       {:ok, connected_state} ->
-        stream = build_stream(connected_state, message)
-        {:reply, stream, connected_state}
+        session_id = connected_state.session_id
+        port = connected_state.port
+
+        ndjson = Input.user_message(message, session_id || "default")
+        Logger.debug("ClaudePort sending NDJSON: #{ndjson}")
+        Port.command(port, ndjson <> "\n")
+
+        new_state = %{connected_state | current_request_id: from}
+        {:noreply, new_state}
 
       {:error, _reason} ->
         {:reply, [], state}
@@ -80,8 +98,25 @@ defmodule El.ClaudePort do
 
   @impl GenServer
   def handle_info({port, {:data, data}}, %{port: port} = state) do
+    Logger.debug("ClaudePort received #{byte_size(data)} bytes: #{inspect(data)}")
     new_buffer = state.buffer <> data
-    {:noreply, %{state | buffer: new_buffer}}
+    new_state = %{state | buffer: new_buffer}
+
+    case state.current_request_id do
+      nil ->
+        {:noreply, new_state}
+
+      from ->
+        case try_extract_result(new_state) do
+          {:ok, result, remaining_buffer} ->
+            Logger.debug("ClaudePort extracted result: #{inspect(result)}")
+            GenServer.reply(from, result)
+            {:noreply, %{new_state | buffer: remaining_buffer, current_request_id: nil}}
+
+          :incomplete ->
+            {:noreply, new_state}
+        end
+    end
   end
 
   def handle_info({port, {:exit_status, status}}, %{port: port} = state) do
@@ -171,78 +206,50 @@ defmodule El.ClaudePort do
     end
   end
 
-  defp do_ask(state, message) do
-    session_id = state.session_id
-    port = state.port
+  defp try_extract_result(state) do
+    case extract_all_lines(state.buffer, []) do
+      {[], _remaining} ->
+        :incomplete
 
-    ndjson = Input.user_message(message, session_id || "default")
-    Port.command(port, ndjson <> "\n")
+      {lines, remaining} ->
+        case process_lines(lines, {nil, nil, nil}, state.session_id) do
+          {:complete, result, model, sid} ->
+            {:ok, {nil_to_empty(result), model, sid || state.session_id}, remaining}
 
-    events = collect_events(state, [])
-    {result, model, sid} = extract_from_events(events)
-
-    {
-      nil_to_empty(result),
-      model,
-      sid || session_id
-    }
-  end
-
-  defp build_stream(state, message) do
-    Stream.unfold(state, fn current_state ->
-      session_id = current_state.session_id
-      port = current_state.port
-
-      ndjson = Input.user_message(message, session_id || "default")
-      Port.command(port, ndjson <> "\n")
-
-      case read_one_event(current_state) do
-        {:ok, event, new_state} ->
-          {event, new_state}
-
-        :eof ->
-          nil
-      end
-    end)
-  end
-
-  defp collect_events(state, acc) do
-    case read_one_event(state) do
-      {:ok, event, new_state} ->
-        if is_result_message(event) do
-          Enum.reverse([event | acc])
-        else
-          collect_events(new_state, [event | acc])
+          :incomplete ->
+            :incomplete
         end
-
-      :eof ->
-        Enum.reverse(acc)
     end
   end
 
-  defp read_one_event(state) do
-    case extract_one_line(state.buffer) do
+  defp extract_all_lines(buffer, acc) do
+    case extract_one_line(buffer) do
       {nil, _} ->
-        case read_from_port_timeout(state.port, 5000) do
-          {:data, data} ->
-            new_buffer = state.buffer <> data
-            read_one_event(%{state | buffer: new_buffer})
-
-          :timeout ->
-            :eof
-
-          :error ->
-            :eof
-        end
+        {Enum.reverse(acc), buffer}
 
       {line, remaining} ->
-        case Jason.decode(line) do
-          {:ok, json} ->
-            {:ok, Parser.normalize_keys(json), %{state | buffer: remaining}}
+        extract_all_lines(remaining, [line | acc])
+    end
+  end
 
-          {:error, _} ->
-            read_one_event(%{state | buffer: remaining})
+  defp process_lines([], {result, model, sid}, _session_id), do: {:complete, result, model, sid}
+
+  defp process_lines([line | rest], {result, model, sid} = acc, session_id) do
+    case Jason.decode(line) do
+      {:ok, json} ->
+        normalized = Parser.normalize_keys(json)
+        new_result = if is_result_message(normalized), do: get_result(normalized), else: result
+        new_model = if has_model(normalized), do: get_model(normalized), else: model
+        new_sid = if has_session_id(normalized), do: get_session_id(normalized), else: sid
+
+        if is_result_message(normalized) do
+          {:complete, new_result, new_model, new_sid}
+        else
+          process_lines(rest, {new_result, new_model, new_sid}, session_id)
         end
+
+      {:error, _reason} ->
+        process_lines(rest, acc, session_id)
     end
   end
 
@@ -254,34 +261,27 @@ defmodule El.ClaudePort do
     end
   end
 
-  defp read_from_port_timeout(port, timeout) do
-    receive do
-      {^port, {:data, data}} -> {:data, data}
-      {^port, :eof} -> :error
-      {^port, {:exit_status, _}} -> :error
-    after
-      timeout -> :timeout
-    end
-  end
-
   defp is_result_message(%{"type" => "result"}), do: true
   defp is_result_message(_), do: false
 
-  defp extract_from_events(events) do
-    result = Enum.find_value(events, &extract_result/1)
-    model = Enum.find_value(events, &extract_model/1)
-    session_id = Enum.find_value(events, &extract_session_id/1)
-    {result, model, session_id}
+  defp has_model(%{"type" => "system", "message_type" => "init"}), do: true
+  defp has_model(_), do: false
+
+  defp has_session_id(%{"type" => "system", "message_type" => "init"}), do: true
+  defp has_session_id(_), do: false
+
+  defp get_result(%{"type" => "result", "result" => result}), do: result
+  defp get_result(%{"type" => "result"} = event) do
+    Logger.debug("ClaudePort found result event but no 'result' key: #{inspect(event)}")
+    nil
   end
+  defp get_result(_), do: nil
 
-  defp extract_result(%{"type" => "result", "result" => result}), do: result
-  defp extract_result(_), do: nil
+  defp get_model(%{"type" => "system", "message_type" => "init", "model" => model}), do: model
+  defp get_model(_), do: nil
 
-  defp extract_model(%{"type" => "system", "message_type" => "init", "model" => model}), do: model
-  defp extract_model(_), do: nil
-
-  defp extract_session_id(%{"type" => "system", "message_type" => "init", "session_id" => session_id}), do: session_id
-  defp extract_session_id(_), do: nil
+  defp get_session_id(%{"type" => "system", "message_type" => "init", "session_id" => session_id}), do: session_id
+  defp get_session_id(_), do: nil
 
   defp nil_to_empty(nil), do: ""
   defp nil_to_empty(result), do: result
