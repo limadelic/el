@@ -118,6 +118,17 @@ defmodule El.ClaudeCode.Spec do
       El.ClaudeCode.start_link(session_module: ResumeOmittedTest)
     end
 
+    test "start_link/1 passes :resume to session_module when given in opts" do
+      defmodule ResumeSidTest do
+        def start_link(opts) do
+          assert opts[:resume] == "abc"
+          {:ok, self()}
+        end
+      end
+
+      El.ClaudeCode.start_link(session_id: "abc", session_module: ResumeSidTest, resume: "abc")
+    end
+
     test "includes setting_sources in session options" do
       defmodule SettingSourcesTest do
         def start_link(opts) do
