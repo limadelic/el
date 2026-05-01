@@ -44,9 +44,8 @@ defmodule El.Session do
     |> Map.put(:claude_opts, build_claude_opts(rest, opts, session_id))
   end
 
-  defp build_claude_opts(rest, opts, session_id) do
+  defp build_claude_opts(rest, opts, _session_id) do
     rest
-    |> Keyword.put(:session_id, session_id)
     |> add_resume(Keyword.has_key?(opts, :resume), opts)
   end
 
