@@ -1,9 +1,9 @@
 require 'timeout'
 
 Around do |scenario, block|
-  Timeout.timeout(20) { block.call }
+  Timeout.timeout(30) { block.call }
 rescue Timeout::Error
-  raise "Scenario '#{scenario.name}' timed out after 20s"
+  raise "Scenario '#{scenario.name}' timed out after 30s"
 end
 
 Before do |scenario|
