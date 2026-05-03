@@ -292,5 +292,11 @@ defmodule El.Session.Ask.Spec do
 
       assert_receive {:delete_session_messages, :test_session}
     end
+
+    test "sets claude_pid via claude_module", %{state: state} do
+      new_state = El.Session.Ask.reset_session(state)
+
+      assert new_state.claude_pid == :mock_pid
+    end
   end
 end
