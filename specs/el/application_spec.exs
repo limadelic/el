@@ -145,8 +145,24 @@ defmodule El.Application.Spec do
 
       calls = Agent.get(RestoreWithMetaStubEl, & &1)
       assert Enum.reverse(calls) == [
-        {:dude, [continue: true, agent: "agent_ref_1"]},
-        {:kent, [continue: true, agent: "agent_ref_2"]}
+        {:dude, [resume: :session_id_1, agent: "agent_ref_1", model: nil]},
+        {:kent, [resume: :session_id_2, agent: "agent_ref_2", model: nil]}
+      ]
+    end
+
+    test "passes model from SessionMeta.lookup to el.start" do
+      {:ok, _pid} = Agent.start_link(fn -> [] end, name: RestoreWithModelStubEl)
+
+      Application.put_env(:el, :message_store, RestoreWithModelStubStore)
+      Application.put_env(:el, :el_module, RestoreWithModelStubEl)
+      Application.put_env(:el, :session_meta, RestoreWithModelStubSessionMeta)
+
+      El.Application.restore_sessions()
+
+      calls = Agent.get(RestoreWithModelStubEl, & &1)
+      assert Enum.reverse(calls) == [
+        {:alice, [resume: :sid_alpha, agent: "opusA", model: "opus"]},
+        {:bob, [resume: :sid_beta, agent: "haikuB", model: "haiku"]}
       ]
     end
 
@@ -166,7 +182,7 @@ defmodule El.Application.Spec do
       ]
     end
 
-    test "warm-restart uses continue option and sends warmup tell" do
+    test "warm-restart uses resume option from SessionMeta" do
       {:ok, _pid} = Agent.start_link(fn -> [] end, name: WarmupStubEl)
 
       Application.put_env(:el, :message_store, WarmupStubStore)
@@ -177,8 +193,7 @@ defmodule El.Application.Spec do
 
       calls = Agent.get(WarmupStubEl, & &1)
       assert Enum.reverse(calls) == [
-        {:start, [:dude, [continue: true, agent: "a1"]]},
-        {:tell, [:dude, "continue if needed"]}
+        {:start, [:dude, [resume: :sid_1, agent: "a1", model: nil]]}
       ]
     end
   end
@@ -213,8 +228,8 @@ defmodule RestoreWithMetaStubStore do
 end
 
 defmodule RestoreWithMetaStubSessionMeta do
-  def lookup(:dude), do: {:ok, :session_id_1, "agent_ref_1"}
-  def lookup(:kent), do: {:ok, :session_id_2, "agent_ref_2"}
+  def lookup(:dude), do: {:ok, :session_id_1, "agent_ref_1", nil}
+  def lookup(:kent), do: {:ok, :session_id_2, "agent_ref_2", nil}
 end
 
 defmodule RestoreWithMetaStubEl do
@@ -254,7 +269,7 @@ defmodule WarmupStubStore do
 end
 
 defmodule WarmupStubSessionMeta do
-  def lookup(:dude), do: {:ok, :sid_1, "a1"}
+  def lookup(:dude), do: {:ok, :sid_1, "a1", nil}
 end
 
 defmodule WarmupStubEl do
@@ -264,5 +279,24 @@ defmodule WarmupStubEl do
 
   def tell(name, message) do
     Agent.update(__MODULE__, &[{:tell, [name, message]} | &1])
+  end
+end
+
+defmodule RestoreWithModelStubStore do
+  def session_names, do: [:alice, :bob]
+end
+
+defmodule RestoreWithModelStubSessionMeta do
+  def lookup(:alice), do: {:ok, :sid_alpha, "opusA", "opus"}
+  def lookup(:bob), do: {:ok, :sid_beta, "haikuB", "haiku"}
+end
+
+defmodule RestoreWithModelStubEl do
+  def start(name, opts) do
+    Agent.update(__MODULE__, &[{name, opts} | &1])
+  end
+
+  def tell(_name, _message) do
+    :ok
   end
 end

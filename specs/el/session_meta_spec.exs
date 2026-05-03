@@ -10,11 +10,20 @@ defmodule El.SessionMeta.Spec do
     :ok
   end
 
-  describe "insert/3" do
-    test "stores meta tuple with name, agent, and session_id" do
-      result = El.SessionMeta.insert(:test_name, "kent", "session-123")
+  describe "insert/4" do
+    test "stores meta tuple with name, agent, session_id, and model" do
+      result = El.SessionMeta.insert(:test_name, "kent", "session-123", "haiku")
 
       assert result == :ok
+    end
+
+    test "persists model alongside agent and session_id" do
+      Application.put_env(:el, :dets_backend, ModelCapturingBackend)
+
+      El.SessionMeta.insert(:foo, "donny", "abc-123", "haiku")
+
+      received = Application.get_env(:el, :captured_tuple)
+      assert received == {:foo, "abc-123", "donny", "haiku"}
     end
   end
 
@@ -30,7 +39,7 @@ defmodule El.SessionMeta.Spec do
 
       result = El.SessionMeta.lookup(:test_name)
 
-      assert result == {:ok, "session-123", "kent"}
+      assert result == {:ok, "session-123", "kent", nil}
     end
   end
 
@@ -47,7 +56,7 @@ defmodule DetsBackendWithSession do
   def delete(_table, _key), do: :ok
 
   def lookup(:session_meta, :test_name) do
-    [{:test_name, "session-123", "kent"}]
+    [{:test_name, "session-123", "kent", nil}]
   end
 
   def lookup(_table, _key), do: []
@@ -56,5 +65,17 @@ defmodule DetsBackendWithSession do
 
   def delete_object(_table, _key), do: :ok
 
+  def foldl(_table, acc, _fun), do: acc
+end
+
+defmodule ModelCapturingBackend do
+  def insert(_table, tuple) do
+    Application.put_env(:el, :captured_tuple, tuple)
+    :ok
+  end
+
+  def delete(_table, _key), do: :ok
+  def lookup(_table, _key), do: []
+  def delete_object(_table, _key), do: :ok
   def foldl(_table, acc, _fun), do: acc
 end

@@ -4,7 +4,7 @@ defmodule El.Session.Spec do
   setup :verify_on_exit!
 
   setup do
-    Mox.stub(El.MockSessionMeta, :insert, fn _, _, _ -> :ok end)
+    Mox.stub(El.MockSessionMeta, :insert, fn _, _, _, _ -> :ok end)
 
     state = %{
       name: :test_session,
@@ -66,12 +66,12 @@ defmodule El.Session.Spec do
 
   describe "init/1" do
     setup do
-      Mox.stub(El.MockSessionMeta, :insert, fn _name, _agent, _session_id -> :ok end)
+      Mox.stub(El.MockSessionMeta, :insert, fn _name, _agent, _session_id, _model -> :ok end)
       %{}
     end
 
     test "does not call SessionMeta.insert during init" do
-      Mox.expect(El.MockSessionMeta, :insert, 0, fn _name, _agent, _session_id ->
+      Mox.expect(El.MockSessionMeta, :insert, 0, fn _name, _agent, _session_id, _model ->
         :ok
       end)
 
@@ -566,16 +566,17 @@ defmodule El.Session.Spec do
       assert returned_state.session_id == "claude-session-id"
     end
 
-    test "calls SessionMeta.insert with captured session_id", %{state: state} do
+    test "calls SessionMeta.insert with captured session_id and model", %{state: state} do
       from = {self(), make_ref()}
       ref = make_ref()
       agent = "kent"
-      test_state = %{state | opts: [agent: agent]}
+      test_state = %{state | opts: [agent: agent, model: "haiku"]}
 
-      Mox.expect(El.MockSessionMeta, :insert, fn name, a, sid ->
+      Mox.expect(El.MockSessionMeta, :insert, fn name, a, sid, model ->
         assert name == :test_session
         assert a == agent
         assert sid == "claude-session-id"
+        assert model == "haiku"
         :ok
       end)
 

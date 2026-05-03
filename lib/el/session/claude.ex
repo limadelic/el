@@ -41,7 +41,7 @@ defmodule El.Session.Claude do
   end
 
   def maybe_respawn_claude(%{claude_pid: nil} = state) do
-    opts = resume_options(state.opts, state.session_id)
+    opts = resume_options(state.claude_opts, state.session_id)
     pid = start(state.claude_module, opts)
     %{state | claude_pid: pid}
   end

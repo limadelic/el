@@ -1,12 +1,12 @@
 defmodule El.SessionMeta do
-  @callback insert(term(), term(), term()) :: term()
+  @callback insert(term(), term(), term(), term()) :: term()
   @callback lookup(term()) :: term()
   @callback delete(term()) :: term()
   @callback close() :: term()
 
-  def insert(name, agent, session_id) do
+  def insert(name, agent, session_id, model \\ nil) do
     backend = Application.get_env(:el, :dets_backend, El.DetsBackend)
-    backend.insert(:session_meta, {name, session_id, agent})
+    backend.insert(:session_meta, {name, session_id, agent, model})
     :ok
   end
 
@@ -17,7 +17,7 @@ defmodule El.SessionMeta do
     |> match_session()
   end
 
-  defp match_session([{_name, session_id, agent}]), do: {:ok, session_id, agent}
+  defp match_session([{_name, session_id, agent, model}]), do: {:ok, session_id, agent, model}
   defp match_session([]), do: {:error, :not_found}
 
   def delete(name) do
