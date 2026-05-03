@@ -14,6 +14,7 @@ defmodule El.Session do
   @defaults %{
     claude_module: El.ClaudePort,
     task_module: Task,
+    ask_module: El.Session.Ask,
     alive_fn: &El.Session.Api.alive?/1,
     registry_module: Registry,
     store_module: El.Application,
