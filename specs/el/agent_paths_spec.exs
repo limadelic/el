@@ -1,6 +1,11 @@
 defmodule El.Agent.Paths.Spec do
   use ExUnit.Case
 
+  setup_all do
+    Code.ensure_loaded!(El.Agent.Paths)
+    :ok
+  end
+
   describe "El.Agent.Paths.local_path/1" do
     test "returns relative path in .claude/agents directory" do
       path = El.Agent.Paths.local_path("kent")
