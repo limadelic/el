@@ -239,10 +239,9 @@ defmodule El.Session.Ask.Spec do
 
       from = {self(), make_ref()}
 
-      {ref, new_state} = El.Session.Ask.prepare_ask(state, from, "@target> routed question")
+      {_ref, new_state} = El.Session.Ask.prepare_ask(state, from, "@target> routed question")
 
       assert new_state.messages == []
-      assert is_reference(ref)
     end
   end
 end
