@@ -1084,6 +1084,7 @@ defmodule MockSessionStore do
   def delete_session_messages(_), do: :ok
   def delete_ask_entry(_state, _message, _ref), do: :ok
   def store_ask_entry(_, _), do: :ok
+  def replace_ask(messages, ref, message, response, model), do: El.Session.Store.replace_ask(messages, ref, message, response, model)
 end
 
 defmodule MockLoadingStore do
