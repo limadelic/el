@@ -1084,7 +1084,25 @@ defmodule MockSessionStore do
   def delete_session_messages(_), do: :ok
   def delete_ask_entry(_state, _message, _ref), do: :ok
   def store_ask_entry(_, _), do: :ok
-  def replace_ask(messages, ref, message, response, model), do: El.Session.Store.replace_ask(messages, ref, message, response, model)
+  def replace_ask(messages, ref, message, response, model) do
+    messages
+    |> Enum.split_while(&match_pending(&1, ref))
+    |> complete(message, response, model)
+  end
+
+  defp match_pending({_, _, "", %{ref: ref}}, ref), do: false
+  defp match_pending(_, _), do: true
+
+  defp complete({before, [{_, _, _, _} | rest]}, message, response, model) do
+    before ++ [{"ask", message, response, metadata(model)} | rest]
+  end
+
+  defp complete({messages, []}, message, response, model) do
+    messages ++ [{"ask", message, response, metadata(model)}]
+  end
+
+  defp metadata(nil), do: %{}
+  defp metadata(model), do: %{model: model}
 end
 
 defmodule MockLoadingStore do
