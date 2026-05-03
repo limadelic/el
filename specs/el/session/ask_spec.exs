@@ -137,5 +137,33 @@ defmodule El.Session.Ask.Spec do
 
       assert_receive {^caller_ref, "the answer"}
     end
+
+    test "deletes pending entry from DETS on completion" do
+      stub(El.MockStoreModule, :delete_ask_entry, fn _, _, _ -> :ok end)
+      stub(El.MockStoreModule, :store_ask_entry, fn _, _ -> :ok end)
+      stub(El.MockStoreModule, :replace_ask, fn _messages, _ref, _message, _response, _model ->
+        [{"ask", "question", "answer", %{}}]
+      end)
+
+      Application.put_env(:el, :store_module, El.MockStoreModule)
+
+      on_exit(fn ->
+        Application.delete_env(:el, :store_module)
+      end)
+
+      state = %{
+        name: :test_session,
+        messages: [{"ask", "question", "", %{ref: make_ref()}}],
+        pending_calls: [self()],
+        store_module: El.MockStoreModule
+      }
+
+      from = {self(), make_ref()}
+      ref = make_ref()
+
+      returned_state = El.Session.Ask.finalize_ask(state, from, ref, "question", "answer", "claude-3")
+
+      assert returned_state.messages == [{"ask", "question", "answer", %{}}]
+    end
   end
 end

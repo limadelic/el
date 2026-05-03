@@ -519,21 +519,6 @@ defmodule El.Session.Spec do
       assert returned_state.messages == [{:replaced, ref1, "question", "answer first", "claude-3"}]
     end
 
-    test "deletes pending entry from DETS on completion",
-         %{state: state} do
-      from = {self(), make_ref()}
-      ref = make_ref()
-      msg = [{"ask", "question", "", %{ref: ref}}]
-      pending_state = %{state | messages: msg}
-
-      cast_msg = {:complete_ask, from, "question", "answer", ref, "claude-3", "session-123"}
-
-      {:noreply, returned_state} =
-        El.Session.handle_cast(cast_msg, pending_state)
-
-      assert [{"ask", "question", "answer", %{}}] = returned_state.messages
-    end
-
     test "updates state.session_id when Claude returns non-nil session_id", %{state: state} do
       from = {self(), make_ref()}
       ref = make_ref()
