@@ -23,7 +23,7 @@ defmodule El.Session.Ask do
   end
 
   def finalize_ask(state, from, ref, message, response, model) do
-    store_module = Application.get_env(:el, :store_module, Store)
+    store_module = state.store_module
     store_module.delete_ask_entry(state, message, ref)
     store_module.store_ask_entry(state, {"ask", message, response, metadata_for(model)})
     Claude.safe_reply(from, response)

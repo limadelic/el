@@ -75,7 +75,8 @@ defmodule El.Session.Ask.Spec do
       state = %{
         name: :test_session,
         messages: [],
-        pending_calls: [self()]
+        pending_calls: [self()],
+        store_module: El.MockStoreModule
       }
 
       from = {self(), make_ref()}
@@ -101,7 +102,8 @@ defmodule El.Session.Ask.Spec do
       state = %{
         name: :test_session,
         messages: [],
-        pending_calls: [self()]
+        pending_calls: [self()],
+        store_module: El.MockStoreModule
       }
 
       from = {self(), make_ref()}
