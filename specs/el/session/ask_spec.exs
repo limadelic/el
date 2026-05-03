@@ -192,5 +192,35 @@ defmodule El.Session.Ask.Spec do
 
       assert is_reference(ref)
     end
+
+    test "does not store pending entry when ask has routes" do
+      stub(El.MockStoreModule, :store_message, fn _, _ -> :ok end)
+
+      Application.put_env(:el, :store_module, El.MockStoreModule)
+
+      on_exit(fn ->
+        Application.delete_env(:el, :store_module)
+      end)
+
+      alive_fn = fn
+        :target -> true
+        _ -> false
+      end
+
+      state = %{
+        name: :test_session,
+        messages: [],
+        pending_calls: [],
+        store_module: El.MockStoreModule,
+        alive_fn: alive_fn
+      }
+
+      from = {self(), make_ref()}
+
+      {ref, new_state} = El.Session.Ask.prepare_ask(state, from, "@target> routed question")
+
+      assert new_state.messages == []
+      assert is_reference(ref)
+    end
   end
 end

@@ -415,31 +415,6 @@ defmodule El.Session.Spec do
                El.Session.handle_call({:ask, "test"}, from, updated_state)
     end
 
-    test "does not store pending entry when ask has routes", %{
-      state: state
-    } do
-      from = {self(), make_ref()}
-
-      alive_fn = fn
-        :target -> true
-        _ -> false
-      end
-
-      updated_state = %{
-        state
-        | task_module: MockTaskModule,
-          alive_fn: alive_fn
-      }
-
-      {:noreply, returned_state} =
-        El.Session.handle_call(
-          {:ask, "@target> routed question"},
-          from,
-          updated_state
-        )
-
-      assert returned_state.messages == []
-    end
   end
 
   describe "handle_cast/2 :complete_ask" do
