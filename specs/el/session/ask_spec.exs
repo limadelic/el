@@ -246,10 +246,11 @@ defmodule El.Session.Ask.Spec do
   end
 
   describe "reset_session/1" do
-    test "reset_session generates a session_id different from previous" do
-      stub(El.MockStoreModule, :delete_session_messages, fn _ -> :ok end)
+    setup do
       Application.put_env(:el, :store_module, El.MockStoreModule)
       on_exit(fn -> Application.delete_env(:el, :store_module) end)
+
+      stub(El.MockStoreModule, :delete_session_messages, fn _ -> :ok end)
 
       state = %{
         name: :test_session,
@@ -262,72 +263,30 @@ defmodule El.Session.Ask.Spec do
         store_module: El.MockStoreModule
       }
 
-      new_state = El.Session.Ask.reset_session(state)
+      {:ok, state: state}
+    end
 
+    test "reset_session generates a session_id different from previous", %{state: state} do
+      new_state = El.Session.Ask.reset_session(state)
       assert new_state.session_id != "test-session-id"
     end
 
-    test "reset_session generates a binary session_id" do
-      stub(El.MockStoreModule, :delete_session_messages, fn _ -> :ok end)
-      Application.put_env(:el, :store_module, El.MockStoreModule)
-      on_exit(fn -> Application.delete_env(:el, :store_module) end)
-
-      state = %{
-        name: :test_session,
-        messages: [{"tell", "old message", "response", %{}}],
-        opts: [],
-        session_id: "test-session-id",
-        claude_pid: :old_pid,
-        claude_opts: [],
-        claude_module: MockSessionModule,
-        store_module: El.MockStoreModule
-      }
-
+    test "reset_session generates a binary session_id", %{state: state} do
       new_state = El.Session.Ask.reset_session(state)
-
       assert is_binary(new_state.session_id)
     end
 
-    test "clears state.messages to empty list" do
-      stub(El.MockStoreModule, :delete_session_messages, fn _ -> :ok end)
-      Application.put_env(:el, :store_module, El.MockStoreModule)
-      on_exit(fn -> Application.delete_env(:el, :store_module) end)
-
-      state = %{
-        name: :test_session,
-        messages: [{"tell", "old message", "response", %{}}],
-        opts: [],
-        session_id: "test-session-id",
-        claude_pid: :old_pid,
-        claude_opts: [],
-        claude_module: MockSessionModule,
-        store_module: El.MockStoreModule
-      }
-
+    test "clears state.messages to empty list", %{state: state} do
       new_state = El.Session.Ask.reset_session(state)
-
       assert new_state.messages == []
     end
 
-    test "deletes DETS messages via store_module.delete_session_messages" do
+    test "deletes DETS messages via store_module.delete_session_messages", %{state: state} do
       test_pid = self()
-      stub(El.MockStoreModule, :delete_session_messages, fn name ->
+      expect(El.MockStoreModule, :delete_session_messages, fn name ->
         send(test_pid, {:delete_session_messages, name})
         :ok
       end)
-      Application.put_env(:el, :store_module, El.MockStoreModule)
-      on_exit(fn -> Application.delete_env(:el, :store_module) end)
-
-      state = %{
-        name: :test_session,
-        messages: [{"tell", "old message", "response", %{}}],
-        opts: [],
-        session_id: "test-session-id",
-        claude_pid: :old_pid,
-        claude_opts: [],
-        claude_module: MockSessionModule,
-        store_module: El.MockStoreModule
-      }
 
       El.Session.Ask.reset_session(state)
 
