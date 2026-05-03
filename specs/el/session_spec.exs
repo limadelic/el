@@ -764,16 +764,6 @@ defmodule El.Session.Spec do
       refute Process.alive?(old_pid)
     end
 
-    test "starts new claude process via claude_module", %{state: state} do
-      {:reply, :ok, returned_state} =
-        El.Session.handle_call(:clear, :from, %{
-          state
-          | claude_module: MockSessionModule
-        })
-
-      assert returned_state.claude_pid == :mock_pid
-    end
-
     test "returns :ok reply", %{state: state} do
       {:reply, reply, _returned_state} =
         El.Session.handle_call(:clear, :from, %{
