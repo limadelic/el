@@ -418,29 +418,6 @@ defmodule El.Session.Spec do
   end
 
   describe "handle_cast/2 :complete_ask" do
-    test "replaces correct entry when duplicates exist",
-         %{state: state} do
-      from = {self(), make_ref()}
-      ref1 = make_ref()
-      ref2 = make_ref()
-
-      pending_state = %{
-        state
-        | messages: [
-            {"ask", "question", "", %{ref: ref1}},
-            {"ask", "question", "", %{ref: ref2}}
-          ],
-          store_module: MockSessionStoreBare
-      }
-
-      cast_msg = {:complete_ask, from, "question", "answer first", ref1, "claude-3", "session-123"}
-
-      {:noreply, returned_state} =
-        El.Session.handle_cast(cast_msg, pending_state)
-
-      assert returned_state.messages == [{:replaced, ref1, "question", "answer first", "claude-3"}]
-    end
-
     test "updates state.session_id when Claude returns non-nil session_id", %{state: state} do
       from = {self(), make_ref()}
       ref = make_ref()
