@@ -501,7 +501,7 @@ defmodule El.Session.Spec do
     test "replaces pending entry with response", %{state: state} do
       from = {self(), make_ref()}
       ref = make_ref()
-      pending_state = %{state | messages: [{"ask", "hello", "", %{ref: ref}}]}
+      pending_state = %{state | messages: [{"ask", "hello", "", %{ref: ref}}], store_module: MockSessionStoreBare}
 
       {:noreply, returned_state} =
         El.Session.handle_cast(
@@ -509,7 +509,7 @@ defmodule El.Session.Spec do
           pending_state
         )
 
-      assert [{"ask", "hello", "response", %{}}] = returned_state.messages
+      assert returned_state.messages == [{:replaced, ref, "hello", "response", "claude-3"}]
     end
 
     test "replaces correct entry when duplicates exist",
