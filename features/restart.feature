@@ -8,4 +8,3 @@ Feature: Restart
       | donny |
     * > el donny "where did i say u were?":
       | element |
-    * > el donny exit
