@@ -108,11 +108,16 @@ defmodule El.ClaudePort do
   end
 
   @impl GenServer
-  def terminate(_reason, state) do
-    if state.port && Port.info(state.port) do
-      Port.close(state.port)
-    end
+  def terminate(_reason, %{port: nil}), do: :ok
+  def terminate(_reason, %{port: port}) do
+    safe_close_port(port)
     :ok
+  end
+
+  defp safe_close_port(port) do
+    if port && Port.info(port) do
+      Port.close(port)
+    end
   rescue
     ArgumentError -> :ok
   end
