@@ -97,6 +97,7 @@ defmodule El.CLI.Spec do
 
   describe "execute/2" do
     setup do
+      System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
       Application.put_env(:el, :file_system, El.MockFileSystem)
       stub(El.MockSessionApi, :info, fn _name -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
 
