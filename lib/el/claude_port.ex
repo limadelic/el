@@ -53,7 +53,6 @@ defmodule El.ClaudePort do
 
   @impl GenServer
   def handle_call({:ask, message}, from, state) do
-    Logger.error("CLAUDEPORT_TRACE: ask entry, port=#{inspect(state.port)}, session_id=#{inspect(state.session_id)}, opts=#{inspect(state.opts)}")
     case ensure_connected(state) do
       {:ok, connected_state} ->
         Logger.debug("ClaudePort connected, sending message")
@@ -62,20 +61,18 @@ defmodule El.ClaudePort do
 
         ndjson = Input.user_message(message, session_id || "default")
         Port.command(port, ndjson <> "\n")
-        Logger.error("CLAUDEPORT_TRACE: ndjson sent, bytes=#{byte_size(ndjson)}")
 
         new_state = %{connected_state | current_request_id: from}
         {:noreply, new_state}
 
       {:error, reason} ->
-        Logger.error("CLAUDEPORT_TRACE: ensure_connected FAILED, reason=#{inspect(reason)}")
+        Logger.error("ClaudePort ensure_connected failed: #{inspect(reason)}")
         {:reply, {"(unavailable)", nil, nil}, state}
     end
   end
 
   @impl GenServer
   def handle_info({port, {:data, data}}, %{port: port} = state) do
-    Logger.error("CLAUDEPORT_TRACE: data received, bytes=#{byte_size(data)}, has_request=#{not is_nil(state.current_request_id)}")
     new_buffer = state.buffer <> data
     new_state = %{state | buffer: new_buffer}
 
@@ -86,7 +83,6 @@ defmodule El.ClaudePort do
       from ->
         case try_extract_result(new_state) do
           {:ok, result, remaining_buffer} ->
-            Logger.error("CLAUDEPORT_TRACE: replying, result=#{inspect(elem(result, 0)) |> String.slice(0, 200)}")
             GenServer.reply(from, result)
             {:noreply, %{new_state | buffer: remaining_buffer, current_request_id: nil}}
 
@@ -97,7 +93,7 @@ defmodule El.ClaudePort do
   end
 
   def handle_info({port, {:exit_status, status}}, %{port: port} = state) do
-    Logger.error("CLAUDEPORT_TRACE: port exited, status=#{status}, had_request=#{not is_nil(state.current_request_id)}")
+    Logger.debug("Claude port exited with status: #{status}")
     {:noreply, %{state | port: nil, buffer: ""}}
   end
 

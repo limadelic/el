@@ -48,6 +48,15 @@ defmodule El.Session do
     rest
     |> add_resume(Keyword.has_key?(opts, :resume), opts)
     |> add_continue(Keyword.has_key?(opts, :continue), opts)
+    |> ensure_setting_sources()
+  end
+
+  defp ensure_setting_sources(opts) do
+    if Keyword.has_key?(opts, :setting_sources) do
+      opts
+    else
+      Keyword.put(opts, :setting_sources, ["user", "project", "local"])
+    end
   end
 
   defp add_resume(claude_opts, true, opts) do
