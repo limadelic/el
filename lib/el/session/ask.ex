@@ -1,4 +1,6 @@
 defmodule El.Session.Ask do
+  @behaviour El.Behaviours.SessionAsk
+
   alias El.Session.Router
   alias El.Session.Store
   alias El.Session.Claude
