@@ -3,6 +3,12 @@ defmodule El.Lifecycle.Spec do
   import Mox
   setup :verify_on_exit!
 
+  setup_all do
+    Code.ensure_loaded!(El.Lifecycle)
+    Code.ensure_loaded!(El.Session.Registry)
+    :ok
+  end
+
   setup do
     original_session_meta = Application.get_env(:el, :session_meta)
     original_registry = Application.get_env(:el, :registry)
