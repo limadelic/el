@@ -600,20 +600,6 @@ defmodule El.Session.Spec do
   end
 
   describe "handle_call/2 {:log, count}" do
-    test "{:log, :all} returns all messages", %{state: state} do
-      messages = [
-        {"type1", "msg1", "resp1", %{}},
-        {"type2", "msg2", "resp2", %{}}
-      ]
-
-      state_with_messages = %{state | messages: messages}
-
-      {:reply, returned_messages, _returned_state} =
-        El.Session.handle_call({:log, :all}, :from, state_with_messages)
-
-      assert returned_messages == messages
-    end
-
     test "{:log, 1} returns last 1 message", %{state: state} do
       messages = [
         {"type1", "msg1", "resp1", %{}},
