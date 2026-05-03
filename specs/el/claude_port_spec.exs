@@ -22,4 +22,10 @@ defmodule El.ClaudePort.Spec do
       assert new_state.buffer == "partial"
     end
   end
+
+  describe "terminate/2" do
+    test "returns :ok when port is nil" do
+      assert :ok = El.ClaudePort.terminate(:normal, %{port: nil})
+    end
+  end
 end
