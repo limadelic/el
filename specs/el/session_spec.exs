@@ -1128,3 +1128,13 @@ defmodule MockVerifyingStore do
     :ok
   end
 end
+
+defmodule MockSessionStoreBare do
+  def store_message(_, _), do: :ok
+  def load_messages(_), do: []
+  def delete_message(_, _), do: :ok
+  def delete_session_messages(_), do: :ok
+  def delete_ask_entry(_state, _message, _ref), do: :ok
+  def store_ask_entry(_, _), do: :ok
+  def replace_ask(_messages, ref, message, response, model), do: [{:replaced, ref, message, response, model}]
+end
