@@ -21,6 +21,20 @@ defmodule El.ClaudePort.Spec do
       {:noreply, new_state} = El.ClaudePort.handle_info({:fake_port, {:data, "partial"}}, state)
       assert new_state.buffer == "partial"
     end
+
+    test "replies to caller and clears request when result line completes" do
+      ref = make_ref()
+      from = {self(), ref}
+      state = %{
+        port: :fake_port,
+        buffer: "",
+        current_request_id: from,
+        session_id: "s1"
+      }
+      ndjson = ~s({"type":"result","result":"answer"}\n)
+      El.ClaudePort.handle_info({:fake_port, {:data, ndjson}}, state)
+      assert_receive {^ref, {"answer", _, _}}
+    end
   end
 
   describe "terminate/2" do
