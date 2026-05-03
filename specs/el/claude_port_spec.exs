@@ -14,4 +14,12 @@ defmodule El.ClaudePort.Spec do
       assert state.buffer == ""
     end
   end
+
+  describe "handle_info {:data, ...}" do
+    test "appends partial data to buffer when no pending request" do
+      state = %{port: :fake_port, buffer: "", current_request_id: nil}
+      {:noreply, new_state} = El.ClaudePort.handle_info({:fake_port, {:data, "partial"}}, state)
+      assert new_state.buffer == "partial"
+    end
+  end
 end
