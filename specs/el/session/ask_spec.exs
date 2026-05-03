@@ -283,5 +283,22 @@ defmodule El.Session.Ask.Spec do
 
       assert is_binary(new_state.session_id)
     end
+
+    test "clears state.messages to empty list" do
+      state = %{
+        name: :test_session,
+        messages: [{"tell", "old message", "response", %{}}],
+        opts: [],
+        session_id: "test-session-id",
+        claude_pid: :old_pid,
+        claude_opts: [],
+        claude_module: MockSessionModule,
+        store_module: TestResetSessionStore
+      }
+
+      new_state = El.Session.Ask.reset_session(state)
+
+      assert new_state.messages == []
+    end
   end
 end
