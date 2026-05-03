@@ -2,6 +2,13 @@ defmodule TestResetSessionStore do
   def delete_session_messages(_name), do: :ok
 end
 
+defmodule TestDeleteSessionMessagesStore do
+  def delete_session_messages(name) do
+    send(self(), {:delete_session_messages, name})
+    :ok
+  end
+end
+
 defmodule El.Session.Ask.Spec do
   use ExUnit.Case
   import Mox
@@ -299,6 +306,23 @@ defmodule El.Session.Ask.Spec do
       new_state = El.Session.Ask.reset_session(state)
 
       assert new_state.messages == []
+    end
+
+    test "deletes DETS messages via store_module.delete_session_messages" do
+      state = %{
+        name: :test_session,
+        messages: [{"tell", "old message", "response", %{}}],
+        opts: [],
+        session_id: "test-session-id",
+        claude_pid: :old_pid,
+        claude_opts: [],
+        claude_module: MockSessionModule,
+        store_module: TestDeleteSessionMessagesStore
+      }
+
+      El.Session.Ask.reset_session(state)
+
+      assert_receive {:delete_session_messages, :test_session}
     end
   end
 end

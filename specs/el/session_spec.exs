@@ -837,17 +837,6 @@ defmodule El.Session.Spec do
       assert returned_state.claude_pid == :mock_pid
     end
 
-    test "deletes DETS messages via El.Application.delete_session_messages",
-         %{state: state} do
-      El.Session.handle_call(:clear, :from, %{
-        state
-        | claude_module: MockSessionModule,
-          store_module: MockVerifyingStore
-      })
-
-      assert_received {:delete_session_messages, :test_session}
-    end
-
     test "returns :ok reply", %{state: state} do
       {:reply, reply, _returned_state} =
         El.Session.handle_call(:clear, :from, %{
