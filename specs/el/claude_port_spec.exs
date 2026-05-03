@@ -35,6 +35,20 @@ defmodule El.ClaudePort.Spec do
       El.ClaudePort.handle_info({:fake_port, {:data, ndjson}}, state)
       assert_receive {^ref, {"answer", _, _}}
     end
+
+    test "does not reply when system-init line arrives" do
+      ref = make_ref()
+      from = {self(), ref}
+      state = %{
+        port: :fake_port,
+        buffer: "",
+        current_request_id: from,
+        session_id: "s1"
+      }
+      ndjson = ~s({"type":"system","subtype":"init","model":"claude-3","session_id":"s2"}\n)
+      El.ClaudePort.handle_info({:fake_port, {:data, ndjson}}, state)
+      refute_receive _, 0
+    end
   end
 
   describe "terminate/2" do
