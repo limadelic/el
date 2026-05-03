@@ -211,7 +211,7 @@ defmodule El.Session.Ask.Spec do
 
       {_ref, new_state} = El.Session.Ask.prepare_ask(state, from, "test question")
 
-      [{_, _, _, %{ref: ref}}] = new_state.messages
+      ref = new_state.messages |> hd() |> elem(3) |> Map.fetch!(:ref)
       assert is_reference(ref)
     end
 
