@@ -9,6 +9,9 @@ end
 
 defmodule El.MessageStore.Spec do
   use ExUnit.Case
+  import Mox
+
+  setup :verify_on_exit!
 
   setup do
     on_exit(fn ->
@@ -24,9 +27,11 @@ defmodule El.MessageStore.Spec do
       name = :test_entry
       entry = {"tell", "hello", "response", %{}}
 
-      result = El.MessageStore.delete_entry(name, entry)
+      Application.put_env(:el, :dets_backend, El.MockDets)
 
-      assert result == :ok
+      expect(El.MockDets, :delete_object, fn :message_store, {^name, ^entry} -> :ok end)
+
+      assert El.MessageStore.delete_entry(name, entry) == :ok
     end
   end
 
