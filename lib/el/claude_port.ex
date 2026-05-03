@@ -139,10 +139,10 @@ defmodule El.ClaudePort do
       {:ok, {executable, args}} ->
         exe_path = executable |> String.to_charlist() |> :os.find_executable()
 
-        if !exe_path do
-          {:error, "CLI executable not found: #{executable}"}
-        else
+        if exe_path do
           spawn_port(exe_path, args, cwd)
+        else
+          {:error, "CLI executable not found: #{executable}"}
         end
 
       {:error, reason} ->
