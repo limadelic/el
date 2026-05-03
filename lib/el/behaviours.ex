@@ -60,6 +60,8 @@ defmodule El.Behaviours.Store do
   @callback replace_ask(term(), term(), term(), term(), term()) :: term()
   @callback delete_message(term(), term()) :: term()
   @callback store_message(term(), term()) :: term()
+  @callback delete_session_messages(term()) :: term()
+  @callback load_messages(term()) :: term()
 end
 
 defmodule El.Behaviours.ClaudeCodeSession do
