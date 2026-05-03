@@ -467,19 +467,6 @@ defmodule El.Session.Spec do
       assert [{"ask", "test", "response", %{}}] = returned_state.messages
     end
 
-    test "replies to caller with response", %{state: state} do
-      caller_ref = make_ref()
-      from = {self(), caller_ref}
-      cast_ref = make_ref()
-
-      El.Session.handle_cast(
-        {:complete_ask, from, "test", "the answer", cast_ref, "claude-3", "session-123"},
-        state
-      )
-
-      assert_receive {^caller_ref, "the answer"}
-    end
-
     test "stores exact message content", %{state: state} do
       from = {self(), make_ref()}
       ref = make_ref()

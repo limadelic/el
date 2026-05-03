@@ -111,5 +111,31 @@ defmodule El.Session.Ask.Spec do
 
       El.Session.Ask.finalize_ask(state, from, ref, "question", "answer", nil)
     end
+
+    test "replies to caller with response" do
+      stub(El.MockStoreModule, :delete_ask_entry, fn _, _, _ -> :ok end)
+      stub(El.MockStoreModule, :store_ask_entry, fn _, _ -> :ok end)
+      stub(El.MockStoreModule, :replace_ask, fn messages, _, _, _, _ -> messages end)
+
+      Application.put_env(:el, :store_module, El.MockStoreModule)
+
+      on_exit(fn ->
+        Application.delete_env(:el, :store_module)
+      end)
+
+      state = %{
+        name: :test_session,
+        messages: [],
+        pending_calls: [self()],
+        store_module: El.MockStoreModule
+      }
+
+      caller_ref = make_ref()
+      from = {self(), caller_ref}
+
+      El.Session.Ask.finalize_ask(state, from, make_ref(), "test", "the answer", "claude-3")
+
+      assert_receive {^caller_ref, "the answer"}
+    end
   end
 end
