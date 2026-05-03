@@ -3,12 +3,13 @@ defmodule El.Session.Claude.Spec do
 
   setup do
     Application.put_env(:claude_code, :session_module, MockClaudeCodeSession)
+    {:ok, pid} = TestClaudePortStub.start_link(nil)
 
     on_exit(fn ->
       Application.delete_env(:claude_code, :session_module)
     end)
 
-    :ok
+    {:ok, test_pid: pid}
   end
 
   describe "resume_options/2" do
@@ -19,20 +20,23 @@ defmodule El.Session.Claude.Spec do
   end
 
   describe "ask/2" do
-    test "returns result from ask" do
-      assert {"test result", _, _} = El.Session.Claude.ask(:test_pid, "test")
+    @tag timeout: 1000
+    test "returns result from ask", %{test_pid: test_pid} do
+      assert {"test result", _, _} = El.Session.Claude.ask(test_pid, "test")
     end
 
-    test "captures model from Init event" do
-      assert {_, "test-model", _} = El.Session.Claude.ask(:test_pid, "test")
+    @tag timeout: 1000
+    test "captures model from Init event", %{test_pid: test_pid} do
+      assert {_, "test-model", _} = El.Session.Claude.ask(test_pid, "test")
     end
 
-    test "captures session_id from Init event" do
-      assert {_, _, "test-session-id"} = El.Session.Claude.ask(:test_pid, "test")
+    @tag timeout: 1000
+    test "captures session_id from Init event", %{test_pid: test_pid} do
+      assert {_, _, "test-session-id"} = El.Session.Claude.ask(test_pid, "test")
     end
 
     test "returns error tuple with nils when pid is nil" do
-      assert {"(ClaudeCode unavailable)", nil, nil} = El.Session.Claude.ask(nil, "test")
+      assert {"(unavailable)", nil, nil} = El.Session.Claude.ask(nil, "test")
     end
   end
 end

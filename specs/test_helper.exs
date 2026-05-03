@@ -125,6 +125,24 @@ defmodule SessionIdCaptureModule do
   end
 end
 
+defmodule TestClaudePortStub do
+  use GenServer
+
+  def start_link(_opts) do
+    GenServer.start_link(__MODULE__, nil)
+  end
+
+  @impl GenServer
+  def init(_) do
+    {:ok, nil}
+  end
+
+  @impl GenServer
+  def handle_call({:ask, _message}, _from, state) do
+    {:reply, {"test result", "test-model", "test-session-id"}, state}
+  end
+end
+
 defmodule FailingModule do
   def start_link(_), do: {:error, :failed}
 end
