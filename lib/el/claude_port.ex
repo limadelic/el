@@ -142,26 +142,30 @@ defmodule El.ClaudePort do
         if !exe_path do
           {:error, "CLI executable not found: #{executable}"}
         else
-          env = System.get_env() |> Enum.map(fn {k, v} -> {String.to_charlist(k), String.to_charlist(v)} end)
-          port_opts = [
-            {:args, args},
-            {:cd, String.to_charlist(cwd)},
-            {:env, env},
-            :binary,
-            :exit_status,
-            :stderr_to_stdout
-          ]
-
-          try do
-            port = Port.open({:spawn_executable, exe_path}, port_opts)
-            {:ok, port}
-          rescue
-            e -> {:error, {:port_open_failed, e}}
-          end
+          spawn_port(exe_path, args, cwd)
         end
 
       {:error, reason} ->
         {:error, reason}
+    end
+  end
+
+  defp spawn_port(exe_path, args, cwd) do
+    env = System.get_env() |> Enum.map(fn {k, v} -> {String.to_charlist(k), String.to_charlist(v)} end)
+    port_opts = [
+      {:args, args},
+      {:cd, String.to_charlist(cwd)},
+      {:env, env},
+      :binary,
+      :exit_status,
+      :stderr_to_stdout
+    ]
+
+    try do
+      port = Port.open({:spawn_executable, exe_path}, port_opts)
+      {:ok, port}
+    rescue
+      e -> {:error, {:port_open_failed, e}}
     end
   end
 
