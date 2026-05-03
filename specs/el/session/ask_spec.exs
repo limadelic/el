@@ -168,7 +168,7 @@ defmodule El.Session.Ask.Spec do
   end
 
   describe "prepare_ask/3" do
-    test "stores pending entry immediately" do
+    test "stores pending entry with empty response on prepare_ask" do
       stub(El.MockStoreModule, :store_message, fn _, _ -> :ok end)
 
       Application.put_env(:el, :store_module, El.MockStoreModule)
@@ -186,10 +186,32 @@ defmodule El.Session.Ask.Spec do
 
       from = {self(), make_ref()}
 
-      {ref, new_state} = El.Session.Ask.prepare_ask(state, from, "test question")
+      {_ref, new_state} = El.Session.Ask.prepare_ask(state, from, "test question")
 
-      assert [{"ask", "test question", "", %{ref: ref}}] = new_state.messages
+      assert [{"ask", "test question", "", %{ref: _}}] = new_state.messages
+    end
 
+    test "stores pending entry with a reference on prepare_ask" do
+      stub(El.MockStoreModule, :store_message, fn _, _ -> :ok end)
+
+      Application.put_env(:el, :store_module, El.MockStoreModule)
+
+      on_exit(fn ->
+        Application.delete_env(:el, :store_module)
+      end)
+
+      state = %{
+        name: :test_session,
+        messages: [],
+        pending_calls: [],
+        store_module: El.MockStoreModule
+      }
+
+      from = {self(), make_ref()}
+
+      {_ref, new_state} = El.Session.Ask.prepare_ask(state, from, "test question")
+
+      [{_, _, _, %{ref: ref}}] = new_state.messages
       assert is_reference(ref)
     end
 
