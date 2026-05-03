@@ -19,7 +19,8 @@ defmodule El.Application do
 
   @impl true
   def stop(_state) do
-    :dets.close(:session_meta)
+    dets_backend = Application.get_env(:el, :dets_backend, :dets)
+    dets_backend.close(:session_meta)
     message_store = Application.get_env(:el, :message_store, El.MessageStore)
     message_store.close()
   end

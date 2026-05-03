@@ -25,6 +25,7 @@ defmodule El.DetsBackendStub do
   def lookup(_table, _key), do: []
   def delete(_table, _key), do: :ok
   def open_file(_table, _opts), do: {:ok, :stub_ref}
+  def close(_table), do: :ok
 end
 
 defmodule El.MessageStoreStub do

@@ -199,6 +199,11 @@ defmodule El.Application.Spec do
   end
 
   describe "stop/1" do
+    setup do
+      Application.put_env(:el, :dets_backend, El.DetsBackendStub)
+      :ok
+    end
+
     test "closes the message store" do
       assert El.Application.stop(:ignored) == :ok
     end
