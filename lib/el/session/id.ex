@@ -15,6 +15,6 @@ defmodule El.Session.Id do
 
   def extract_resume_or_id(opts) do
     {resume, rest} = Keyword.pop(opts, :resume)
-    {session_id(resume), rest}
+    {resume, rest}
   end
 end

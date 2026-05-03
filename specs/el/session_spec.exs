@@ -1,11 +1,16 @@
 defmodule El.Session.Spec do
   use ExUnit.Case
+  import Mox
+  setup :verify_on_exit!
 
   setup do
+    Mox.stub(El.MockSessionMeta, :insert, fn _, _, _, _ -> :ok end)
+
     state = %{
       name: :test_session,
       claude_pid: nil,
       session_id: "test-session-id",
+      cwd: "/test/dir",
       messages: [],
       pending_calls: [],
       claude_module: MockSessionModule,
@@ -16,6 +21,7 @@ defmodule El.Session.Spec do
       end,
       registry_module: MockSessionModule,
       store_module: MockSessionStore,
+      session_meta: El.MockSessionMeta,
       opts: [],
       claude_opts: []
     }
@@ -59,8 +65,60 @@ defmodule El.Session.Spec do
   end
 
   describe "init/1" do
+    setup do
+      Mox.stub(El.MockSessionMeta, :insert, fn _name, _agent, _session_id, _model -> :ok end)
+      %{}
+    end
+
+    test "does not call SessionMeta.insert during init" do
+      Mox.expect(El.MockSessionMeta, :insert, 0, fn _name, _agent, _session_id, _model ->
+        :ok
+      end)
+
+      opts = [
+        claude_module: MockSessionModule,
+        agent: "kent",
+        session_meta: El.MockSessionMeta
+      ]
+
+      {:ok, _state, {:continue, :start_claude}} =
+        El.Session.init({:my_session, opts})
+    end
+
+    test "sets session_id to nil when no resume option" do
+      opts = [claude_module: MockSessionModule, session_meta: El.MockSessionMeta]
+
+      {:ok, state, {:continue, :start_claude}} =
+        El.Session.init({:my_session, opts})
+
+      assert state.session_id == nil
+    end
+
+    test "sets session_id to resume value when provided" do
+      opts = [
+        claude_module: MockSessionModule,
+        resume: "my-resume-id",
+        session_meta: El.MockSessionMeta
+      ]
+
+      {:ok, state, {:continue, :start_claude}} =
+        El.Session.init({:my_session, opts})
+
+      assert state.session_id == "my-resume-id"
+    end
+
+    test "captures cwd in state" do
+      Mox.stub(El.MockFileSystem, :cwd, fn -> "/test/dir" end)
+      opts = [claude_module: MockSessionModule, file_system: El.MockFileSystem, session_meta: El.MockSessionMeta]
+
+      {:ok, state, {:continue, :start_claude}} =
+        El.Session.init({:my_session, opts})
+
+      assert state.cwd == "/test/dir"
+    end
+
     test "stores session name in state" do
-      opts = [claude_module: MockSessionModule]
+      opts = [claude_module: MockSessionModule, session_meta: El.MockSessionMeta]
 
       {:ok, state, {:continue, :start_claude}} =
         El.Session.init({:my_session, opts})
@@ -69,7 +127,7 @@ defmodule El.Session.Spec do
     end
 
     test "initializes messages as empty list" do
-      opts = [claude_module: MockSessionModule]
+      opts = [claude_module: MockSessionModule, session_meta: El.MockSessionMeta]
 
       {:ok, state, {:continue, :start_claude}} =
         El.Session.init({:test_session, opts})
@@ -78,7 +136,7 @@ defmodule El.Session.Spec do
     end
 
     test "stores claude_opts for continue phase" do
-      opts = [model: "test-model", claude_module: ModelCaptureModule]
+      opts = [model: "test-model", claude_module: ModelCaptureModule, session_meta: El.MockSessionMeta]
 
       {:ok, state, {:continue, :start_claude}} =
         El.Session.init({:test_session, opts})
@@ -87,7 +145,7 @@ defmodule El.Session.Spec do
     end
 
     test "stores agent in claude_opts" do
-      opts = [agent: "kent", claude_module: ModelCaptureModule]
+      opts = [agent: "kent", claude_module: ModelCaptureModule, session_meta: El.MockSessionMeta]
 
       {:ok, state, {:continue, :start_claude}} =
         El.Session.init({:test_session, opts})
@@ -95,17 +153,17 @@ defmodule El.Session.Spec do
       assert Keyword.get(state.claude_opts, :agent) == "kent"
     end
 
-    test "generates and stores session_id" do
-      opts = [claude_module: MockSessionModule]
+    test "does not pre-seed :session_id in claude_opts" do
+      opts = [claude_module: MockSessionModule, session_meta: El.MockSessionMeta]
 
       {:ok, state, {:continue, :start_claude}} =
         El.Session.init({:test_session, opts})
 
-      assert is_binary(state.session_id)
+      refute Keyword.has_key?(state.claude_opts, :session_id)
     end
 
     test "stores nil claude_pid before continue" do
-      opts = [claude_module: MockSessionModule]
+      opts = [claude_module: MockSessionModule, session_meta: El.MockSessionMeta]
 
       {:ok, state, {:continue, :start_claude}} =
         El.Session.init({:test_session, opts})
@@ -114,7 +172,7 @@ defmodule El.Session.Spec do
     end
 
     test "stores default task_module" do
-      opts = [claude_module: MockSessionModule]
+      opts = [claude_module: MockSessionModule, session_meta: El.MockSessionMeta]
 
       {:ok, state, {:continue, :start_claude}} =
         El.Session.init({:test_session, opts})
@@ -125,7 +183,8 @@ defmodule El.Session.Spec do
     test "stores provided task_module" do
       opts = [
         claude_module: MockSessionModule,
-        task_module: MockSessionModule
+        task_module: MockSessionModule,
+        session_meta: El.MockSessionMeta
       ]
 
       {:ok, state, {:continue, :start_claude}} =
@@ -133,13 +192,29 @@ defmodule El.Session.Spec do
 
       assert state.task_module == MockSessionModule
     end
+
+    test "puts :resume into claude_opts when given resume in opts" do
+      Mox.stub(El.MockFileSystem, :cwd, fn -> "/test/dir" end)
+      opts = [
+        resume: "my-resume-id",
+        claude_module: MockSessionModule,
+        file_system: El.MockFileSystem,
+        session_meta: El.MockSessionMeta
+      ]
+
+      {:ok, state, {:continue, :start_claude}} =
+        El.Session.init({:test_session, opts})
+
+      assert Keyword.get(state.claude_opts, :resume) == "my-resume-id"
+    end
   end
 
   describe "handle_continue/2 :start_claude" do
     test "calls claude_module.start_link with claude_opts" do
       opts = [
         claude_module: MockSessionModule,
-        store_module: MockSessionStore
+        store_module: MockSessionStore,
+        session_meta: El.MockSessionMeta
       ]
 
       {:ok, state, {:continue, :start_claude}} =
@@ -152,7 +227,7 @@ defmodule El.Session.Spec do
     end
 
     test "loads messages from El.Application" do
-      opts = [claude_module: MockSessionModule]
+      opts = [claude_module: MockSessionModule, session_meta: El.MockSessionMeta]
 
       {:ok, state, {:continue, :start_claude}} =
         El.Session.init({:test_session, opts})
@@ -169,7 +244,8 @@ defmodule El.Session.Spec do
     test "sets claude_pid to nil on start failure" do
       opts = [
         claude_module: FailingModule,
-        store_module: MockSessionStore
+        store_module: MockSessionStore,
+        session_meta: El.MockSessionMeta
       ]
 
       {:ok, state, {:continue, :start_claude}} =
@@ -387,7 +463,7 @@ defmodule El.Session.Spec do
     test "appends when no pending entry exists", %{state: state} do
       from = {self(), make_ref()}
       ref = make_ref()
-      cast_msg = {:complete_ask, from, "test", "response", ref}
+      cast_msg = {:complete_ask, from, "test", "response", ref, "claude-3", "session-123"}
 
       {:noreply, returned_state} =
         El.Session.handle_cast(cast_msg, state)
@@ -401,7 +477,7 @@ defmodule El.Session.Spec do
       cast_ref = make_ref()
 
       El.Session.handle_cast(
-        {:complete_ask, from, "test", "the answer", cast_ref},
+        {:complete_ask, from, "test", "the answer", cast_ref, "claude-3", "session-123"},
         state
       )
 
@@ -414,7 +490,7 @@ defmodule El.Session.Spec do
 
       {:noreply, returned_state} =
         El.Session.handle_cast(
-          {:complete_ask, from, "my question", "42", ref},
+          {:complete_ask, from, "my question", "42", ref, "claude-3", "session-123"},
           state
         )
 
@@ -430,7 +506,7 @@ defmodule El.Session.Spec do
 
       {:noreply, returned_state} =
         El.Session.handle_cast(
-          {:complete_ask, from, "hello", "response", ref},
+          {:complete_ask, from, "hello", "response", ref, "claude-3", "session-123"},
           pending_state
         )
 
@@ -451,7 +527,7 @@ defmodule El.Session.Spec do
           ]
       }
 
-      cast_msg = {:complete_ask, from, "question", "answer first", ref1}
+      cast_msg = {:complete_ask, from, "question", "answer first", ref1, "claude-3", "session-123"}
 
       {:noreply, returned_state} =
         El.Session.handle_cast(cast_msg, pending_state)
@@ -469,12 +545,45 @@ defmodule El.Session.Spec do
       msg = [{"ask", "question", "", %{ref: ref}}]
       pending_state = %{state | messages: msg}
 
-      cast_msg = {:complete_ask, from, "question", "answer", ref}
+      cast_msg = {:complete_ask, from, "question", "answer", ref, "claude-3", "session-123"}
 
       {:noreply, returned_state} =
         El.Session.handle_cast(cast_msg, pending_state)
 
       assert [{"ask", "question", "answer", %{}}] = returned_state.messages
+    end
+
+    test "updates state.session_id when Claude returns non-nil session_id", %{state: state} do
+      from = {self(), make_ref()}
+      ref = make_ref()
+
+      {:noreply, returned_state} =
+        El.Session.handle_cast(
+          {:complete_ask, from, "test", "response", ref, "claude-3", "claude-session-id"},
+          state
+        )
+
+      assert returned_state.session_id == "claude-session-id"
+    end
+
+    test "calls SessionMeta.insert with captured session_id and model", %{state: state} do
+      from = {self(), make_ref()}
+      ref = make_ref()
+      agent = "kent"
+      test_state = %{state | opts: [agent: agent, model: "haiku"]}
+
+      Mox.expect(El.MockSessionMeta, :insert, fn name, a, sid, model ->
+        assert name == :test_session
+        assert a == agent
+        assert sid == "claude-session-id"
+        assert model == "haiku"
+        :ok
+      end)
+
+      El.Session.handle_cast(
+        {:complete_ask, from, "test", "response", ref, "claude-3", "claude-session-id"},
+        test_state
+      )
     end
   end
 
@@ -857,6 +966,113 @@ defmodule El.Session.Spec do
         })
 
       assert reply == :ok
+    end
+  end
+
+  describe "Api.info/1" do
+    test "returns default info when session does not exist" do
+      result = El.Session.Api.info(:nonexistent_session)
+
+      assert result == %{messages: 0, last_prompt: nil, last_response: nil, model: nil, id: nil, cwd: nil}
+    end
+  end
+
+  describe "handle_call/2 :info" do
+    test "returns message count when messages exist", %{state: state} do
+      state_with_messages = %{state | messages: [{"ask", "q1", "a1", %{}}, {"tell", "q2", "a2", %{}}]}
+
+      {:reply, reply, _returned_state} =
+        El.Session.handle_call(:info, :from, state_with_messages)
+
+      assert reply.messages == 2
+    end
+
+    test "returns zero message count when no messages", %{state: state} do
+      {:reply, reply, _returned_state} =
+        El.Session.handle_call(:info, :from, state)
+
+      assert reply.messages == 0
+    end
+
+    test "returns nil last_prompt when messages empty", %{state: state} do
+      {:reply, reply, _returned_state} =
+        El.Session.handle_call(:info, :from, state)
+
+      assert reply.last_prompt == nil
+    end
+
+    test "returns nil last_response when messages empty", %{state: state} do
+      {:reply, reply, _returned_state} =
+        El.Session.handle_call(:info, :from, state)
+
+      assert reply.last_response == nil
+    end
+
+    test "returns last message prompt", %{state: state} do
+      state_with_messages = %{state | messages: [{"ask", "first", "a1", %{}}, {"tell", "second", "a2", %{}}]}
+
+      {:reply, reply, _returned_state} =
+        El.Session.handle_call(:info, :from, state_with_messages)
+
+      assert reply.last_prompt == "second"
+    end
+
+    test "returns last message response", %{state: state} do
+      state_with_messages = %{state | messages: [{"ask", "first", "a1", %{}}, {"tell", "second", "response2", %{}}]}
+
+      {:reply, reply, _returned_state} =
+        El.Session.handle_call(:info, :from, state_with_messages)
+
+      assert reply.last_response == "response2"
+    end
+
+    test "returns state unchanged", %{state: state} do
+      {:reply, _reply, returned_state} =
+        El.Session.handle_call(:info, :from, state)
+
+      assert returned_state == state
+    end
+
+    test "returns nil model when messages empty", %{state: state} do
+      {:reply, reply, _returned_state} =
+        El.Session.handle_call(:info, :from, state)
+
+      assert reply.model == nil
+    end
+
+    test "returns model from last message metadata", %{state: state} do
+      state_with_messages = %{state | messages: [{"ask", "q1", "a1", %{model: "claude-3-haiku"}}, {"tell", "q2", "a2", %{model: "claude-3-opus"}}]}
+
+      {:reply, reply, _returned_state} =
+        El.Session.handle_call(:info, :from, state_with_messages)
+
+      assert reply.model == "claude-3-opus"
+    end
+
+    test "returns nil model when last message has no model in metadata", %{state: state} do
+      state_with_messages = %{state | messages: [{"ask", "q1", "a1", %{}}]}
+
+      {:reply, reply, _returned_state} =
+        El.Session.handle_call(:info, :from, state_with_messages)
+
+      assert reply.model == nil
+    end
+
+    defp call_info_with_id_cwd(state) do
+      updated_state = %{state | session_id: "test-session-id", cwd: "/test/dir"}
+      {:reply, reply, _returned_state} =
+        El.Session.handle_call(:info, :from, updated_state)
+      reply
+    end
+
+    test "returns id from state.session_id", %{state: state} do
+      reply = call_info_with_id_cwd(state)
+      assert reply.id == "test-session-id"
+    end
+
+    test "returns cwd from state.cwd", %{state: state} do
+      reply = call_info_with_id_cwd(state)
+      assert reply.cwd == "/test/dir"
     end
   end
 end

@@ -4,4 +4,8 @@ defmodule El.FileSystemImpl do
   def exists?(path) do
     File.exists?(path)
   end
+
+  def cwd do
+    File.cwd!()
+  end
 end

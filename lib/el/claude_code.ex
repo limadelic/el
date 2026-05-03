@@ -22,13 +22,20 @@ defmodule El.ClaudeCode do
     |> add_resume_if_present(opts)
   end
 
-  defp extract_session_module(nil), do: @default_session_module
+  defp extract_session_module(nil) do
+    Application.get_env(:el, :claude_code_session_module, @default_session_module)
+  end
+
   defp extract_session_module(module), do: module
 
   defp base_session_opts(session_id, cli_path) do
-    opts = [base_adapter(cli_path), {:session_id, session_id}]
+    opts = [base_adapter(cli_path)]
+    opts = add_session_id(opts, session_id)
     opts ++ [base_perms(), base_settings()]
   end
+
+  defp add_session_id(opts, nil), do: opts
+  defp add_session_id(opts, session_id), do: opts ++ [{:session_id, session_id}]
 
   defp base_adapter(cli_path) do
     {:adapter, {ClaudeCode.Adapter.Port, [cli_path: cli_path]}}
@@ -57,6 +64,9 @@ defmodule El.ClaudeCode do
     session_module.stream(pid, prompt)
   end
 
-  defp extract_stream_session_module(nil), do: @default_session_module
+  defp extract_stream_session_module(nil) do
+    Application.get_env(:claude_code, :session_module, @default_session_module)
+  end
+
   defp extract_stream_session_module(module), do: module
 end

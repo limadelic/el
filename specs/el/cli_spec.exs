@@ -98,6 +98,7 @@ defmodule El.CLI.Spec do
   describe "execute/2" do
     setup do
       Application.put_env(:el, :file_system, El.MockFileSystem)
+      stub(El.MockSessionApi, :info, fn _name -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
 
       on_exit(fn ->
         Application.delete_env(:el, :file_system)
@@ -236,7 +237,7 @@ defmodule El.CLI.Spec do
         String.contains?(path, "session.md")
       end)
 
-      expect(El.MockEl, :start, fn :session, [agent: "session"] -> :ok end)
+      expect(El.MockEl, :start, fn :session, [agent: "session"] -> :created end)
       expect(El.MockEl, :ask, fn :session, "hello world" -> "reply" end)
       expect(El.MockEl, :agent, fn :session -> "session" end)
 
@@ -249,7 +250,7 @@ defmodule El.CLI.Spec do
     test "execute :msg without agent uses session name" do
       stub(El.MockFileSystem, :exists?, fn _path -> false end)
 
-      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      expect(El.MockEl, :start, fn :session, [] -> :created end)
       expect(El.MockEl, :ask, fn :session, "hello" -> "reply" end)
       expect(El.MockEl, :agent, fn :session -> nil end)
 
@@ -259,12 +260,54 @@ defmodule El.CLI.Spec do
       assert output =~ "reply"
     end
 
+    test "execute :msg prints boxed card after response" do
+      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+
+      expect(El.MockEl, :start, fn :session, [] -> :created end)
+      expect(El.MockEl, :ask, fn :session, "hello" -> "reply" end)
+      expect(El.MockEl, :agent, fn :session -> nil end)
+
+      output =
+        capture_io(fn -> El.CLI.execute(:msg, ["session", "hello"]) end)
+
+      assert output =~ "name:  session"
+    end
+
+    test "execute :msg skips card when session already running" do
+      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+
+      expect(El.MockEl, :start, fn :session, [] -> :already_running end)
+      expect(El.MockEl, :ask, fn :session, "hello" -> "reply" end)
+      expect(El.MockEl, :agent, fn :session -> nil end)
+
+      output =
+        capture_io(fn -> El.CLI.execute(:msg, ["session", "hello"]) end)
+
+      assert output =~ "reply"
+      refute output =~ "name:  session"
+    end
+
+    test "execute :msg shows card when session newly created" do
+      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+
+      expect(El.MockEl, :start, fn :session, [] -> :created end)
+      expect(El.MockEl, :ask, fn :session, "hello" -> "reply" end)
+      expect(El.MockEl, :agent, fn :session -> nil end)
+
+      output =
+        capture_io(fn -> El.CLI.execute(:msg, ["session", "hello"]) end)
+
+      assert output =~ "reply"
+      assert output =~ "name:  session"
+    end
+
     test "execute :start uses merge_session_opts to combine agent and model" do
       stub(El.MockFileSystem, :exists?, fn path ->
         String.contains?(path, "my_session.md")
       end)
 
       expect(El.MockEl, :start, fn :my_session, [agent: "my_session"] -> :ok end)
+      expect(El.MockSessionApi, :ask, fn :my_session, "who are you?" -> "response" end)
 
       capture_io(fn ->
         El.CLI.execute(:start, ["my_session"])
@@ -343,6 +386,7 @@ defmodule El.CLI.Spec do
       end)
 
       expect(El.MockEl, :start, fn :my_session, [agent: "my_session"] -> :ok end)
+      expect(El.MockSessionApi, :ask, fn :my_session, "who are you?" -> "response" end)
 
       System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
 
@@ -519,5 +563,617 @@ defmodule El.CLI.Spec do
 
       refute Keyword.has_key?(result, :model)
     end
+
+    test "merges model from agent metadata when agent detected and explicit_model is nil" do
+      System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
+      Application.put_env(:el, :agent_detector, AgentDetectorStub)
+      Application.put_env(:el, :agent_metadata, AgentMetadataStub)
+
+      on_exit(fn ->
+        Application.delete_env(:el, :agent_detector)
+        Application.delete_env(:el, :agent_metadata)
+      end)
+
+      result = El.CLI.Start.merge_session_opts("kent", nil, nil)
+
+      assert Keyword.get(result, :model) == "opus"
+    end
+
+    test "omits model from agent metadata if model_for returns nil" do
+      System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
+      Application.put_env(:el, :agent_detector, NilAgentDetectorStub)
+      Application.put_env(:el, :agent_metadata, NilAgentMetadataStub)
+
+      on_exit(fn ->
+        Application.delete_env(:el, :agent_detector)
+        Application.delete_env(:el, :agent_metadata)
+      end)
+
+      result = El.CLI.Start.merge_session_opts("agent", nil, nil)
+
+      refute Keyword.has_key?(result, :model)
+    end
   end
+
+  describe "El.CLI.Start.detect_and_merge_agent/2" do
+    setup do
+      Application.put_env(:el, :file_system, El.MockFileSystem)
+      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+
+      on_exit(fn ->
+        Application.delete_env(:el, :file_system)
+        System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
+      end)
+
+      :ok
+    end
+
+    test "detects agent through injected detector" do
+      Application.put_env(:el, :agent_detector, AgentDetectorStub)
+
+      on_exit(fn ->
+        Application.delete_env(:el, :agent_detector)
+      end)
+
+      result = El.CLI.Start.detect_and_merge_agent("kent", [])
+
+      assert Keyword.get(result, :agent) == "kent"
+    end
+
+    test "includes opts in result" do
+      Application.put_env(:el, :agent_detector, NilAgentDetectorStub)
+
+      on_exit(fn ->
+        Application.delete_env(:el, :agent_detector)
+      end)
+
+      result = El.CLI.Start.detect_and_merge_agent("session", [model: "haiku"])
+
+      assert Keyword.get(result, :model) == "haiku"
+    end
+
+    test "handles nil agent from detector" do
+      Application.put_env(:el, :agent_detector, NilAgentDetectorStub)
+
+      on_exit(fn ->
+        Application.delete_env(:el, :agent_detector)
+      end)
+
+      result = El.CLI.Start.detect_and_merge_agent("session", [])
+
+      refute Keyword.has_key?(result, :agent)
+    end
+  end
+
+  describe "El.CLI.Start.handle_find_daemon_for_start/3" do
+    setup do
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil} end)
+      :ok
+    end
+
+    test "renders boxed output with name in first row" do
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      assert output =~ "name:  session"
+    end
+
+    test "renders boxed output with agent when present in opts" do
+      expect(El.MockEl, :start, fn :session, [agent: "kent"] -> :ok end)
+      expect(El.MockSessionApi, :ask, fn :session, "who are you?" -> "response" end)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [agent: "kent"], El.MockEl)
+        end)
+
+      assert output =~ "agent: kent"
+    end
+
+    test "renders boxed output with model when present in opts" do
+      expect(El.MockEl, :start, fn :session, [model: "opus"] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [model: "opus"], El.MockEl)
+        end)
+
+      assert output =~ "model: opus"
+    end
+
+    test "renders boxed output with msgs count" do
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 5, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      assert output =~ "msgs:  5"
+    end
+
+    test "renders boxed output with prompt when present" do
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 1, last_prompt: "who are you?", last_response: nil, model: nil, cwd: nil, id: nil} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      assert output =~ "> who are you?"
+    end
+
+    test "renders boxed output with response when present" do
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 1, last_prompt: "who are you?", last_response: "I am an agent", model: nil, cwd: nil, id: nil} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      assert output =~ "I am an agent"
+    end
+
+    test "omits agent row when agent not in opts" do
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      refute output =~ "agent:"
+    end
+
+    test "omits model row when model not in opts" do
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      refute output =~ "model:"
+    end
+
+    test "shows model from info when opts model is nil but info.model exists" do
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 0, last_prompt: nil, last_response: nil, model: "haiku", cwd: nil, id: nil} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      assert output =~ "model: haiku"
+    end
+
+    test "omits prompt separator and prompt when last_prompt is nil" do
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      refute output =~ ">"
+    end
+
+    test "wraps long response using format_response" do
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      long_response = "I'm Dude, man. The rug that ties this whole stack together."
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 1, last_prompt: "who are you?", last_response: long_response, model: nil, cwd: nil, id: nil} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      assert output =~ "stack together."
+    end
+
+    test "caps response at 2 lines" do
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      long_response = "This is a very long response that will definitely wrap across multiple lines when formatted with word awareness at 46 characters per line"
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 1, last_prompt: "who are you?", last_response: long_response, model: nil, cwd: nil, id: nil} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      lines = String.split(output, "\n")
+      response_lines = Enum.filter(lines, fn line -> String.contains?(line, ["definitely", "word", "awareness"]) end)
+      assert length(response_lines) <= 2
+    end
+
+    test "sends ping when agent in opts" do
+      stub(El.MockEl, :start, fn :session, [agent: "kent"] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
+      expect(El.MockSessionApi, :ask, fn :session, "who are you?" -> "response" end)
+
+      capture_io(fn ->
+        El.CLI.Start.handle_find_daemon_for_start("session", [agent: "kent"], El.MockEl)
+      end)
+    end
+
+    test "does not send ping when no agent in opts" do
+      stub(El.MockEl, :start, fn :session, [] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
+      expect(El.MockSessionApi, :ask, 0, fn _, _ -> "response" end)
+
+      capture_io(fn ->
+        El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+      end)
+    end
+
+    test "does not send ping when session has existing messages" do
+      stub(El.MockEl, :start, fn :session, [agent: "kent"] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 5, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
+      expect(El.MockSessionApi, :ask, 0, fn _, _ -> "response" end)
+
+      capture_io(fn ->
+        El.CLI.Start.handle_find_daemon_for_start("session", [agent: "kent"], El.MockEl)
+      end)
+    end
+
+    test "omits msgs row when messages count is zero" do
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      refute output =~ "msgs:"
+    end
+
+    defp setup_cwd_id_session do
+      expect(El.MockEl, :start, fn :session, [] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: "/abc/def", id: "abc123def456"} end)
+    end
+
+    test "renders name in two-column format" do
+      setup_cwd_id_session()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      assert output =~ "name:  session"
+    end
+
+    test "omits cwd row when no second left row (no agent or model)" do
+      setup_cwd_id_session()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      refute output =~ "cwd:"
+    end
+
+    test "renders id in two-column format" do
+      setup_cwd_id_session()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      assert output =~ "id: …23def456"
+    end
+
+    defp setup_anom_case do
+      expect(El.MockEl, :start, fn :anom, [] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :anom -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: "/a/b/c/d/e/f/g/h", id: "xyz789abc123"} end)
+    end
+
+    test "renders name with cwd in two-column first row" do
+      setup_anom_case()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
+        end)
+
+      assert output =~ "name:  anom"
+    end
+
+    test "omits cwd when anom has no model" do
+      setup_anom_case()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
+        end)
+
+      refute output =~ "cwd:"
+    end
+
+    test "renders truncated id in anom case" do
+      setup_anom_case()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
+        end)
+
+      assert output =~ "id: …89abc123"
+    end
+
+    test "omits agent row for anom" do
+      setup_anom_case()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
+        end)
+
+      refute output =~ "agent:"
+    end
+
+    test "omits model row for anom" do
+      setup_anom_case()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
+        end)
+
+      refute output =~ "model:"
+    end
+
+    test "omits msgs row for anom" do
+      setup_anom_case()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
+        end)
+
+      refute output =~ "msgs:"
+    end
+
+    defp setup_agent_kent_session do
+      expect(El.MockEl, :start, fn :kent, [agent: "kent"] -> :ok end)
+      expect(El.MockSessionApi, :ask, fn :kent, "who are you?" -> "response" end)
+      stub(El.MockSessionApi, :info, fn :kent -> %{messages: 0, last_prompt: nil, last_response: nil, model: "opus", cwd: "/verylong/path/name", id: "kent1234567890"} end)
+    end
+
+    test "renders name for agent sessions" do
+      setup_agent_kent_session()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl)
+        end)
+
+      assert output =~ "name:  kent"
+    end
+
+    test "renders truncated cwd for agent sessions" do
+      setup_agent_kent_session()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl)
+        end)
+
+      assert output =~ "cwd: …ath/name"
+    end
+
+    test "renders agent with id in second row for agent sessions" do
+      setup_agent_kent_session()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl)
+        end)
+
+      assert output =~ "agent: kent"
+    end
+
+    test "renders truncated id for agent sessions" do
+      setup_agent_kent_session()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl)
+        end)
+
+      assert output =~ "id: …34567890"
+    end
+
+    test "renders model for agent sessions" do
+      setup_agent_kent_session()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl)
+        end)
+
+      assert output =~ "model: opus"
+    end
+
+    test "renders name in cwd/id pairing" do
+      setup_cwd_id_session()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      lines = String.split(output, "\n")
+      second_line = Enum.at(lines, 1)
+      assert second_line =~ "name:  session"
+    end
+
+    test "renders id in cwd/id pairing" do
+      setup_cwd_id_session()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+        end)
+
+      lines = String.split(output, "\n")
+      second_line = Enum.at(lines, 1)
+      assert second_line =~ "id: …23def456"
+    end
+
+    test "renders agent in agent/cwd pairing" do
+      setup_agent_kent_session()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl)
+        end)
+
+      lines = String.split(output, "\n")
+      third_line = Enum.at(lines, 2)
+      assert third_line =~ "agent: kent"
+    end
+
+    test "renders cwd in agent/cwd pairing" do
+      setup_agent_kent_session()
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl)
+        end)
+
+      lines = String.split(output, "\n")
+      third_line = Enum.at(lines, 2)
+      assert third_line =~ "cwd: …ath/name"
+    end
+
+    test "renders model in model/cwd pairing when no agent" do
+      expect(El.MockEl, :start, fn :anom, [] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :anom -> %{messages: 0, last_prompt: nil, last_response: nil, model: "haiku", cwd: "/abc/def", id: "xyz789abc123"} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
+        end)
+
+      lines = String.split(output, "\n")
+      third_line = Enum.at(lines, 2)
+      assert third_line =~ "model: haiku"
+    end
+
+    test "renders cwd in model/cwd pairing when no agent" do
+      expect(El.MockEl, :start, fn :anom, [] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :anom -> %{messages: 0, last_prompt: nil, last_response: nil, model: "haiku", cwd: "/abc/def", id: "xyz789abc123"} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
+        end)
+
+      lines = String.split(output, "\n")
+      third_line = Enum.at(lines, 2)
+      assert third_line =~ "cwd: /abc/def"
+    end
+
+    test "drops cwd row when only name exists" do
+      expect(El.MockEl, :start, fn :anom, [] -> :ok end)
+      stub(El.MockSessionApi, :info, fn :anom -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: "/abc/def", id: "xyz789abc123"} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
+        end)
+
+      lines = String.split(output, "\n")
+      box_lines = Enum.filter(lines, fn line -> String.starts_with?(line, "│") end)
+      assert length(box_lines) == 1
+    end
+  end
+
+  describe "El.CLI.Start.handle_find_daemon_with_rest/4" do
+    setup do
+      stub(El.MockSessionApi, :info, fn :kenny -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
+      :ok
+    end
+
+    test "renders boxed output with agent when provided" do
+      expect(El.MockEl, :start, fn :kenny, [agent: "kent"] -> :ok end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_with_rest("kenny", [agent: "kent"], [], El.MockEl)
+        end)
+
+      assert output =~ "agent: kent"
+    end
+
+    test "renders boxed output with model when agent has default model" do
+      Application.put_env(:el, :agent_metadata, AgentMetadataStub)
+
+      on_exit(fn ->
+        Application.delete_env(:el, :agent_metadata)
+      end)
+
+      expect(El.MockEl, :start, fn :kenny, [agent: "kent", model: "opus"] -> :ok end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.Start.handle_find_daemon_with_rest("kenny", [agent: "kent", model: "opus"], [], El.MockEl)
+        end)
+
+      assert output =~ "model: opus"
+    end
+  end
+
+  describe "El.CLI.Start.format_response/1" do
+    test "returns empty list when nil" do
+      assert El.CLI.Start.format_response(nil) == []
+    end
+
+    test "returns single-element list for short text" do
+      assert El.CLI.Start.format_response("kent") == ["kent"]
+    end
+
+    test "wraps at 46 characters with word awareness" do
+      text = "I'm Dude, man. The rug that ties this whole stack together."
+      result = El.CLI.Start.format_response(text)
+
+      assert result == ["I'm Dude, man. The rug that ties this whole", "stack together."]
+    end
+
+    test "caps at 2 lines maximum" do
+      long_text = "This is a very long response that will definitely wrap across multiple lines when formatted with word awareness at 46 characters per line"
+      result = El.CLI.Start.format_response(long_text)
+
+      assert length(result) == 2
+    end
+
+    test "respects 46 character line width" do
+      text = "I'm Dude, man. The rug that ties this whole stack together."
+      result = El.CLI.Start.format_response(text)
+      assert Enum.all?(result, fn line -> String.length(line) <= 46 end)
+    end
+
+    test "preserves short lines under 46 chars" do
+      assert El.CLI.Start.format_response("short") == ["short"]
+    end
+  end
+
 end

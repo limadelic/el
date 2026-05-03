@@ -17,9 +17,19 @@ defmodule El.Session.CastHandler do
     {:noreply, new_state}
   end
 
-  def handle({:complete_ask, from, message, response, ref}, state) do
-    new_state = Ask.finalize_ask(state, from, ref, message, response)
+  def handle({:complete_ask, from, message, response, ref, model, nil}, state) do
+    new_state = Ask.finalize_ask(state, from, ref, message, response, model)
     {:noreply, new_state}
+  end
+
+  def handle({:complete_ask, from, message, response, ref, model, session_id}, state) do
+    new_state = Ask.finalize_ask(state, from, ref, message, response, model)
+    updated_state = %{new_state | session_id: session_id}
+    session_meta = Map.get(updated_state, :session_meta, Application.get_env(:el, :session_meta, El.SessionMeta))
+    agent = Keyword.get(updated_state.opts, :agent)
+    persisted_model = Keyword.get(updated_state.opts, :model) || model
+    session_meta.insert(updated_state.name, agent, session_id, persisted_model)
+    {:noreply, updated_state}
   end
 
   def handle({:cast_store_relay, message, response}, state) do

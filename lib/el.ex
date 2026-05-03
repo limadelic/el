@@ -9,14 +9,14 @@ defmodule El do
     start_if_needed(name, opts, registry().lookup(El.Registry, name))
   end
 
-  defp start_if_needed(name, _opts, [{_pid, _}]) do
-    name
+  defp start_if_needed(_name, _opts, [{_pid, _}]) do
+    :already_running
   end
 
   defp start_if_needed(name, opts, []) do
     filtered_opts = filter_session_opts(opts)
     start_session_child(name, filtered_opts)
-    name
+    :created
   end
 
   defp start_session_child(name, opts) do

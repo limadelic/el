@@ -10,6 +10,7 @@ Mox.defmock(El.MockApp, for: El.Behaviours.App)
 Mox.defmock(El.MockMonitor, for: El.Behaviours.Monitor)
 Mox.defmock(El.MockEl, for: El.Behaviours.El)
 Mox.defmock(El.MockFileSystem, for: El.Behaviours.FileSystem)
+Mox.stub(El.MockFileSystem, :cwd, fn -> "/tmp/test" end)
 
 defmodule ClaudeCode.SessionStub do
   def stream(_pid, _prompt) do
@@ -20,6 +21,10 @@ end
 defmodule El.DetsBackendStub do
   def delete_object(_table, _key), do: :ok
   def foldl(_table, acc, _fun), do: acc
+  def insert(_table, _key_entry), do: :ok
+  def lookup(_table, _key), do: []
+  def delete(_table, _key), do: :ok
+  def open_file(_table, _opts), do: {:ok, :stub_ref}
 end
 
 defmodule El.MessageStoreStub do
@@ -29,7 +34,59 @@ defmodule El.MessageStoreStub do
   def close, do: :ok
 end
 
+defmodule AgentMetadataStub do
+  def model_for("kent"), do: "opus"
+  def model_for(_), do: nil
+end
+
+defmodule NilAgentMetadataStub do
+  def model_for(_), do: nil
+end
+
+defmodule AgentDetectorStub do
+  def detect_agent("kent"), do: "kent"
+  def detect_agent(_), do: nil
+end
+
+defmodule NilAgentDetectorStub do
+  def detect_agent(_), do: nil
+end
+
 Mox.defmock(El.MockSessionApi, for: El.Behaviours.Session)
+Mox.defmock(El.MockClaudeCode, for: El.Behaviours.ClaudeCode)
+Mox.defmock(El.MockClaudeCodeSession, for: El.Behaviours.ClaudeCodeSession)
+Mox.defmock(El.MockStoreModule, for: El.Behaviours.Store)
+Mox.defmock(El.MockSessionMeta, for: El.SessionMeta)
+
+defmodule MockClaudeCodeSession do
+  def stream(_pid, _message) do
+    [
+      %ClaudeCode.Message.SystemMessage.Init{
+        model: "test-model",
+        type: "system",
+        subtype: "init",
+        session_id: "test-session-id"
+      },
+      %ClaudeCode.Message.ResultMessage{
+        result: "test result",
+        type: "result",
+        subtype: "result",
+        is_error: false,
+        duration_ms: 0,
+        duration_api_ms: 0,
+        num_turns: 0,
+        session_id: "test-session-id",
+        total_cost_usd: 0.0,
+        usage: %{}
+      }
+    ]
+    |> Stream.concat([])
+  end
+
+  def start_link(_opts) do
+    {:ok, :mock_pid}
+  end
+end
 
 Application.put_env(:el, :registry, El.MockRegistry)
 Application.put_env(:el, :supervisor, El.MockSupervisor)
@@ -38,6 +95,8 @@ Application.put_env(:el, :session_api, El.MockSessionApi)
 Application.put_env(:el, :app, El.MockApp)
 Application.put_env(:el, :monitor, El.MockMonitor)
 Application.put_env(:el, :el_module, El.MockEl)
+Application.put_env(:el, :file_system, El.MockFileSystem)
+Application.put_env(:el, :claude_code_session_module, El.MockClaudeCodeSession)
 
 ExUnit.start(timeout: 10)
 
@@ -63,6 +122,24 @@ end
 defmodule SessionIdCaptureModule do
   def start_link(_opts) do
     {:ok, "captured-session-id"}
+  end
+end
+
+defmodule TestClaudePortStub do
+  use GenServer
+
+  def start_link(_opts) do
+    GenServer.start_link(__MODULE__, nil)
+  end
+
+  @impl GenServer
+  def init(_) do
+    {:ok, nil}
+  end
+
+  @impl GenServer
+  def handle_call({:ask, _message}, _from, state) do
+    {:reply, {"test result", "test-model", "test-session-id"}, state}
   end
 end
 

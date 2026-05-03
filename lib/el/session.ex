@@ -12,16 +12,18 @@ defmodule El.Session do
   alias El.Session.CallHandler
 
   @defaults %{
-    claude_module: El.ClaudeCode,
+    claude_module: El.ClaudePort,
     task_module: Task,
     alive_fn: &El.Session.Api.alive?/1,
     registry_module: Registry,
-    store_module: El.Application
+    store_module: El.Application,
+    session_meta: El.SessionMeta
   }
   @base_state_defaults %{
     name: nil,
     claude_pid: nil,
     session_id: nil,
+    cwd: nil,
     messages: [],
     pending_calls: [],
     opts: []
@@ -31,21 +33,49 @@ defmodule El.Session do
   def init({name, opts}) do
     Process.flag(:trap_exit, true)
     {session_id, rest} = El.Session.Id.extract_resume_or_id(opts)
-    {:ok, build_state(name, opts, rest, session_id), {:continue, :start_claude}}
+    cwd = file_system(opts).cwd()
+    state = build_state(name, opts, rest, session_id, cwd)
+    {:ok, state, {:continue, :start_claude}}
   end
 
-  defp build_state(name, opts, rest, session_id) do
-    base_state(name, session_id, opts)
+  defp build_state(name, opts, rest, session_id, cwd) do
+    base_state(name, session_id, cwd, opts)
     |> Map.merge(modules_and_callbacks(opts))
-    |> Map.put(:claude_opts, Keyword.put(rest, :session_id, session_id))
+    |> Map.put(:claude_opts, build_claude_opts(rest, opts, session_id))
   end
 
-  defp base_state(n, s, o),
-    do: @base_state_defaults |> Map.merge(%{name: n, session_id: s, opts: o})
+  defp build_claude_opts(rest, opts, _session_id) do
+    rest
+    |> add_resume(Keyword.has_key?(opts, :resume), opts)
+    |> add_continue(Keyword.has_key?(opts, :continue), opts)
+  end
+
+  defp add_resume(claude_opts, true, opts) do
+    Keyword.put(claude_opts, :resume, Keyword.get(opts, :resume))
+  end
+
+  defp add_resume(claude_opts, false, _opts) do
+    claude_opts
+  end
+
+  defp add_continue(claude_opts, true, opts) do
+    Keyword.put(claude_opts, :continue, Keyword.get(opts, :continue))
+  end
+
+  defp add_continue(claude_opts, false, _opts) do
+    claude_opts
+  end
+
+  defp base_state(n, s, c, o),
+    do: @base_state_defaults |> Map.merge(%{name: n, session_id: s, cwd: c, opts: o})
 
   defp modules_and_callbacks(o), do: get_opts(o)
 
   defp get_opts(o), do: @defaults |> Map.merge(Map.new(o))
+
+  defp file_system(opts) do
+    Keyword.get(opts, :file_system, Application.get_env(:el, :file_system, El.FileSystemImpl))
+  end
 
   @impl true
   def handle_continue(:start_claude, state) do

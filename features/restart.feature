@@ -1,8 +1,10 @@
 @el_donny
 Feature: Restart
 
-  Scenario: Restart
-    * > el donny 1 + 1
+  Scenario: Restart preserves session and context
+    * > el donny "you are out of your element"
     * > el restart
     * > el ls:
       | donny |
+    * > el donny "where did i say u were?":
+      | element |

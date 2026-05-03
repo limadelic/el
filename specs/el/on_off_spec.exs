@@ -39,18 +39,34 @@ defmodule El.Features.OnOffSpec do
       El.start(:dude, claude_module: TestClaudeCode)
     end
 
-    test "returns session name on success" do
-      assert El.start(:dude) == :dude
+    test "returns :created when starting new session" do
+      assert El.start(:dude) == :created
     end
 
-    test "returns name if session already registered" do
+    test "returns :already_running when session exists" do
       lookup_fn = fn El.Registry, :dude -> [{:existing_pid, :registered}] end
       expect(El.MockRegistry, :lookup, lookup_fn)
-      assert El.start(:dude) == :dude
+      assert El.start(:dude) == :already_running
     end
   end
 
   describe "El.exit/1" do
+    setup do
+      original_session_meta = Application.get_env(:el, :session_meta)
+
+      on_exit(fn ->
+        if original_session_meta do
+          Application.put_env(:el, :session_meta, original_session_meta)
+        else
+          Application.delete_env(:el, :session_meta)
+        end
+      end)
+
+      Application.put_env(:el, :session_meta, El.MockSessionMeta)
+      stub(El.MockSessionMeta, :delete, fn _ -> :ok end)
+      :ok
+    end
+
     test "looks up session in registry" do
       expect(El.MockRegistry, :lookup, fn El.Registry, :dude -> [] end)
       stub(El.MockApp, :delete_session_messages, fn _ -> :ok end)
@@ -63,6 +79,7 @@ defmodule El.Features.OnOffSpec do
       term_fn = fn El.SessionSupervisor, :mock_pid -> :ok end
       stub(El.MockSupervisor, :terminate_child, term_fn)
       stub(El.MockMonitor, :wait_for_down, fn _, _ -> :ok end)
+      stub(El.MockApp, :delete_session_messages, fn _ -> :ok end)
       El.exit(:dude)
     end
 
@@ -72,6 +89,7 @@ defmodule El.Features.OnOffSpec do
       stub_fn = fn El.SessionSupervisor, _pid -> :ok end
       stub(El.MockSupervisor, :terminate_child, stub_fn)
       stub(El.MockMonitor, :wait_for_down, fn _ref, :dude -> :ok end)
+      stub(El.MockApp, :delete_session_messages, fn _ -> :ok end)
       El.exit(:dude)
     end
   end

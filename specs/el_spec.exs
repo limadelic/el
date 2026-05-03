@@ -5,7 +5,7 @@ defmodule El.Spec do
   setup :verify_on_exit!
 
   describe "start/2" do
-    test "returns name when lookup returns empty" do
+    test "returns :created when lookup returns empty" do
       expect(El.MockRegistry, :lookup, fn El.Registry, _name ->
         []
       end)
@@ -14,15 +14,15 @@ defmodule El.Spec do
         {:ok, :pid}
       end)
 
-      assert El.start(:kent) == :kent
+      assert El.start(:kent) == :created
     end
 
-    test "returns name when session already exists" do
+    test "returns :already_running when session already exists" do
       expect(El.MockRegistry, :lookup, fn El.Registry, :lisa ->
         [{:pid, :meta}]
       end)
 
-      assert El.start(:lisa) == :lisa
+      assert El.start(:lisa) == :already_running
     end
 
     test "passes options to supervisor" do

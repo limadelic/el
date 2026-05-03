@@ -67,25 +67,28 @@ defmodule El.Session.Store do
     split_and_complete(messages, ref, "tell", message, response)
   end
 
-  def replace_ask(messages, ref, message, response) do
-    split_and_complete(messages, ref, "ask", message, response)
-  end
+  def replace_ask(messages, ref, message, response, model \\ nil) do
+    split_and_complete(messages, ref, "ask", message, response, model)
+end
 
-  defp split_and_complete(messages, ref, type, message, response) do
+  defp split_and_complete(messages, ref, type, message, response, model \\ nil) do
     messages
     |> Enum.split_while(&match_pending_entry(&1, type, ref))
-    |> complete_entry(type, message, response)
+    |> complete_entry(type, message, response, model)
   end
 
   defp match_pending_entry({type, _, "", %{ref: ref}}, type, ref), do: false
   defp match_pending_entry(_, _, _), do: true
 
-  defp complete_entry({before, [{_, _, _, _} | rest]}, type, message, response) do
-    entry = {type, message, response, %{}}
+  defp complete_entry({before, [{_, _, _, _} | rest]}, type, message, response, model) do
+    entry = {type, message, response, metadata_for(model)}
     before ++ [entry | rest]
   end
 
-  defp complete_entry({messages, []}, type, message, response) do
-    messages ++ [{type, message, response, %{}}]
+  defp complete_entry({messages, []}, type, message, response, model) do
+    messages ++ [{type, message, response, metadata_for(model)}]
   end
+
+  defp metadata_for(nil), do: %{}
+  defp metadata_for(model), do: %{model: model}
 end

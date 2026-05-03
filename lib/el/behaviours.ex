@@ -17,6 +17,7 @@ defmodule El.Behaviours.Session do
   @callback tell_ask(term(), term(), term()) :: term()
   @callback ask_tell(term(), term(), term()) :: term()
   @callback agent(term()) :: term()
+  @callback info(term()) :: term()
 end
 
 defmodule El.Behaviours.App do
@@ -45,4 +46,23 @@ end
 
 defmodule El.Behaviours.FileSystem do
   @callback exists?(String.t()) :: boolean()
+  @callback cwd() :: String.t()
+end
+
+defmodule El.Behaviours.ClaudeCode do
+  @callback stream(term(), term()) :: term()
+  @callback stream(term(), term(), list()) :: term()
+end
+
+defmodule El.Behaviours.Store do
+  @callback delete_ask_entry(term(), term(), term()) :: term()
+  @callback store_ask_entry(term(), term()) :: term()
+  @callback replace_ask(term(), term(), term(), term(), term()) :: term()
+  @callback delete_message(term(), term()) :: term()
+  @callback store_message(term(), term()) :: term()
+end
+
+defmodule El.Behaviours.ClaudeCodeSession do
+  @callback start_link(keyword()) :: {:ok, pid()} | {:error, term()}
+  @callback stream(pid(), binary()) :: Enumerable.t()
 end

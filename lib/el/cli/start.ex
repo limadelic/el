@@ -7,19 +7,34 @@ defmodule El.CLI.Start do
 
   def merge_session_opts(name, explicit_agent \\ nil, explicit_model \\ nil) do
     model_opts = start_opts(explicit_model)
-    agent = explicit_agent || El.AgentDetector.detect_agent(name)
+    agent = explicit_agent || agent_detector().detect_agent(name)
     agent_opts = agent_opt(agent)
-    result = model_opts ++ agent_opts
+    agent_model_opts = agent_model_opt(agent, explicit_model)
+    result = model_opts ++ agent_opts ++ agent_model_opts
     result ++ env_model(result)
   end
 
   def detect_and_merge_agent(name, opts) do
-    merged = opts ++ agent_opt(El.AgentDetector.detect_agent(name))
+    merged = opts ++ agent_opt(agent_detector().detect_agent(name))
     merged ++ env_model(merged)
+  end
+
+  defp agent_detector do
+    Application.get_env(:el, :agent_detector, El.AgentDetector)
   end
 
   defp agent_opt(nil), do: []
   defp agent_opt(agent), do: [agent: agent]
+
+  defp agent_model_opt(nil, _), do: []
+  defp agent_model_opt(_, explicit_model) when explicit_model != nil, do: []
+  defp agent_model_opt(agent, nil) do
+    agent_metadata = Application.get_env(:el, :agent_metadata, El.AgentMetadata)
+    agent_model_for(agent_metadata.model_for(agent))
+  end
+
+  defp agent_model_for(nil), do: []
+  defp agent_model_for(model), do: [model: model]
 
   defp env_model(opts) do
     env_model_for(Keyword.get(opts, :model), Keyword.get(opts, :agent))
@@ -37,12 +52,185 @@ defmodule El.CLI.Start do
   def handle_find_daemon_for_start(name, opts, el) do
     name_atom = String.to_atom(name)
     el.start(name_atom, opts)
-    IO.puts("el: #{name} is up")
+    ping_if_agent(name_atom, opts)
+    print_session_info(name, opts)
   end
+
+  defp ping_if_agent(name_atom, opts) do
+    do_ping(name_atom, Keyword.get(opts, :agent), session_api().info(name_atom))
+  end
+
+  defp do_ping(_name_atom, nil, _info), do: :ok
+  defp do_ping(_name_atom, _agent, %{messages: messages}) when messages > 0, do: :ok
+  defp do_ping(name_atom, _agent, _info), do: quiet_ask(name_atom)
+
+  defp quiet_ask(name_atom) do
+    {:ok, null_device} = File.open("/dev/null", [:write])
+    original = Process.group_leader()
+    Process.group_leader(self(), null_device)
+    result = session_api().ask(name_atom, "who are you?")
+    Process.group_leader(self(), original)
+    File.close(null_device)
+    result
+  end
+
+  def print_session_info(name, opts) do
+    info = session_api().info(String.to_atom(name))
+    rows = build_card_rows(name, opts, info)
+    box_frame(rows) |> Enum.each(&IO.puts/1)
+  end
+
+  defp build_card_rows(name, opts, info) do
+    agent = Keyword.get(opts, :agent)
+    opts_model = Keyword.get(opts, :model)
+
+    []
+    |> add_name_id(name, info.id)
+    |> add_second_with_cwd(agent, opts_model, info.model, info.cwd)
+    |> add_model(opts_model, info.model)
+    |> add_msgs(info.messages)
+    |> add_prompt_separator(info.last_prompt)
+    |> add_prompt(info.last_prompt)
+    |> add_response_separator(info.last_response)
+    |> add_response_lines(info.last_response)
+  end
+
+  defp add_name_id(rows, name, id) do
+    left = "name:  #{name}"
+    right = "id: #{id}"
+    rows ++ [frame_pair_row(left, right)]
+  end
+
+  defp add_second_with_cwd(rows, agent, opts_model, info_model, cwd) do
+    second_left = second_left_value(agent, opts_model, info_model)
+    do_add_second_with_cwd(rows, second_left, cwd)
+  end
+
+  defp second_left_value(agent, _, _) when agent != nil, do: "agent: #{agent}"
+  defp second_left_value(nil, opts_model, _) when opts_model != nil, do: "model: #{opts_model}"
+  defp second_left_value(nil, nil, info_model) when info_model != nil, do: "model: #{info_model}"
+  defp second_left_value(_, _, _), do: nil
+
+  defp do_add_second_with_cwd(rows, nil, _cwd), do: rows
+  defp do_add_second_with_cwd(rows, left, cwd) do
+    right = "cwd: #{cwd}"
+    rows ++ [frame_pair_row(left, right)]
+  end
+
+  defp add_model(rows, nil, nil), do: rows
+  defp add_model(rows, nil, info_model), do: rows ++ ["model: #{info_model}"]
+  defp add_model(rows, opts_model, _info_model), do: rows ++ ["model: #{opts_model}"]
+
+  defp add_msgs(rows, 0), do: rows
+  defp add_msgs(rows, count), do: rows ++ ["msgs:  #{count}"]
+
+  defp add_prompt_separator(rows, nil), do: rows
+  defp add_prompt_separator(rows, _prompt), do: rows ++ [String.duplicate("─", 46)]
+
+  defp add_prompt(rows, nil), do: rows
+  defp add_prompt(rows, prompt), do: rows ++ ["> #{prompt}"]
+
+  defp add_response_separator(rows, nil), do: rows
+  defp add_response_separator(rows, _response), do: rows ++ [String.duplicate("─", 46)]
+
+  defp add_response_lines(rows, nil), do: rows
+  defp add_response_lines(rows, response), do: rows ++ format_response(response)
+
+  defp session_api do
+    Application.get_env(:el, :session_api, El.Session.Api)
+  end
+
+  defp box_frame([]), do: [top_border(), bottom_border()]
+  defp box_frame(rows) do
+    first_two = Enum.take(rows, 2)
+    rest = Enum.drop(rows, 2)
+    [top_border()] ++ first_two ++ Enum.map(rest, &frame_row/1) ++ [bottom_border()]
+  end
+
+  defp top_border, do: "╭" <> String.duplicate("─", 48) <> "╮"
+  defp bottom_border, do: "╰" <> String.duplicate("─", 48) <> "╯"
+
+  defp frame_row(content) do
+    padded = String.pad_trailing(content, 46)
+    "│ " <> padded <> " │"
+  end
+
+  defp frame_pair_row(left, right) do
+    right_block = truncate_right_block(right)
+    left_len = String.length(left)
+    right_len = String.length(right_block)
+    filler_len = max(0, 46 - left_len - right_len)
+    filler = String.duplicate(" ", filler_len)
+    content = left <> filler <> right_block
+    padded = String.pad_trailing(content, 46)
+    "│ " <> padded <> " │"
+  end
+
+  defp truncate_right_block(right) do
+    case String.split(right, ": ", parts: 2) do
+      [label, value] -> label <> ": " <> truncate_value(value)
+      _ -> right
+    end
+  end
+
+  defp truncate_value(value) do
+    truncate_with_ellipsis(value, 9)
+  end
+
+  defp truncate_with_ellipsis(text, max_len) do
+    text_len = String.length(text)
+    do_truncate(text_len, text, max_len)
+  end
+
+  defp do_truncate(len, text, max_len) when len <= max_len, do: text
+  defp do_truncate(_len, text, max_len) do
+    ellipsis = "…"
+    available = max_len - String.length(ellipsis)
+    ellipsis <> String.slice(text, -available..-1)
+  end
+
+  def format_response(nil), do: []
+  def format_response(response) do
+    response
+    |> wrap_text(46)
+    |> cap_lines(2)
+  end
+
+  defp wrap_text(text, width) do
+    text
+    |> String.split(" ")
+    |> build_lines(width, "", [])
+  end
+
+  defp build_lines([], _width, "", acc), do: Enum.reverse(acc)
+  defp build_lines([], _width, current, acc), do: Enum.reverse([String.trim(current) | acc])
+
+  defp build_lines([word | rest], width, "", acc) do
+    build_lines(rest, width, word, acc)
+  end
+
+  defp build_lines([word | rest], width, current, acc) do
+    add_word(word, rest, width, current, acc, String.trim(current <> " " <> word))
+  end
+
+  defp add_word(word, rest, width, current, acc, new_line) do
+    do_add_word(String.length(new_line), word, rest, width, current, acc, new_line)
+  end
+
+  defp do_add_word(len, _word, rest, width, _current, acc, new_line) when len <= width do
+    build_lines(rest, width, new_line, acc)
+  end
+
+  defp do_add_word(_len, word, rest, width, current, acc, _new_line) do
+    build_lines(rest, width, word, [String.trim(current) | acc])
+  end
+
+  defp cap_lines(lines, max), do: Enum.take(lines, max)
 
   def handle_find_daemon_with_rest(name, opts, rest, el) do
     name_atom = String.to_atom(name)
     el.start(name_atom, opts)
+    print_session_info(name, opts)
     dispatch_rest(rest, name)
   end
 

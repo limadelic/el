@@ -19,6 +19,7 @@ defmodule El.Application do
 
   @impl true
   def stop(_state) do
+    :dets.close(:session_meta)
     message_store = Application.get_env(:el, :message_store, El.MessageStore)
     message_store.close()
   end
@@ -26,9 +27,23 @@ defmodule El.Application do
   def restore_sessions do
     el = Application.get_env(:el, :el_module, El)
     message_store = Application.get_env(:el, :message_store, El.MessageStore)
+    session_meta = Application.get_env(:el, :session_meta, El.SessionMeta)
 
     message_store.session_names()
-    |> Enum.each(fn name -> el.start(name) end)
+    |> Enum.each(&restore_session(&1, el, session_meta))
+  end
+
+  defp restore_session(name, el, _session_meta, {:ok, session_id, agent, model}) do
+    opts = [resume: session_id, agent: agent, model: model]
+    el.start(name, opts)
+  end
+
+  defp restore_session(name, el, _session_meta, {:error, :not_found}) do
+    el.start(name, [])
+  end
+
+  defp restore_session(name, el, session_meta) do
+    restore_session(name, el, session_meta, session_meta.lookup(name))
   end
 
   def children do
@@ -46,12 +61,19 @@ defmodule El.Application do
 
   def init_message_store do
     dir = store_dir()
-    path = Path.expand("#{dir}/messages.dets") |> String.to_charlist()
+    messages_path = Path.expand("#{dir}/messages.dets") |> String.to_charlist()
+    session_meta_path = Path.expand("#{dir}/session_meta.dets") |> String.to_charlist()
     File.mkdir_p!(Path.expand(dir))
-    {:ok, _} = :dets.open_file(:message_store, file: path, type: :bag)
+    dets_backend = Application.get_env(:el, :dets_backend, :dets)
+    {:ok, _} = dets_backend.open_file(:message_store, file: messages_path, type: :bag)
+    {:ok, _} = dets_backend.open_file(:session_meta, file: session_meta_path, type: :bag)
   end
 
-  defp store_dir, do: store_dir(El.CLI.Daemon.dev?())
+  defp store_dir do
+    daemon = Application.get_env(:el, :daemon, El.CLI.Daemon)
+    store_dir(daemon.dev?())
+  end
+
   defp store_dir(true), do: "~/.el/dev"
   defp store_dir(false), do: "~/.el"
 

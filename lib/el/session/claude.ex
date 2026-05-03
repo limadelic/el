@@ -1,6 +1,4 @@
 defmodule El.Session.Claude do
-  require Logger
-
   def start(claude_module, opts) do
     start_claude_safe(claude_module.start_link(opts))
   end
@@ -26,43 +24,24 @@ defmodule El.Session.Claude do
   end
 
   def ask(nil, _message) do
-    "(ClaudeCode unavailable)"
+    {"(unavailable)", nil, nil}
   end
 
   def ask(pid, message) do
-    stream(pid, message)
-  end
-
-  defp stream(pid, message) do
-    safe_stream(pid, message)
-  end
-
-  defp safe_stream(pid, message) do
-    pid |> stream_to_result(message) |> nil_to_empty()
+    {result, model, session_id} = El.ClaudePort.ask(pid, message)
+    {nil_to_empty(result), model, session_id}
   end
 
   defp nil_to_empty(nil), do: ""
   defp nil_to_empty(result), do: result
 
-  defp stream_to_result(pid, message) do
-    pid
-    |> El.ClaudeCode.stream(message)
-    |> Enum.to_list()
-    |> Enum.find_value(&extract_result/1)
-  end
-
-  defp extract_result(%ClaudeCode.Message.ResultMessage{result: result}) do
-    result
-  end
-
-  defp extract_result(_), do: nil
-
   def ask_work(pid, message, _routes) do
-    ask(pid, message)
+    {result, model, session_id} = ask(pid, message)
+    {result, model, session_id}
   end
 
   def maybe_respawn_claude(%{claude_pid: nil} = state) do
-    opts = resume_options(state.opts, state.session_id)
+    opts = resume_options(state.claude_opts, state.session_id)
     pid = start(state.claude_module, opts)
     %{state | claude_pid: pid}
   end
