@@ -194,7 +194,6 @@ defmodule El.Session.Spec do
     end
 
     test "puts :resume into claude_opts when given resume in opts" do
-      Mox.stub(El.MockFileSystem, :cwd, fn -> "/test/dir" end)
       opts = [
         resume: "my-resume-id",
         claude_module: MockSessionModule,
