@@ -1,3 +1,7 @@
+defmodule TestResetSessionStore do
+  def delete_session_messages(_name), do: :ok
+end
+
 defmodule El.Session.Ask.Spec do
   use ExUnit.Case
   import Mox
@@ -242,6 +246,42 @@ defmodule El.Session.Ask.Spec do
       {_ref, new_state} = El.Session.Ask.prepare_ask(state, from, "@target> routed question")
 
       assert new_state.messages == []
+    end
+  end
+
+  describe "reset_session/1" do
+    test "reset_session generates a session_id different from previous" do
+      state = %{
+        name: :test_session,
+        messages: [{"tell", "old message", "response", %{}}],
+        opts: [],
+        session_id: "test-session-id",
+        claude_pid: :old_pid,
+        claude_opts: [],
+        claude_module: MockSessionModule,
+        store_module: TestResetSessionStore
+      }
+
+      new_state = El.Session.Ask.reset_session(state)
+
+      assert new_state.session_id != "test-session-id"
+    end
+
+    test "reset_session generates a binary session_id" do
+      state = %{
+        name: :test_session,
+        messages: [{"tell", "old message", "response", %{}}],
+        opts: [],
+        session_id: "test-session-id",
+        claude_pid: :old_pid,
+        claude_opts: [],
+        claude_module: MockSessionModule,
+        store_module: TestResetSessionStore
+      }
+
+      new_state = El.Session.Ask.reset_session(state)
+
+      assert is_binary(new_state.session_id)
     end
   end
 end

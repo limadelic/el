@@ -827,17 +827,6 @@ defmodule El.Session.Spec do
       refute Process.alive?(old_pid)
     end
 
-    test "generates new session_id different from old", %{state: state} do
-      {:reply, :ok, returned_state} =
-        El.Session.handle_call(:clear, :from, %{
-          state
-          | claude_module: MockSessionModule
-        })
-
-      assert returned_state.session_id != "test-session-id"
-      assert is_binary(returned_state.session_id)
-    end
-
     test "starts new claude process via claude_module", %{state: state} do
       {:reply, :ok, returned_state} =
         El.Session.handle_call(:clear, :from, %{
