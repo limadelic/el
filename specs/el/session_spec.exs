@@ -523,7 +523,8 @@ defmodule El.Session.Spec do
         | messages: [
             {"ask", "question", "", %{ref: ref1}},
             {"ask", "question", "", %{ref: ref2}}
-          ]
+          ],
+          store_module: MockSessionStoreBare
       }
 
       cast_msg = {:complete_ask, from, "question", "answer first", ref1, "claude-3", "session-123"}
@@ -531,10 +532,7 @@ defmodule El.Session.Spec do
       {:noreply, returned_state} =
         El.Session.handle_cast(cast_msg, pending_state)
 
-      assert [
-               {"ask", "question", "answer first", %{}},
-               {"ask", "question", "", %{ref: ^ref2}}
-             ] = returned_state.messages
+      assert returned_state.messages == [{:replaced, ref1, "question", "answer first", "claude-3"}]
     end
 
     test "deletes pending entry from DETS on completion",
