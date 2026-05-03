@@ -1,14 +1,13 @@
 defmodule El.Session.CallHandler do
   alias El.Session.Claude
-  alias El.Session.Ask
   alias El.Session.Router
   alias El.Session.Store
 
   def handle({:ask, message}, from, state) do
     state = Claude.maybe_respawn_claude(state)
-    {ref, ask_state} = Ask.prepare_ask(state, from, message)
+    {ref, ask_state} = state.ask_module.prepare_ask(state, from, message)
     routes = Router.detect_routes(message)
-    Ask.spawn_ask(ask_state, {from, message, ref}, routes, self())
+    ask_state.ask_module.spawn_ask(ask_state, {from, message, ref}, routes, self())
     {:noreply, ask_state}
   end
 
@@ -29,7 +28,7 @@ defmodule El.Session.CallHandler do
 
   def handle(:clear, _from, state) do
     Claude.stop_claude(state.claude_pid)
-    Ask.reset_session(state) |> reply_ok()
+    state.ask_module.reset_session(state) |> reply_ok()
   end
 
   defp build_info([], session_id, cwd) do
