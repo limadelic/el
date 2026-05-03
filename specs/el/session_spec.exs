@@ -109,7 +109,6 @@ defmodule El.Session.Spec do
     end
 
     test "captures cwd in state" do
-      Mox.stub(El.MockFileSystem, :cwd, fn -> "/test/dir" end)
       opts = [claude_module: MockSessionModule, file_system: El.MockFileSystem, session_meta: El.MockSessionMeta]
 
       {:ok, state, {:continue, :start_claude}} =
