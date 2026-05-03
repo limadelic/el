@@ -31,8 +31,7 @@ defmodule El.Session.Ask do
   end
 
   defp finalize_ask_state(state, from, ref, message, response, model) do
-    store_module = Application.get_env(:el, :store_module, Store)
-    new_messages = store_module.replace_ask(state.messages, ref, message, response, model)
+    new_messages = state.store_module.replace_ask(state.messages, ref, message, response, model)
     new_pending = List.delete(state.pending_calls, from)
     %{state | messages: new_messages, pending_calls: new_pending}
   end
