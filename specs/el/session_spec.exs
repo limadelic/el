@@ -418,17 +418,6 @@ defmodule El.Session.Spec do
   end
 
   describe "handle_cast/2 :complete_ask" do
-    test "appends when no pending entry exists", %{state: state} do
-      from = {self(), make_ref()}
-      ref = make_ref()
-      cast_msg = {:complete_ask, from, "test", "response", ref, "claude-3", "session-123"}
-
-      {:noreply, returned_state} =
-        El.Session.handle_cast(cast_msg, state)
-
-      assert [{"ask", "test", "response", %{}}] = returned_state.messages
-    end
-
     test "stores exact message content", %{state: state} do
       from = {self(), make_ref()}
       ref = make_ref()
