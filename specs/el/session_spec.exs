@@ -1082,6 +1082,8 @@ defmodule MockSessionStore do
   def load_messages(_), do: []
   def delete_message(_, _), do: :ok
   def delete_session_messages(_), do: :ok
+  def delete_ask_entry(_state, _message, _ref), do: :ok
+  def store_ask_entry(_, _), do: :ok
 end
 
 defmodule MockLoadingStore do
