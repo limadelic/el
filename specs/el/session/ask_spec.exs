@@ -1,14 +1,3 @@
-defmodule TestResetSessionStore do
-  def delete_session_messages(_name), do: :ok
-end
-
-defmodule TestDeleteSessionMessagesStore do
-  def delete_session_messages(name) do
-    send(self(), {:delete_session_messages, name})
-    :ok
-  end
-end
-
 defmodule El.Session.Ask.Spec do
   use ExUnit.Case
   import Mox
@@ -258,6 +247,10 @@ defmodule El.Session.Ask.Spec do
 
   describe "reset_session/1" do
     test "reset_session generates a session_id different from previous" do
+      stub(El.MockStoreModule, :delete_session_messages, fn _ -> :ok end)
+      Application.put_env(:el, :store_module, El.MockStoreModule)
+      on_exit(fn -> Application.delete_env(:el, :store_module) end)
+
       state = %{
         name: :test_session,
         messages: [{"tell", "old message", "response", %{}}],
@@ -266,7 +259,7 @@ defmodule El.Session.Ask.Spec do
         claude_pid: :old_pid,
         claude_opts: [],
         claude_module: MockSessionModule,
-        store_module: TestResetSessionStore
+        store_module: El.MockStoreModule
       }
 
       new_state = El.Session.Ask.reset_session(state)
@@ -275,6 +268,10 @@ defmodule El.Session.Ask.Spec do
     end
 
     test "reset_session generates a binary session_id" do
+      stub(El.MockStoreModule, :delete_session_messages, fn _ -> :ok end)
+      Application.put_env(:el, :store_module, El.MockStoreModule)
+      on_exit(fn -> Application.delete_env(:el, :store_module) end)
+
       state = %{
         name: :test_session,
         messages: [{"tell", "old message", "response", %{}}],
@@ -283,7 +280,7 @@ defmodule El.Session.Ask.Spec do
         claude_pid: :old_pid,
         claude_opts: [],
         claude_module: MockSessionModule,
-        store_module: TestResetSessionStore
+        store_module: El.MockStoreModule
       }
 
       new_state = El.Session.Ask.reset_session(state)
@@ -292,6 +289,10 @@ defmodule El.Session.Ask.Spec do
     end
 
     test "clears state.messages to empty list" do
+      stub(El.MockStoreModule, :delete_session_messages, fn _ -> :ok end)
+      Application.put_env(:el, :store_module, El.MockStoreModule)
+      on_exit(fn -> Application.delete_env(:el, :store_module) end)
+
       state = %{
         name: :test_session,
         messages: [{"tell", "old message", "response", %{}}],
@@ -300,7 +301,7 @@ defmodule El.Session.Ask.Spec do
         claude_pid: :old_pid,
         claude_opts: [],
         claude_module: MockSessionModule,
-        store_module: TestResetSessionStore
+        store_module: El.MockStoreModule
       }
 
       new_state = El.Session.Ask.reset_session(state)
@@ -309,6 +310,14 @@ defmodule El.Session.Ask.Spec do
     end
 
     test "deletes DETS messages via store_module.delete_session_messages" do
+      test_pid = self()
+      stub(El.MockStoreModule, :delete_session_messages, fn name ->
+        send(test_pid, {:delete_session_messages, name})
+        :ok
+      end)
+      Application.put_env(:el, :store_module, El.MockStoreModule)
+      on_exit(fn -> Application.delete_env(:el, :store_module) end)
+
       state = %{
         name: :test_session,
         messages: [{"tell", "old message", "response", %{}}],
@@ -317,7 +326,7 @@ defmodule El.Session.Ask.Spec do
         claude_pid: :old_pid,
         claude_opts: [],
         claude_module: MockSessionModule,
-        store_module: TestDeleteSessionMessagesStore
+        store_module: El.MockStoreModule
       }
 
       El.Session.Ask.reset_session(state)
