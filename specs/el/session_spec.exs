@@ -415,19 +415,6 @@ defmodule El.Session.Spec do
                El.Session.handle_call({:ask, "test"}, from, updated_state)
     end
 
-    test "stores pending entry immediately", %{state: state} do
-      from = {self(), make_ref()}
-      updated_state = %{state | task_module: MockTaskModule}
-
-      {:noreply, returned_state} =
-        El.Session.handle_call({:ask, "test question"}, from, updated_state)
-
-      assert [{"ask", "test question", "", %{ref: ref}}] =
-               returned_state.messages
-
-      assert is_reference(ref)
-    end
-
     test "does not store pending entry when ask has routes", %{
       state: state
     } do
