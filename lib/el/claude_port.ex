@@ -19,24 +19,21 @@ defmodule El.ClaudePort do
 
   @impl GenServer
   def init(opts) do
-    cli_path = Application.get_env(:claude_code, :cli_path, :global)
-    session_id = Keyword.get(opts, :session_id)
-    resume_id = Keyword.get(opts, :resume)
-    cwd = Keyword.get(opts, :cwd) || File.cwd!()
+    {:ok, build_state(opts), {:continue, :connect}}
+  end
 
-    state = %{
+  defp build_state(opts) do
+    %{
       port: nil,
       buffer: "",
-      session_id: session_id,
-      resume_id: resume_id,
-      cwd: cwd,
-      cli_path: cli_path,
+      session_id: Keyword.get(opts, :session_id),
+      resume_id: Keyword.get(opts, :resume),
+      cwd: Keyword.get(opts, :cwd) || File.cwd!(),
+      cli_path: Application.get_env(:claude_code, :cli_path, :global),
       opts: opts,
       current_request_id: nil,
       responses: []
     }
-
-    {:ok, state, {:continue, :connect}}
   end
 
   @impl GenServer
