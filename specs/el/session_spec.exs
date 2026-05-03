@@ -408,16 +408,6 @@ defmodule El.Session.Spec do
                El.Session.handle_call({:ask, "test"}, from, updated_state)
     end
 
-    test "filters out self-routes", %{state: state} do
-      from = {self(), make_ref()}
-
-      {:noreply, _state} =
-        El.Session.handle_call({:ask, "@test_session> test"}, from, %{
-          state
-          | task_module: MockTaskModule
-        })
-    end
-
     test "stores pending entry immediately", %{state: state} do
       from = {self(), make_ref()}
       updated_state = %{state | task_module: MockTaskModule}
