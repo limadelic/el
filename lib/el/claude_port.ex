@@ -1,4 +1,6 @@
 defmodule El.ClaudePort do
+  @behaviour El.Behaviours.ClaudePort
+
   use GenServer
 
   require Logger
@@ -11,6 +13,7 @@ defmodule El.ClaudePort do
     GenServer.start_link(__MODULE__, opts)
   end
 
+  @impl El.Behaviours.ClaudePort
   def ask(pid, message) do
     GenServer.call(pid, {:ask, message}, :infinity)
   end
