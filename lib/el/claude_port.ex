@@ -146,13 +146,14 @@ defmodule El.ClaudePort do
     cli_path = state.cli_path
     cwd = state.cwd
     opts = state.opts
+    port_module = state.port_module
 
     case resolve_cli_and_args(cli_path, opts, resume_id) do
       {:ok, {executable, args}} ->
         exe_path = executable |> String.to_charlist() |> :os.find_executable()
 
         if exe_path do
-          spawn_port(exe_path, args, cwd)
+          spawn_port(exe_path, args, cwd, port_module)
         else
           {:error, "CLI executable not found: #{executable}"}
         end
@@ -162,7 +163,7 @@ defmodule El.ClaudePort do
     end
   end
 
-  defp spawn_port(exe_path, args, cwd) do
+  defp spawn_port(exe_path, args, cwd, port_module) do
     env = System.get_env() |> Enum.map(fn {k, v} -> {String.to_charlist(k), String.to_charlist(v)} end)
     port_opts = [
       {:args, args},
@@ -174,7 +175,7 @@ defmodule El.ClaudePort do
     ]
 
     try do
-      port = Port.open({:spawn_executable, exe_path}, port_opts)
+      port = port_module.open({:spawn_executable, exe_path}, port_opts)
       {:ok, port}
     rescue
       e -> {:error, {:port_open_failed, e}}
