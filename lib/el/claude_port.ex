@@ -141,25 +141,19 @@ defmodule El.ClaudePort do
   end
 
   defp open_port(state) do
-    resume_id = state.resume_id
-    cli_path = state.cli_path
-    cwd = state.cwd
-    opts = state.opts
-    port_module = state.port_module
+    apply_resolved(resolve_cli_and_args(state.cli_path, state.opts, state.resume_id), state)
+  end
 
-    case resolve_cli_and_args(cli_path, opts, resume_id) do
-      {:ok, {executable, args}} ->
-        exe_path = executable |> String.to_charlist() |> :os.find_executable()
+  defp apply_resolved({:error, reason}, _state), do: {:error, reason}
+  defp apply_resolved({:ok, {executable, args}}, state) do
+    find_and_spawn(:os.find_executable(String.to_charlist(executable)), executable, args, state)
+  end
 
-        if exe_path do
-          spawn_port(exe_path, args, cwd, port_module)
-        else
-          {:error, "CLI executable not found: #{executable}"}
-        end
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+  defp find_and_spawn(false, executable, _args, _state) do
+    {:error, "CLI executable not found: #{executable}"}
+  end
+  defp find_and_spawn(exe_path, _executable, args, state) do
+    spawn_port(exe_path, args, state.cwd, state.port_module)
   end
 
   defp spawn_port(exe_path, args, cwd, port_module) do
