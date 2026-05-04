@@ -5,7 +5,9 @@ defmodule El.ClaudePort.Spec do
     Code.ensure_loaded!(El.ClaudePort)
     Code.ensure_loaded!(ClaudeCode.CLI.Parser)
     Code.ensure_loaded!(Jason)
-    ClaudeCode.CLI.Parser.normalize_keys(%{})
+    El.ClaudePort.Parser.try_extract_result(~s({"type":"result","result":"warmup"}\n), "warmup-sid")
+    El.ClaudePort.Parser.try_extract_result(~s({"type":"system","subtype":"init","model":"m","session_id":"s"}\n), "warmup-sid")
+    El.ClaudePort.Parser.try_extract_result("not json\n", "warmup-sid")
     :ok
   end
 
