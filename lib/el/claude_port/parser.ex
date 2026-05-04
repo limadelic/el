@@ -18,19 +18,19 @@ defmodule El.ClaudePort.Parser do
   end
 
   defp extract_all_lines(buffer, acc) do
-    case extract_one_line(buffer) do
-      {nil, _} -> {Enum.reverse(acc), buffer}
-      {line, remaining} -> extract_all_lines(remaining, [line | acc])
-    end
+    apply_extracted_line(extract_one_line(buffer), buffer, acc)
   end
 
+  defp apply_extracted_line({nil, _}, buffer, acc), do: {Enum.reverse(acc), buffer}
+  defp apply_extracted_line({line, remaining}, _buffer, acc), do: extract_all_lines(remaining, [line | acc])
+
   defp extract_one_line(buffer) do
-    case String.split(buffer, "\n", parts: 2) do
-      [line, rest] -> {line, rest}
-      [_incomplete] -> {nil, buffer}
-      [] -> {nil, ""}
-    end
+    apply_split(String.split(buffer, "\n", parts: 2), buffer)
   end
+
+  defp apply_split([line, rest], _buffer), do: {line, rest}
+  defp apply_split([_incomplete], buffer), do: {nil, buffer}
+  defp apply_split([], _buffer), do: {nil, ""}
 
   defp process_lines([], _acc, _session_id), do: :incomplete
   defp process_lines([line | rest], acc, session_id) do
