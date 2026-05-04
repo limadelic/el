@@ -111,10 +111,14 @@ defmodule El.ClaudePort do
     end
   end
 
-  defp safe_close_port(port) do
-    if port && Port.info(port) do
-      Port.close(port)
-    end
+  defp safe_close_port(nil), do: :ok
+  defp safe_close_port(port), do: try_close(Port.info(port), port)
+
+  defp try_close(nil, _port), do: :ok
+  defp try_close(_info, port), do: close_with_rescue(port)
+
+  defp close_with_rescue(port) do
+    Port.close(port)
   rescue
     ArgumentError -> :ok
   end
