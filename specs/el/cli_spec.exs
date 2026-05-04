@@ -103,6 +103,7 @@ defmodule El.CLI.Spec do
 
       on_exit(fn ->
         Application.delete_env(:el, :file_system)
+        Application.delete_env(:el, :agent_detector)
         System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
       end)
 
@@ -234,9 +235,7 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :msg auto-starts session with agent detection" do
-      stub(El.MockFileSystem, :exists?, fn path ->
-        String.contains?(path, "session.md")
-      end)
+      Application.put_env(:el, :agent_detector, IdentityAgentDetectorStub)
 
       expect(El.MockEl, :start, fn :session, [agent: "session"] -> :created end)
       expect(El.MockEl, :ask, fn :session, "hello world" -> "reply" end)
@@ -249,7 +248,7 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :msg without agent uses session name" do
-      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+      Application.put_env(:el, :agent_detector, NilAgentDetectorStub)
 
       expect(El.MockEl, :start, fn :session, [] -> :created end)
       expect(El.MockEl, :ask, fn :session, "hello" -> "reply" end)
@@ -262,7 +261,7 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :msg prints boxed card after response" do
-      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+      Application.put_env(:el, :agent_detector, NilAgentDetectorStub)
 
       expect(El.MockEl, :start, fn :session, [] -> :created end)
       expect(El.MockEl, :ask, fn :session, "hello" -> "reply" end)
@@ -275,7 +274,7 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :msg skips card when session already running" do
-      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+      Application.put_env(:el, :agent_detector, NilAgentDetectorStub)
 
       expect(El.MockEl, :start, fn :session, [] -> :already_running end)
       expect(El.MockEl, :ask, fn :session, "hello" -> "reply" end)
@@ -289,7 +288,7 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :msg shows card when session newly created" do
-      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+      Application.put_env(:el, :agent_detector, NilAgentDetectorStub)
 
       expect(El.MockEl, :start, fn :session, [] -> :created end)
       expect(El.MockEl, :ask, fn :session, "hello" -> "reply" end)
@@ -303,9 +302,7 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :start uses merge_session_opts to combine agent and model" do
-      stub(El.MockFileSystem, :exists?, fn path ->
-        String.contains?(path, "my_session.md")
-      end)
+      Application.put_env(:el, :agent_detector, IdentityAgentDetectorStub)
 
       expect(El.MockEl, :start, fn :my_session, [agent: "my_session"] -> :ok end)
       expect(El.MockSessionApi, :ask, fn :my_session, "who are you?" -> "response" end)
@@ -316,9 +313,7 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :start with -m model calls merge_session_opts with explicit model" do
-      stub(El.MockFileSystem, :exists?, fn path ->
-        String.contains?(path, "my_session.md")
-      end)
+      Application.put_env(:el, :agent_detector, IdentityAgentDetectorStub)
 
       expect(El.MockEl, :start, fn :my_session, [model: "haiku", agent: "my_session"] -> :ok end)
 
@@ -328,7 +323,7 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :start with -a agent skips detection and uses explicit agent" do
-      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+      Application.put_env(:el, :agent_detector, NilAgentDetectorStub)
 
       expect(El.MockEl, :start, fn :my_session, [agent: "explicit"] -> :ok end)
 
@@ -338,7 +333,7 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :start when no agent detected does not merge agent into opts" do
-      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+      Application.put_env(:el, :agent_detector, NilAgentDetectorStub)
 
       expect(El.MockEl, :start, fn :my_session, [] -> :ok end)
 
@@ -348,7 +343,7 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :start with -m model when no agent detected does not merge agent" do
-      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+      Application.put_env(:el, :agent_detector, NilAgentDetectorStub)
 
       expect(El.MockEl, :start, fn :my_session, [model: "haiku"] -> :ok end)
 
@@ -358,7 +353,7 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :start uses env model when no model or agent" do
-      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+      Application.put_env(:el, :agent_detector, NilAgentDetectorStub)
 
       expect(El.MockEl, :start, fn :my_session, [model: "sonnet"] -> :ok end)
 
@@ -370,7 +365,7 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :start ignores env model when model provided" do
-      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+      Application.put_env(:el, :agent_detector, NilAgentDetectorStub)
 
       expect(El.MockEl, :start, fn :my_session, [model: "opus"] -> :ok end)
 
@@ -382,9 +377,7 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :start ignores env model when agent detected" do
-      stub(El.MockFileSystem, :exists?, fn path ->
-        String.contains?(path, "my_session.md")
-      end)
+      Application.put_env(:el, :agent_detector, IdentityAgentDetectorStub)
 
       expect(El.MockEl, :start, fn :my_session, [agent: "my_session"] -> :ok end)
       expect(El.MockSessionApi, :ask, fn :my_session, "who are you?" -> "response" end)
@@ -397,7 +390,7 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :start ignores nil env model" do
-      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+      Application.put_env(:el, :agent_detector, NilAgentDetectorStub)
 
       expect(El.MockEl, :start, fn :my_session, [] -> :ok end)
 
@@ -465,11 +458,9 @@ defmodule El.CLI.Spec do
 
   describe "El.CLI.Start.merge_session_opts/3" do
     setup do
-      Application.put_env(:el, :file_system, El.MockFileSystem)
-      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+      Application.put_env(:el, :agent_detector, NilAgentDetectorStub)
 
       on_exit(fn ->
-        Application.delete_env(:el, :file_system)
         Application.delete_env(:el, :agent_detector)
         System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
       end)
@@ -595,11 +586,10 @@ defmodule El.CLI.Spec do
 
   describe "El.CLI.Start.detect_and_merge_agent/2" do
     setup do
-      Application.put_env(:el, :file_system, El.MockFileSystem)
-      stub(El.MockFileSystem, :exists?, fn _path -> false end)
+      Application.put_env(:el, :agent_detector, NilAgentDetectorStub)
 
       on_exit(fn ->
-        Application.delete_env(:el, :file_system)
+        Application.delete_env(:el, :agent_detector)
         System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
       end)
 
