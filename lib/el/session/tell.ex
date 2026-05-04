@@ -1,7 +1,6 @@
 defmodule El.Session.Tell do
   alias El.Session.Router
   alias El.Session.Store
-  alias El.Session.Claude
 
   def tell_impl(state, message) do
     routes = Router.detect_routes(message)
