@@ -38,14 +38,7 @@ defmodule El.ClaudePort do
 
   @impl GenServer
   def handle_continue(:connect, state) do
-    case open_port(state) do
-      {:ok, port} ->
-        {:noreply, %{state | port: port, buffer: ""}}
-
-      {:error, reason} ->
-        Logger.error("Failed to open Claude port: #{inspect(reason)}")
-        {:noreply, %{state | port: nil}}
-    end
+    apply_continue_result(open_port(state), state)
   end
 
   @impl GenServer
@@ -127,13 +120,27 @@ defmodule El.ClaudePort do
   end
 
   defp ensure_connected(%{port: nil} = state) do
-    case open_port(state) do
-      {:ok, port} -> {:ok, %{state | port: port, buffer: ""}}
-      {:error, reason} -> {:error, reason}
-    end
+    apply_ensure_result(open_port(state), state)
   end
 
   defp ensure_connected(state), do: {:ok, state}
+
+  defp apply_continue_result({:ok, port}, state) do
+    {:noreply, %{state | port: port, buffer: ""}}
+  end
+
+  defp apply_continue_result({:error, reason}, state) do
+    Logger.error("Failed to open Claude port: #{inspect(reason)}")
+    {:noreply, %{state | port: nil}}
+  end
+
+  defp apply_ensure_result({:ok, port}, state) do
+    {:ok, %{state | port: port, buffer: ""}}
+  end
+
+  defp apply_ensure_result({:error, reason}, _state) do
+    {:error, reason}
+  end
 
   defp open_port(state) do
     resume_id = state.resume_id
