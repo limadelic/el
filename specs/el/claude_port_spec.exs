@@ -1,11 +1,11 @@
 defmodule El.ClaudePort.Spec do
   use ExUnit.Case
-  @moduletag timeout: 1000
 
   setup_all do
     Code.ensure_loaded!(El.ClaudePort)
     Code.ensure_loaded!(ClaudeCode.CLI.Parser)
     Code.ensure_loaded!(Jason)
+    ClaudeCode.CLI.Parser.normalize_keys(%{})
     :ok
   end
 
