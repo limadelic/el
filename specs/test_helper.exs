@@ -63,6 +63,10 @@ Mox.defmock(El.MockDets, for: El.Behaviours.Dets)
 Mox.defmock(El.MockPort, for: El.Behaviours.Port)
 Mox.defmock(El.MockSleeper, for: El.Behaviours.Sleeper)
 
+defmodule TestDaemonConnectorStub do
+  def daemon_node, do: :"el_test@127.0.0.1"
+end
+
 defmodule MockClaudeCodeSession do
   def stream(_pid, _message) do
     [
