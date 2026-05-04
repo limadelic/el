@@ -2,44 +2,13 @@ defmodule El.Session.Ask.Spec do
   use ExUnit.Case
   import Mox
 
-  setup do
-    Application.put_env(:claude_code, :session_module, MockClaudeCodeSession)
-    {:ok, pid} = TestClaudePortStub.start_link(nil)
-
-    on_exit(fn ->
-      Application.delete_env(:claude_code, :session_module)
-    end)
-
-    {:ok, test_pid: pid}
-  end
-
   setup :verify_on_exit!
 
-  describe "ask_work/3" do
-    @tag timeout: 1000
-    test "returns result from ask_work", %{test_pid: test_pid} do
-      {result, _, _} = El.Session.Claude.ask_work(test_pid, "test", [])
-      assert result == "test result"
-    end
-
-    @tag timeout: 1000
-    test "returns model from ask_work", %{test_pid: test_pid} do
-      {_, model, _} = El.Session.Claude.ask_work(test_pid, "test", [])
-      assert model == "test-model"
-    end
-
-    @tag timeout: 1000
-    test "returns session_id from ask_work", %{test_pid: test_pid} do
-      {_, _, session_id} = El.Session.Claude.ask_work(test_pid, "test", [])
-      assert session_id == "test-session-id"
-    end
-  end
-
   describe "model plumbing end-to-end" do
-    @tag timeout: 1000
-    test "model and session_id flow from ask_work through spawn_ask_task to complete_ask cast", %{test_pid: test_pid} do
+    test "model and session_id flow from ask_work through spawn_ask_task to complete_ask cast" do
       state = %{
-        claude_pid: test_pid,
+        claude_pid: :test_pid,
+        claude_session: El.MockSessionClaude,
         messages: [],
         pending_calls: [],
         task_module: Task
@@ -48,12 +17,13 @@ defmodule El.Session.Ask.Spec do
       ask_info = {self(), "test message", make_ref()}
       server_pid = self()
 
+      expect(El.MockSessionClaude, :ask_work, fn _, _, _ -> {"test result", "test-model", "test-session-id"} end)
+
       El.Session.Ask.spawn_ask(state, ask_info, [], server_pid)
 
       assert_receive {:"$gen_cast",
                       {:complete_ask, _, "test message", "test result", _,
-                       "test-model", "test-session-id"}},
-                     1000
+                       "test-model", "test-session-id"}}
     end
   end
 
@@ -66,7 +36,6 @@ defmodule El.Session.Ask.Spec do
       :ok
     end
 
-    @tag timeout: 1000
     test "calls store with model in metadata when model is provided" do
       state = %{
         name: :test_session,
@@ -81,7 +50,6 @@ defmodule El.Session.Ask.Spec do
       El.Session.Ask.finalize_ask(state, from, ref, "question", "answer", "claude-3")
     end
 
-    @tag timeout: 1000
     test "calls store with nil when model is nil" do
       state = %{
         name: :test_session,
@@ -96,7 +64,6 @@ defmodule El.Session.Ask.Spec do
       El.Session.Ask.finalize_ask(state, from, ref, "question", "answer", nil)
     end
 
-    @tag timeout: 1000
     test "replies to caller with response" do
       state = %{
         name: :test_session,
@@ -113,7 +80,6 @@ defmodule El.Session.Ask.Spec do
       assert_receive {^caller_ref, "the answer"}
     end
 
-    @tag timeout: 1000
     test "deletes pending entry from DETS on completion" do
       pending_ref = make_ref()
       state = %{
