@@ -18,6 +18,7 @@ defmodule El.Behaviours.Session do
   @callback ask_tell(term(), term(), term()) :: term()
   @callback agent(term()) :: term()
   @callback info(term()) :: term()
+  @callback cast_store_relay(term(), term(), term()) :: term()
 end
 
 defmodule El.Behaviours.App do

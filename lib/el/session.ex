@@ -19,7 +19,8 @@ defmodule El.Session do
     alive_fn: &El.Session.Api.alive?/1,
     registry_module: Registry,
     store_module: El.Application,
-    session_meta: El.SessionMeta
+    session_meta: El.SessionMeta,
+    session_api: El.Session.Api
   }
   @base_state_defaults %{
     name: nil,
