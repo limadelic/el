@@ -78,7 +78,3 @@ defmodule El.Behaviours.Dets do
   @callback delete(term(), term()) :: term()
   @callback foldl(term(), term(), term()) :: term()
 end
-
-defmodule El.Behaviours.ClaudePort do
-  @callback ask(pid(), String.t()) :: {String.t(), String.t() | nil, String.t() | nil}
-end
