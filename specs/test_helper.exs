@@ -58,6 +58,10 @@ defmodule NilAgentDetectorStub do
   def detect_agent(_), do: nil
 end
 
+defmodule IdentityAgentDetectorStub do
+  def detect_agent(name), do: name
+end
+
 Mox.defmock(El.MockSessionApi, for: El.Behaviours.Session)
 Mox.defmock(El.MockClaudeCode, for: El.Behaviours.ClaudeCode)
 Mox.defmock(El.MockClaudeCodeSession, for: El.Behaviours.ClaudeCodeSession)

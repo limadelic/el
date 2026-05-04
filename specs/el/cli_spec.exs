@@ -470,6 +470,7 @@ defmodule El.CLI.Spec do
 
       on_exit(fn ->
         Application.delete_env(:el, :file_system)
+        Application.delete_env(:el, :agent_detector)
         System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
       end)
 
@@ -477,10 +478,7 @@ defmodule El.CLI.Spec do
     end
 
     defp setup_agent_detected do
-      stub(El.MockFileSystem, :exists?, fn path ->
-        String.contains?(path, "session.md")
-      end)
-
+      Application.put_env(:el, :agent_detector, IdentityAgentDetectorStub)
       System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
     end
 
@@ -497,9 +495,8 @@ defmodule El.CLI.Spec do
     end
 
     test "with no explicit_agent detects agent if exists" do
-      stub(El.MockFileSystem, :exists?, fn path ->
-        String.contains?(path, "session.md")
-      end)
+      Application.put_env(:el, :agent_detector, IdentityAgentDetectorStub)
+      on_exit(fn -> Application.delete_env(:el, :agent_detector) end)
 
       result = El.CLI.Start.merge_session_opts("session", nil, nil)
 
