@@ -1,0 +1,2 @@
+default: --require features/step_definitions --require features/support --publish-quiet
+dev: --require features/dev.rb --require features/step_definitions --require features/support --publish-quiet
