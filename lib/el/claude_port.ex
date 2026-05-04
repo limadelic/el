@@ -51,7 +51,7 @@ defmodule El.ClaudePort do
         port = connected_state.port
 
         ndjson = Input.user_message(message, session_id || "default")
-        Port.command(port, ndjson <> "\n")
+        connected_state.port_module.command(port, ndjson <> "\n")
 
         new_state = %{connected_state | current_request_id: from}
         {:noreply, new_state}
