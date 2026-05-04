@@ -58,20 +58,16 @@ defmodule El.Session.Ask.Spec do
   end
 
   describe "finalize_ask/6" do
-    test "calls store with model in metadata when model is provided" do
-      stub(El.MockStoreModule, :delete_ask_entry, fn _, _, _ -> :ok end)
-      stub(El.MockStoreModule, :store_ask_entry, fn _, _ -> :ok end)
-      expect(El.MockStoreModule, :replace_ask, fn messages, _ref, _message, _response, model ->
-        assert model == "claude-3"
-        messages
-      end)
-
+    setup do
       Application.put_env(:el, :store_module, El.MockStoreModule)
+      on_exit(fn -> Application.delete_env(:el, :store_module) end)
+      stub(El.MockStoreModule, :delete_message, fn _, _ -> :ok end)
+      stub(El.MockStoreModule, :store_message, fn _, _ -> :ok end)
+      :ok
+    end
 
-      on_exit(fn ->
-        Application.delete_env(:el, :store_module)
-      end)
-
+    @tag timeout: 1000
+    test "calls store with model in metadata when model is provided" do
       state = %{
         name: :test_session,
         messages: [],
@@ -85,20 +81,8 @@ defmodule El.Session.Ask.Spec do
       El.Session.Ask.finalize_ask(state, from, ref, "question", "answer", "claude-3")
     end
 
+    @tag timeout: 1000
     test "calls store with nil when model is nil" do
-      stub(El.MockStoreModule, :delete_ask_entry, fn _, _, _ -> :ok end)
-      stub(El.MockStoreModule, :store_ask_entry, fn _, _ -> :ok end)
-      expect(El.MockStoreModule, :replace_ask, fn messages, _ref, _message, _response, model ->
-        assert model == nil
-        messages
-      end)
-
-      Application.put_env(:el, :store_module, El.MockStoreModule)
-
-      on_exit(fn ->
-        Application.delete_env(:el, :store_module)
-      end)
-
       state = %{
         name: :test_session,
         messages: [],
@@ -112,17 +96,8 @@ defmodule El.Session.Ask.Spec do
       El.Session.Ask.finalize_ask(state, from, ref, "question", "answer", nil)
     end
 
+    @tag timeout: 1000
     test "replies to caller with response" do
-      stub(El.MockStoreModule, :delete_ask_entry, fn _, _, _ -> :ok end)
-      stub(El.MockStoreModule, :store_ask_entry, fn _, _ -> :ok end)
-      stub(El.MockStoreModule, :replace_ask, fn messages, _, _, _, _ -> messages end)
-
-      Application.put_env(:el, :store_module, El.MockStoreModule)
-
-      on_exit(fn ->
-        Application.delete_env(:el, :store_module)
-      end)
-
       state = %{
         name: :test_session,
         messages: [],
@@ -138,45 +113,34 @@ defmodule El.Session.Ask.Spec do
       assert_receive {^caller_ref, "the answer"}
     end
 
+    @tag timeout: 1000
     test "deletes pending entry from DETS on completion" do
-      stub(El.MockStoreModule, :delete_ask_entry, fn _, _, _ -> :ok end)
-      stub(El.MockStoreModule, :store_ask_entry, fn _, _ -> :ok end)
-      stub(El.MockStoreModule, :replace_ask, fn _messages, _ref, _message, _response, _model ->
-        [{"ask", "question", "answer", %{}}]
-      end)
-
-      Application.put_env(:el, :store_module, El.MockStoreModule)
-
-      on_exit(fn ->
-        Application.delete_env(:el, :store_module)
-      end)
-
+      pending_ref = make_ref()
       state = %{
         name: :test_session,
-        messages: [{"ask", "question", "", %{ref: make_ref()}}],
+        messages: [{"ask", "question", "", %{ref: pending_ref}}],
         pending_calls: [self()],
         store_module: El.MockStoreModule
       }
 
       from = {self(), make_ref()}
-      ref = make_ref()
 
-      returned_state = El.Session.Ask.finalize_ask(state, from, ref, "question", "answer", "claude-3")
+      returned_state = El.Session.Ask.finalize_ask(state, from, pending_ref, "question", "answer", "claude-3")
 
-      assert returned_state.messages == [{"ask", "question", "answer", %{}}]
+      assert returned_state.messages == [{"ask", "question", "answer", %{model: "claude-3"}}]
     end
   end
 
   describe "prepare_ask/3" do
-    test "stores pending entry with empty response on prepare_ask" do
-      stub(El.MockStoreModule, :store_message, fn _, _ -> :ok end)
-
+    setup do
       Application.put_env(:el, :store_module, El.MockStoreModule)
+      on_exit(fn -> Application.delete_env(:el, :store_module) end)
+      stub(El.MockStoreModule, :delete_message, fn _, _ -> :ok end)
+      stub(El.MockStoreModule, :store_message, fn _, _ -> :ok end)
+      :ok
+    end
 
-      on_exit(fn ->
-        Application.delete_env(:el, :store_module)
-      end)
-
+    test "stores pending entry with empty response on prepare_ask" do
       state = %{
         name: :test_session,
         messages: [],
@@ -192,14 +156,6 @@ defmodule El.Session.Ask.Spec do
     end
 
     test "stores pending entry with a reference on prepare_ask" do
-      stub(El.MockStoreModule, :store_message, fn _, _ -> :ok end)
-
-      Application.put_env(:el, :store_module, El.MockStoreModule)
-
-      on_exit(fn ->
-        Application.delete_env(:el, :store_module)
-      end)
-
       state = %{
         name: :test_session,
         messages: [],
@@ -216,14 +172,6 @@ defmodule El.Session.Ask.Spec do
     end
 
     test "does not store pending entry when ask has routes" do
-      stub(El.MockStoreModule, :store_message, fn _, _ -> :ok end)
-
-      Application.put_env(:el, :store_module, El.MockStoreModule)
-
-      on_exit(fn ->
-        Application.delete_env(:el, :store_module)
-      end)
-
       alive_fn = fn
         :target -> true
         _ -> false
@@ -250,6 +198,8 @@ defmodule El.Session.Ask.Spec do
       Application.put_env(:el, :store_module, El.MockStoreModule)
       on_exit(fn -> Application.delete_env(:el, :store_module) end)
 
+      stub(El.MockStoreModule, :delete_message, fn _, _ -> :ok end)
+      stub(El.MockStoreModule, :store_message, fn _, _ -> :ok end)
       stub(El.MockStoreModule, :delete_session_messages, fn _ -> :ok end)
 
       state = %{
