@@ -1,7 +1,3 @@
-defmodule SyncTask do
-  def start(fun), do: fun.()
-end
-
 defmodule El.Session.Tell.Spec do
   use ExUnit.Case
   import Mox

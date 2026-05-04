@@ -1,7 +1,3 @@
-defmodule SyncTask do
-  def start(fun), do: fun.()
-end
-
 defmodule El.Session.RouterSpec do
   use ExUnit.Case
   import Mox

@@ -3,6 +3,10 @@ defmodule MockSessionModule do
   def start(_fun), do: {:ok, :task_pid}
 end
 
+defmodule SyncTask do
+  def start(fun), do: fun.()
+end
+
 Mox.defmock(El.MockRegistry, for: El.Behaviours.Registry)
 Mox.defmock(El.MockSupervisor, for: El.Behaviours.Supervisor)
 Mox.defmock(El.MockSession, for: El.Behaviours.Session)
