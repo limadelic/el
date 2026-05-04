@@ -36,25 +36,25 @@ defmodule El.Session.Ask.Spec do
   end
 
   describe "model plumbing end-to-end" do
-    test "spawn_ask tells the completer to complete with reporter, ask_info, and routes" do
-      ask_info = {self(), "test message", make_ref()}
-      server_pid = self()
-      routes = []
-
-      expect(El.MockCompleter, :complete, fn _target, ^server_pid, ^ask_info, ^routes ->
-        :ok
-      end)
-
+    @tag timeout: 1000
+    test "model and session_id flow from ask_work through spawn_ask_task to complete_ask cast", %{test_pid: test_pid} do
       state = %{
-        claude_pid: :unused,
+        claude_pid: test_pid,
         messages: [],
         pending_calls: [],
-        completer: El.MockCompleter
+        task_module: Task,
+        completer: El.Session.ClaudeCompleter
       }
 
-      El.Session.Ask.spawn_ask(state, ask_info, routes, server_pid)
+      ask_info = {self(), "test message", make_ref()}
+      server_pid = self()
 
-      verify!()
+      El.Session.Ask.spawn_ask(state, ask_info, [], server_pid)
+
+      assert_receive {:"$gen_cast",
+                      {:complete_ask, _, "test message", "test result", _,
+                       "test-model", "test-session-id"}},
+                     1000
     end
   end
 
