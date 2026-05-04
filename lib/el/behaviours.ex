@@ -78,3 +78,7 @@ defmodule El.Behaviours.Dets do
   @callback delete(term(), term()) :: term()
   @callback foldl(term(), term(), term()) :: term()
 end
+
+defmodule El.Behaviours.Sleeper do
+  @callback sleep(integer()) :: :ok
+end
