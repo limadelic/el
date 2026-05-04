@@ -1,19 +1,19 @@
 defmodule El.AgentDetector do
   @behaviour El.Behaviours.FileSystem
 
-  def exists?(name, fs \\ Application.get_env(:el, :file_system, El.FileSystemImpl)) do
+  def exists?(name, fs \\ El.FileSystemImpl) do
     check_paths(fs, paths(name))
   end
 
-  def cwd(fs \\ Application.get_env(:el, :file_system, El.FileSystemImpl)) do
+  def cwd(fs \\ El.FileSystemImpl) do
     fs.cwd()
   end
 
-  def mkdir_p!(path, fs \\ Application.get_env(:el, :file_system, El.FileSystemImpl)) do
+  def mkdir_p!(path, fs \\ El.FileSystemImpl) do
     fs.mkdir_p!(path)
   end
 
-  def detect_agent(name, fs \\ Application.get_env(:el, :file_system, El.FileSystemImpl)) do
+  def detect_agent(name, fs \\ El.FileSystemImpl) do
     paths(name) |> Enum.find(&fs.exists?/1) |> found(name)
   end
 
