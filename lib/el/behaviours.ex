@@ -87,6 +87,11 @@ end
 
 defmodule El.Behaviours.NodeConnector do
   @callback connect(node()) :: boolean() | :ignored
+  @callback set_cookie(atom()) :: true
+end
+
+defmodule El.Behaviours.NetKernel do
+  @callback start([atom()]) :: {:ok, pid()} | {:error, term()}
 end
 
 defmodule El.Behaviours.SessionClaude do
