@@ -60,6 +60,7 @@ Mox.defmock(El.MockStoreModule, for: El.Behaviours.Store)
 Mox.defmock(El.MockSessionMeta, for: El.SessionMeta)
 Mox.defmock(El.MockSessionAsk, for: El.Behaviours.SessionAsk)
 Mox.defmock(El.MockDets, for: El.Behaviours.Dets)
+Mox.defmock(El.MockPort, for: El.Behaviours.Port)
 
 defmodule MockClaudeCodeSession do
   def stream(_pid, _message) do
