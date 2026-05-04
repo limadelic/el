@@ -219,23 +219,31 @@ defmodule El.ClaudePort do
 
   defp process_lines([], _acc, _session_id), do: :incomplete
 
-  defp process_lines([line | rest], {result, model, sid} = acc, session_id) do
+  defp process_lines([line | rest], acc, session_id) do
     case Jason.decode(line) do
       {:ok, json} ->
         normalized = Parser.normalize_keys(json)
-        new_result = if is_result_message(normalized), do: get_result(normalized), else: result
-        new_model = if has_model(normalized), do: get_model(normalized), else: model
-        new_sid = if has_session_id(normalized), do: get_session_id(normalized), else: sid
+        {new_acc, complete?} = merge_line(normalized, acc)
 
-        if is_result_message(normalized) do
+        if complete? do
+          {new_result, new_model, new_sid} = new_acc
           {:complete, new_result, new_model, new_sid}
         else
-          process_lines(rest, {new_result, new_model, new_sid}, session_id)
+          process_lines(rest, new_acc, session_id)
         end
 
       {:error, _reason} ->
         process_lines(rest, acc, session_id)
     end
+  end
+
+  defp merge_line(normalized, {result, model, sid}) do
+    new_result = if is_result_message(normalized), do: get_result(normalized), else: result
+    new_model = if has_model(normalized), do: get_model(normalized), else: model
+    new_sid = if has_session_id(normalized), do: get_session_id(normalized), else: sid
+    complete? = is_result_message(normalized)
+
+    {{new_result, new_model, new_sid}, complete?}
   end
 
   defp extract_one_line(buffer) do
