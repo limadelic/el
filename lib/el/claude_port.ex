@@ -229,27 +229,41 @@ defmodule El.ClaudePort do
       {:ok, json} ->
         normalized = Parser.normalize_keys(json)
         {new_acc, complete?} = merge_line(normalized, acc)
-
-        if complete? do
-          {new_result, new_model, new_sid} = new_acc
-          {:complete, new_result, new_model, new_sid}
-        else
-          process_lines(rest, new_acc, session_id)
-        end
+        emit_or_continue(complete?, new_acc, rest, session_id)
 
       {:error, _reason} ->
         process_lines(rest, acc, session_id)
     end
   end
 
-  defp merge_line(normalized, {result, model, sid}) do
-    new_result = if is_result_message(normalized), do: get_result(normalized), else: result
-    new_model = if has_model(normalized), do: get_model(normalized), else: model
-    new_sid = if has_session_id(normalized), do: get_session_id(normalized), else: sid
-    complete? = is_result_message(normalized)
-
-    {{new_result, new_model, new_sid}, complete?}
+  defp emit_or_continue(true, new_acc, _rest, _session_id) do
+    {new_result, new_model, new_sid} = new_acc
+    {:complete, new_result, new_model, new_sid}
   end
+
+  defp emit_or_continue(false, new_acc, rest, session_id) do
+    process_lines(rest, new_acc, session_id)
+  end
+
+  defp merge_line(normalized, {result, model, sid}) do
+    {
+      {
+        pick_result(is_result_message(normalized), normalized, result),
+        pick_model(has_model(normalized), normalized, model),
+        pick_sid(has_session_id(normalized), normalized, sid)
+      },
+      is_result_message(normalized)
+    }
+  end
+
+  defp pick_result(true, normalized, _result), do: get_result(normalized)
+  defp pick_result(false, _normalized, result), do: result
+
+  defp pick_model(true, normalized, _model), do: get_model(normalized)
+  defp pick_model(false, _normalized, model), do: model
+
+  defp pick_sid(true, normalized, _sid), do: get_session_id(normalized)
+  defp pick_sid(false, _normalized, sid), do: sid
 
   defp extract_one_line(buffer) do
     case String.split(buffer, "\n", parts: 2) do
