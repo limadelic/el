@@ -92,23 +92,17 @@ defmodule El.ClaudePort do
   end
 
   defp process_chunk(data, state) do
-    new_buffer = state.buffer <> data
-    new_state = %{state | buffer: new_buffer}
+    new_state = %{state | buffer: state.buffer <> data}
+    maybe_extract(new_state)
+  end
 
-    case state.current_request_id do
-      nil ->
-        new_state
+  defp maybe_extract(%{current_request_id: nil} = state), do: state
+  defp maybe_extract(state), do: dispatch_extraction(try_extract_result(state), state)
 
-      from ->
-        case try_extract_result(new_state) do
-          {:ok, result, remaining_buffer} ->
-            GenServer.reply(from, result)
-            %{new_state | buffer: remaining_buffer, current_request_id: nil}
-
-          :incomplete ->
-            new_state
-        end
-    end
+  defp dispatch_extraction(:incomplete, state), do: state
+  defp dispatch_extraction({:ok, result, remaining_buffer}, state) do
+    GenServer.reply(state.current_request_id, result)
+    %{state | buffer: remaining_buffer, current_request_id: nil}
   end
 
   defp safe_close_port(nil), do: :ok
