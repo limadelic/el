@@ -4,8 +4,6 @@ defmodule El.CLI.DaemonConnector.Spec do
 
   setup :verify_on_exit!
 
-  @moduletag timeout: 1000
-
   describe "wait_for_daemon/3" do
     test "happy path: connects on first attempt and returns :ok" do
       Mox.expect(El.MockSleeper, :sleep, 1, fn _ -> :ok end)
