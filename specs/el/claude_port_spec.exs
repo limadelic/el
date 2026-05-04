@@ -1,5 +1,6 @@
 defmodule El.ClaudePort.Spec do
   use ExUnit.Case
+  @moduletag timeout: 1000
 
   setup_all do
     Code.ensure_loaded!(El.ClaudePort)
