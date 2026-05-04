@@ -8,71 +8,71 @@ defmodule El.CLI do
   defp el, do: Application.get_env(:el, :el_module, El)
 
   def dispatch(args) do
-    args |> Router.parse_route() |> execute(args)
+    args |> Router.parse_route() |> execute(args, [])
   end
 
-  def execute(:usage, _args), do: IO.puts(Output.usage_message())
-  def execute(:version, _args), do: IO.puts(version())
-  def execute(:ls, _args), do: el().ls() |> Output.show_sessions()
-  def execute(:daemon_hub, _args), do: Process.sleep(:infinity)
+  def execute(:usage, _args, _deps), do: IO.puts(Output.usage_message())
+  def execute(:version, _args, _deps), do: IO.puts(version())
+  def execute(:ls, _args, _deps), do: el().ls() |> Output.show_sessions()
+  def execute(:daemon_hub, _args, _deps), do: Process.sleep(:infinity)
 
-  def execute(:daemon, ["--daemon", name]) do
-    execute(:daemon, ["--daemon", name, "-m", ""])
+  def execute(:daemon, ["--daemon", name], _deps) do
+    execute(:daemon, ["--daemon", name, "-m", ""], [])
   end
 
-  def execute(:daemon, ["--daemon", name, "-m", model]) do
+  def execute(:daemon, ["--daemon", name, "-m", model], _deps) do
     Start.start_daemon_node_for(name, model, el())
   end
 
-  def execute(:start, [name]) do
-    opts = Start.merge_session_opts(name)
-    Start.handle_find_daemon_for_start(name, opts, el())
+  def execute(:start, [name], deps) do
+    opts = Start.merge_session_opts(name, nil, nil, deps)
+    Start.handle_find_daemon_for_start(name, opts, el(), deps)
   end
 
-  def execute(:start, [name, "-m", model | rest]) do
-    opts = Start.merge_session_opts(name, nil, model)
-    Start.handle_find_daemon_with_rest(name, opts, rest, el())
+  def execute(:start, [name, "-m", model | rest], deps) do
+    opts = Start.merge_session_opts(name, nil, model, deps)
+    Start.handle_find_daemon_with_rest(name, opts, rest, el(), deps)
   end
 
-  def execute(:start, [name, "-a", agent | rest]) do
-    opts = Start.merge_session_opts(name, agent, nil)
-    Start.handle_find_daemon_with_rest(name, opts, rest, el())
+  def execute(:start, [name, "-a", agent | rest], deps) do
+    opts = Start.merge_session_opts(name, agent, nil, deps)
+    Start.handle_find_daemon_with_rest(name, opts, rest, el(), deps)
   end
 
-  def execute(:tell_ask, [name, "tell", "ask", "@" <> target | words]) do
+  def execute(:tell_ask, [name, "tell", "ask", "@" <> target | words], _deps) do
     Messaging.execute_tell_ask(name, target, words, el())
   end
 
-  def execute(:ask_tell, [name, "ask", "tell", "@" <> target | words]) do
+  def execute(:ask_tell, [name, "ask", "tell", "@" <> target | words], _deps) do
     Messaging.execute_ask_tell(name, target, words, el())
   end
 
-  def execute(:msg, [name, word | more_words]) do
-    opts = Start.detect_and_merge_agent(name, Start.start_opts(nil))
+  def execute(:msg, [name, word | more_words], deps) do
+    opts = Start.detect_and_merge_agent(name, Start.start_opts(nil), deps)
     status = el().start(String.to_atom(name), opts)
     Messaging.execute_msg(name, [word | more_words], el())
-    maybe_print_card(status, name, opts)
+    maybe_print_card(status, name, opts, deps)
   end
 
-  def execute(:log, [name, "log"]), do: Log.execute_log(name, 1, el())
+  def execute(:log, [name, "log"], _deps), do: Log.execute_log(name, 1, el())
 
-  def execute(:log_n, [name, "log", n]) do
+  def execute(:log_n, [name, "log", n], _deps) do
     Log.execute_log(name, Log.parse_log_count(n), el())
   end
 
-  def execute(:exit, [name, "exit"]) do
+  def execute(:exit, [name, "exit"], _deps) do
     Pattern.exit_by_kind(el(), Pattern.pattern?(name), name)
   end
 
-  def execute(:clear, [name, "clear"]) do
+  def execute(:clear, [name, "clear"], _deps) do
     Pattern.clear_by_kind(el(), Pattern.pattern?(name), name)
   end
 
-  def execute(:exit_all, ["exit"]) do
+  def execute(:exit_all, ["exit"], _deps) do
     el().exit(:all)
     IO.puts("exited all")
   end
 
-  defp maybe_print_card(:created, name, opts), do: Start.print_session_info(name, opts)
-  defp maybe_print_card(:already_running, _name, _opts), do: :ok
+  defp maybe_print_card(:created, name, opts, deps), do: Start.print_session_info(name, opts, deps)
+  defp maybe_print_card(:already_running, _name, _opts, _deps), do: :ok
 end

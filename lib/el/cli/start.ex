@@ -20,7 +20,7 @@ defmodule El.CLI.Start do
   end
 
   defp agent_detector(deps) do
-    Keyword.get(deps, :agent_detector, Application.get_env(:el, :agent_detector, El.AgentDetector))
+    Keyword.get(deps, :agent_detector, El.AgentDetector)
   end
 
   defp agent_opt(nil), do: []
@@ -29,8 +29,12 @@ defmodule El.CLI.Start do
   defp agent_model_opt(nil, _, _), do: []
   defp agent_model_opt(_, explicit_model, _) when explicit_model != nil, do: []
   defp agent_model_opt(agent, nil, deps) do
-    agent_metadata = Keyword.get(deps, :agent_metadata, Application.get_env(:el, :agent_metadata, El.AgentMetadata))
-    agent_model_for(agent_metadata.model_for(agent))
+    metadata = agent_metadata(deps)
+    agent_model_for(metadata.model_for(agent))
+  end
+
+  defp agent_metadata(deps) do
+    Keyword.get(deps, :agent_metadata, El.AgentMetadata)
   end
 
   defp agent_model_for(nil), do: []
@@ -57,12 +61,12 @@ defmodule El.CLI.Start do
   end
 
   defp ping_if_agent(name_atom, opts, deps) do
-    do_ping(name_atom, Keyword.get(opts, :agent), session_api(deps).info(name_atom))
+    do_ping(name_atom, Keyword.get(opts, :agent), session_api(deps).info(name_atom), deps)
   end
 
-  defp do_ping(_name_atom, nil, _info), do: :ok
-  defp do_ping(_name_atom, _agent, %{messages: messages}) when messages > 0, do: :ok
-  defp do_ping(name_atom, _agent, _info), do: quiet_ask(name_atom, [])
+  defp do_ping(_name_atom, nil, _info, _deps), do: :ok
+  defp do_ping(_name_atom, _agent, %{messages: messages}, _deps) when messages > 0, do: :ok
+  defp do_ping(name_atom, _agent, _info, deps), do: quiet_ask(name_atom, deps)
 
   defp quiet_ask(name_atom, deps) do
     {:ok, null_device} = File.open("/dev/null", [:write])
@@ -137,7 +141,7 @@ defmodule El.CLI.Start do
   defp add_response_lines(rows, response), do: rows ++ format_response(response)
 
   defp session_api(deps) do
-    Keyword.get(deps, :session_api, Application.get_env(:el, :session_api, El.Session.Api))
+    Keyword.get(deps, :session_api, El.Session.Api)
   end
 
   defp box_frame([]), do: [top_border(), bottom_border()]
