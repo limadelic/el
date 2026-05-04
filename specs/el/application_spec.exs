@@ -1,11 +1,14 @@
 defmodule El.Application.Spec do
   use ExUnit.Case
 
+  import Mox
+
   setup do
     original_el_module = Application.get_env(:el, :el_module)
     original_session_meta = Application.get_env(:el, :session_meta)
     original_daemon = Application.get_env(:el, :daemon)
     original_dets_backend = Application.get_env(:el, :dets_backend)
+    original_file_system = Application.get_env(:el, :file_system)
 
     on_exit(fn ->
       Application.delete_env(:el, :message_store)
@@ -34,10 +37,17 @@ defmodule El.Application.Spec do
       if original_dets_backend do
         Application.put_env(:el, :dets_backend, original_dets_backend)
       end
+
+      if original_file_system do
+        Application.put_env(:el, :file_system, original_file_system)
+      else
+        Application.delete_env(:el, :file_system)
+      end
     end)
 
     Application.put_env(:el, :message_store, El.MessageStoreStub)
     Application.put_env(:el, :daemon, El.DaemonStub)
+    Application.put_env(:el, :file_system, El.MockFileSystem)
 
     [
       children: El.Application.children(),
@@ -116,6 +126,7 @@ defmodule El.Application.Spec do
 
   test "init_message_store opens session_meta table alongside message_store" do
     Application.put_env(:el, :dets_backend, El.DetsBackendStub)
+    stub(El.MockFileSystem, :mkdir_p!, fn _path -> :ok end)
     El.Application.init_message_store()
     assert El.DetsBackendStub.insert(:session_meta, {:key, :value}) == :ok
   end

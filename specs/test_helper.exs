@@ -15,6 +15,7 @@ Mox.defmock(El.MockMonitor, for: El.Behaviours.Monitor)
 Mox.defmock(El.MockEl, for: El.Behaviours.El)
 Mox.defmock(El.MockFileSystem, for: El.Behaviours.FileSystem)
 Mox.stub(El.MockFileSystem, :cwd, fn -> "/tmp/test" end)
+Mox.stub(El.MockFileSystem, :mkdir_p!, fn _path -> :ok end)
 
 defmodule ClaudeCode.SessionStub do
   def stream(_pid, _prompt) do
