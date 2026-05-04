@@ -44,22 +44,21 @@ defmodule El.ClaudePort do
 
   @impl GenServer
   def handle_call({:ask, message}, from, state) do
-    case ensure_connected(state) do
-      {:ok, connected_state} ->
-        Logger.debug("ClaudePort connected, sending message")
-        session_id = connected_state.session_id
-        port = connected_state.port
+    dispatch_ask(ensure_connected(state), message, from, state)
+  end
 
-        ndjson = Input.user_message(message, session_id || "default")
-        connected_state.port_module.command(port, ndjson <> "\n")
+  defp dispatch_ask({:ok, connected_state}, message, from, _state) do
+    Logger.debug("ClaudePort connected, sending message")
+    session_id = connected_state.session_id
+    port = connected_state.port
+    ndjson = Input.user_message(message, session_id || "default")
+    connected_state.port_module.command(port, ndjson <> "\n")
+    {:noreply, %{connected_state | current_request_id: from}}
+  end
 
-        new_state = %{connected_state | current_request_id: from}
-        {:noreply, new_state}
-
-      {:error, reason} ->
-        Logger.error("ClaudePort ensure_connected failed: #{inspect(reason)}")
-        {:reply, {"(unavailable)", nil, nil}, state}
-    end
+  defp dispatch_ask({:error, reason}, _message, _from, state) do
+    Logger.error("ClaudePort ensure_connected failed: #{inspect(reason)}")
+    {:reply, {"(unavailable)", nil, nil}, state}
   end
 
   @impl GenServer
