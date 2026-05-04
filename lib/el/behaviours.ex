@@ -95,3 +95,7 @@ defmodule El.Behaviours.SessionClaude do
   @callback start(any(), any()) :: pid() | nil
   @callback safe_reply(any(), any()) :: pid()
 end
+
+defmodule El.Behaviours.System do
+  @callback cmd(binary(), [binary()]) :: {Collectable.t(), exit_status :: non_neg_integer()}
+end

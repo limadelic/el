@@ -10,6 +10,11 @@
 - no end-to-end through the whole stack
 - no Process.sleep, ever
 
+## What gets mocked (London school)
+- Every collaborator we own gets a behaviour and a Mox mock
+- BEAM stdlib calls (System, Node, File, Process, IO, :dets, :net_kernel, :timer, :erlang) are wrapped in our own behaviour + Mox mock when they touch FS, network, DB, clock, or processes outside the unit (Feathers' five rules)
+- BEAM stdlib calls that touch none of those may be called directly
+
 ## Mock Style
 - use Mox with behaviours (lib/el/behaviours.ex)
 - Mox.defmock in specs/test_helper.exs, one mock per behaviour

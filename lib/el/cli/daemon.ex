@@ -7,22 +7,22 @@ defmodule El.CLI.Daemon do
     dev?() |> daemon_node_for()
   end
 
-  def connect_to_daemon do
-    start_epmd()
-    start_client_node() |> handle_client_started()
+  def connect_to_daemon(system \\ El.SystemImpl) do
+    start_epmd(system)
+    start_client_node() |> handle_client_started(system)
   end
 
-  defp handle_client_started({:ok, _}) do
-    ensure_daemon() |> handle_daemon_ready()
+  defp handle_client_started({:ok, _}, system) do
+    ensure_daemon(system) |> handle_daemon_ready()
   end
 
-  defp handle_client_started(_), do: :local
+  defp handle_client_started(_, _), do: :local
 
   defp handle_daemon_ready(:ok), do: {:ok, daemon_node()}
   defp handle_daemon_ready(_), do: :local
 
-  def start_daemon_node do
-    start_epmd()
+  def start_daemon_node(system \\ El.SystemImpl) do
+    start_epmd(system)
     :net_kernel.start([daemon_node(), :longnames])
     Node.set_cookie(daemon_cookie())
   end
@@ -31,8 +31,8 @@ defmodule El.CLI.Daemon do
     dev_check(System.get_env("DEV"))
   end
 
-  def ensure_daemon do
-    ensure_daemon_connected(Node.connect(daemon_node()))
+  def ensure_daemon(system \\ El.SystemImpl) do
+    ensure_daemon_connected(Node.connect(daemon_node()), system)
   end
 
   defp daemon_node_for(true), do: :"el_dev@127.0.0.1"
@@ -72,22 +72,22 @@ defmodule El.CLI.Daemon do
 
   defp maybe_set_cookie(error), do: error
 
-  defp ensure_daemon_connected(true), do: :ok
-  defp ensure_daemon_connected(false), do: spawn_and_wait()
+  defp ensure_daemon_connected(true, _system), do: :ok
+  defp ensure_daemon_connected(false, system), do: spawn_and_wait(system)
 
-  defp spawn_and_wait do
-    spawn_daemon()
+  defp spawn_and_wait(system) do
+    spawn_daemon(system)
     El.CLI.DaemonConnector.wait_for_daemon(30)
   end
 
-  defp start_epmd do
-    System.cmd("epmd", ["-daemon"])
+  defp start_epmd(system) do
+    system.cmd("epmd", ["-daemon"])
   end
 
-  defp spawn_daemon do
+  defp spawn_daemon(system) do
     script = daemon_script()
     prefix = dev?() |> env_prefix()
-    System.cmd("sh", ["-c", "#{prefix}#{script} --daemon > /dev/null 2>&1 &"])
+    system.cmd("sh", ["-c", "#{prefix}#{script} --daemon > /dev/null 2>&1 &"])
   end
 
   defp env_prefix(true), do: "DEV=1 "
