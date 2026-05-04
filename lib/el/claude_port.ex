@@ -198,19 +198,17 @@ defmodule El.ClaudePort do
   end
 
   defp try_extract_result(state) do
-    case extract_all_lines(state.buffer, []) do
-      {[], _remaining} ->
-        :incomplete
+    apply_extraction(extract_all_lines(state.buffer, []), state)
+  end
 
-      {lines, remaining} ->
-        case process_lines(lines, {nil, nil, nil}, state.session_id) do
-          {:complete, result, model, sid} ->
-            {:ok, {nil_to_empty(result), model, sid || state.session_id}, remaining}
+  defp apply_extraction({[], _remaining}, _state), do: :incomplete
+  defp apply_extraction({lines, remaining}, state) do
+    apply_process_result(process_lines(lines, {nil, nil, nil}, state.session_id), remaining, state)
+  end
 
-          :incomplete ->
-            :incomplete
-        end
-    end
+  defp apply_process_result(:incomplete, _remaining, _state), do: :incomplete
+  defp apply_process_result({:complete, result, model, sid}, remaining, state) do
+    {:ok, {nil_to_empty(result), model, sid || state.session_id}, remaining}
   end
 
   defp extract_all_lines(buffer, acc) do
