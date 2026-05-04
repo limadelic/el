@@ -1,4 +1,6 @@
 defmodule El.Session.Claude do
+  @behaviour El.Behaviours.SessionClaude
+
   def start(claude_module, opts) do
     start_claude_safe(claude_module.start_link(opts))
   end

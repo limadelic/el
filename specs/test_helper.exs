@@ -63,6 +63,7 @@ Mox.defmock(El.MockDets, for: El.Behaviours.Dets)
 Mox.defmock(El.MockPort, for: El.Behaviours.Port)
 Mox.defmock(El.MockSleeper, for: El.Behaviours.Sleeper)
 Mox.defmock(El.MockNodeConnector, for: El.Behaviours.NodeConnector)
+Mox.defmock(El.MockSessionClaude, for: El.Behaviours.SessionClaude)
 
 Mox.stub(El.MockNodeConnector, :connect, fn _ -> false end)
 
