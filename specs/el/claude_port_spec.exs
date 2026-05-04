@@ -49,6 +49,20 @@ defmodule El.ClaudePort.Spec do
       El.ClaudePort.handle_info({:fake_port, {:data, ndjson}}, state)
       refute_receive _, 0
     end
+
+    test "skips malformed JSON line and processes valid result line" do
+      ref = make_ref()
+      from = {self(), ref}
+      state = %{
+        port: :fake_port,
+        buffer: "",
+        current_request_id: from,
+        session_id: "s1"
+      }
+      payload = ~s(not json\n{"type":"result","result":"ok"}\n)
+      El.ClaudePort.handle_info({:fake_port, {:data, payload}}, state)
+      assert_receive {^ref, {"ok", _, _}}
+    end
   end
 
   describe "terminate/2" do
