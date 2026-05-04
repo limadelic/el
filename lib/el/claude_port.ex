@@ -66,26 +66,6 @@ defmodule El.ClaudePort do
     {:noreply, process_chunk(data, state)}
   end
 
-  defp process_chunk(data, state) do
-    new_buffer = state.buffer <> data
-    new_state = %{state | buffer: new_buffer}
-
-    case state.current_request_id do
-      nil ->
-        new_state
-
-      from ->
-        case try_extract_result(new_state) do
-          {:ok, result, remaining_buffer} ->
-            GenServer.reply(from, result)
-            %{new_state | buffer: remaining_buffer, current_request_id: nil}
-
-          :incomplete ->
-            new_state
-        end
-    end
-  end
-
   def handle_info({port, {:exit_status, status}}, %{port: port} = state) do
     Logger.debug("Claude port exited with status: #{status}")
     {:noreply, %{state | port: nil, buffer: ""}}
@@ -109,6 +89,26 @@ defmodule El.ClaudePort do
   def terminate(_reason, %{port: port}) do
     safe_close_port(port)
     :ok
+  end
+
+  defp process_chunk(data, state) do
+    new_buffer = state.buffer <> data
+    new_state = %{state | buffer: new_buffer}
+
+    case state.current_request_id do
+      nil ->
+        new_state
+
+      from ->
+        case try_extract_result(new_state) do
+          {:ok, result, remaining_buffer} ->
+            GenServer.reply(from, result)
+            %{new_state | buffer: remaining_buffer, current_request_id: nil}
+
+          :incomplete ->
+            new_state
+        end
+    end
   end
 
   defp safe_close_port(port) do
