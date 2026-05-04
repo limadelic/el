@@ -219,15 +219,21 @@ defmodule El.ClaudePort do
   defp process_lines([], _acc, _session_id), do: :incomplete
 
   defp process_lines([line | rest], acc, session_id) do
-    case Jason.decode(line) do
-      {:ok, json} ->
-        normalized = Parser.normalize_keys(json)
-        {new_acc, complete?} = merge_line(normalized, acc)
-        emit_or_continue(complete?, new_acc, rest, session_id)
+    apply_decode(Jason.decode(line), rest, acc, session_id)
+  end
 
-      {:error, _reason} ->
-        process_lines(rest, acc, session_id)
-    end
+  defp apply_decode({:ok, json}, rest, acc, session_id) do
+    process_decoded(json, rest, acc, session_id)
+  end
+
+  defp apply_decode({:error, _reason}, rest, acc, session_id) do
+    process_lines(rest, acc, session_id)
+  end
+
+  defp process_decoded(json, rest, acc, session_id) do
+    normalized = Parser.normalize_keys(json)
+    {new_acc, complete?} = merge_line(normalized, acc)
+    emit_or_continue(complete?, new_acc, rest, session_id)
   end
 
   defp emit_or_continue(true, new_acc, _rest, _session_id) do
