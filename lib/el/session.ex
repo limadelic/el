@@ -20,7 +20,8 @@ defmodule El.Session do
     registry_module: Registry,
     store_module: El.Application,
     session_meta: El.SessionMeta,
-    session_api: El.Session.Api
+    session_api: El.Session.Api,
+    el_module: El
   }
   @base_state_defaults %{
     name: nil,

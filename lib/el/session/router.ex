@@ -67,14 +67,14 @@ defmodule El.Session.Router do
   def process_tell_ask(state, target, message) do
     route_if_alive(state, target, fn ->
       state.task_module.start(fn ->
-        El.ask(target, envelope(state.name, message))
+        state.el_module.ask(target, envelope(state.name, message))
       end)
     end)
   end
 
   def process_ask_tell(state, target, message) do
     route_if_alive(state, target, fn ->
-      El.tell(target, envelope(state.name, message))
+      state.el_module.tell(target, envelope(state.name, message))
     end)
   end
 

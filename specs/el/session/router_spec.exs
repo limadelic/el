@@ -1,3 +1,7 @@
+defmodule SyncTask do
+  def start(fun), do: fun.()
+end
+
 defmodule El.Session.RouterSpec do
   use ExUnit.Case
   import Mox
@@ -51,6 +55,45 @@ defmodule El.Session.RouterSpec do
       Router.route_all_tells(state, "msg", [{:target, "payload"}])
 
       assert_receive {:relayed, :sender, "msg", "-> target"}
+    end
+  end
+
+  describe "ask_tell routing through el_module" do
+    test "process_tell_ask asks via el_module with enveloped message" do
+      test_pid = self()
+      expect(El.MockEl, :ask, fn target, msg ->
+        send(test_pid, {:asked, target, msg})
+        "ok"
+      end)
+
+      state = %{
+        name: :sender,
+        el_module: El.MockEl,
+        task_module: SyncTask,
+        alive_fn: fn _ -> true end
+      }
+
+      Router.process_tell_ask(state, :target, "question")
+
+      assert_receive {:asked, :target, "[from sender] question"}
+    end
+
+    test "process_ask_tell tells via el_module with enveloped message" do
+      test_pid = self()
+      expect(El.MockEl, :tell, fn target, msg ->
+        send(test_pid, {:told, target, msg})
+        :ok
+      end)
+
+      state = %{
+        name: :sender,
+        el_module: El.MockEl,
+        alive_fn: fn _ -> true end
+      }
+
+      Router.process_ask_tell(state, :target, "question")
+
+      assert_receive {:told, :target, "[from sender] question"}
     end
   end
 end

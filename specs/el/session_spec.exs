@@ -32,6 +32,7 @@ defmodule El.Session.Spec do
       session_meta: El.MockSessionMeta,
       ask_module: El.MockSessionAsk,
       session_api: El.MockSessionApi,
+      el_module: El.MockEl,
       opts: [],
       claude_opts: []
     }
@@ -568,6 +569,7 @@ defmodule El.Session.Spec do
     test "returns route message when target running",
          %{state: state, alive_fn_target: alive_fn} do
       Mox.stub(El.MockSessionApi, :tell, fn _, _ -> :ok end)
+      Mox.stub(El.MockEl, :tell, fn _, _ -> :ok end)
 
       {:reply, response, _returned_state} =
         El.Session.handle_call({:ask_tell, :target, "message"}, :from, %{
@@ -581,6 +583,7 @@ defmodule El.Session.Spec do
     test "stores message when target running",
          %{state: state, alive_fn_target: alive_fn} do
       Mox.stub(El.MockSessionApi, :tell, fn _, _ -> :ok end)
+      Mox.stub(El.MockEl, :tell, fn _, _ -> :ok end)
 
       {:reply, _response, returned_state} =
         El.Session.handle_call({:ask_tell, :target, "message"}, :from, %{
@@ -605,6 +608,7 @@ defmodule El.Session.Spec do
     test "stores relay message",
          %{state: state, alive_fn_target: alive_fn} do
       Mox.stub(El.MockSessionApi, :tell, fn _, _ -> :ok end)
+      Mox.stub(El.MockEl, :tell, fn _, _ -> :ok end)
 
       {:reply, _response, returned_state} =
         El.Session.handle_call({:ask_tell, :target, "message"}, :from, %{
