@@ -84,5 +84,5 @@ defmodule El.Behaviours.Sleeper do
 end
 
 defmodule El.Behaviours.NodeConnector do
-  @callback connect(atom()) :: boolean()
+  @callback connect(node()) :: boolean() | :ignored
 end
