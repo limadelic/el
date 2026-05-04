@@ -110,7 +110,6 @@ Application.put_env(:el, :app, El.MockApp)
 Application.put_env(:el, :monitor, El.MockMonitor)
 Application.put_env(:el, :el_module, El.MockEl)
 Application.put_env(:el, :file_system, El.MockFileSystem)
-Application.put_env(:el, :claude_code_session_module, El.MockClaudeCodeSession)
 
 ExUnit.start(timeout: 10)
 
