@@ -70,21 +70,25 @@ defmodule El.ClaudePort do
 
   @impl GenServer
   def handle_info({port, {:data, data}}, %{port: port} = state) do
+    {:noreply, process_chunk(data, state)}
+  end
+
+  defp process_chunk(data, state) do
     new_buffer = state.buffer <> data
     new_state = %{state | buffer: new_buffer}
 
     case state.current_request_id do
       nil ->
-        {:noreply, new_state}
+        new_state
 
       from ->
         case try_extract_result(new_state) do
           {:ok, result, remaining_buffer} ->
             GenServer.reply(from, result)
-            {:noreply, %{new_state | buffer: remaining_buffer, current_request_id: nil}}
+            %{new_state | buffer: remaining_buffer, current_request_id: nil}
 
           :incomplete ->
-            {:noreply, new_state}
+            new_state
         end
     end
   end
