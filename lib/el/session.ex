@@ -87,7 +87,7 @@ defmodule El.Session do
   defp get_opts(o), do: @defaults |> Map.merge(Map.new(o))
 
   defp file_system(opts) do
-    Keyword.get(opts, :file_system, Application.get_env(:el, :file_system, El.FileSystemImpl))
+    Keyword.get(opts, :file_system, El.FileSystemImpl)
   end
 
   @impl true
