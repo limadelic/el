@@ -1,4 +1,6 @@
 defmodule El.ProcessMonitor do
+  @behaviour El.Behaviours.Monitor
+
   def wait_for_down(ref, name) do
     receive do
       {:DOWN, ^ref, :process, _, _} -> cleanup(name)
