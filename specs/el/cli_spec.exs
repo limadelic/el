@@ -456,46 +456,36 @@ defmodule El.CLI.Spec do
     end
   end
 
-  describe "El.CLI.Start.merge_session_opts/3" do
+  describe "El.CLI.Start.merge_session_opts/4" do
     setup do
-      Application.put_env(:el, :agent_detector, NilAgentDetectorStub)
-
-      on_exit(fn ->
-        Application.delete_env(:el, :agent_detector)
-        System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
-      end)
-
+      System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
       :ok
     end
 
     defp setup_agent_detected do
-      Application.put_env(:el, :agent_detector, IdentityAgentDetectorStub)
       System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
     end
 
     test "with explicit_model prepends [model: explicit_model]" do
-      result = El.CLI.Start.merge_session_opts("session", nil, "opus")
+      result = El.CLI.Start.merge_session_opts("session", nil, "opus", [agent_detector: NilAgentDetectorStub])
 
       assert Keyword.get(result, :model) == "opus"
     end
 
     test "with explicit_agent uses explicit_agent for agent:" do
-      result = El.CLI.Start.merge_session_opts("session", "explicit", nil)
+      result = El.CLI.Start.merge_session_opts("session", "explicit", nil, [agent_detector: NilAgentDetectorStub])
 
       assert Keyword.get(result, :agent) == "explicit"
     end
 
     test "with no explicit_agent detects agent if exists" do
-      Application.put_env(:el, :agent_detector, IdentityAgentDetectorStub)
-      on_exit(fn -> Application.delete_env(:el, :agent_detector) end)
-
-      result = El.CLI.Start.merge_session_opts("session", nil, nil)
+      result = El.CLI.Start.merge_session_opts("session", nil, nil, [agent_detector: IdentityAgentDetectorStub])
 
       assert Keyword.get(result, :agent) == "session"
     end
 
     test "with no explicit_agent and no detected agent omits agent" do
-      result = El.CLI.Start.merge_session_opts("session", nil, nil)
+      result = El.CLI.Start.merge_session_opts("session", nil, nil, [agent_detector: NilAgentDetectorStub])
 
       refute Keyword.has_key?(result, :agent)
     end
@@ -503,7 +493,7 @@ defmodule El.CLI.Spec do
     test "appends env_model when no model or agent" do
       System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
 
-      result = El.CLI.Start.merge_session_opts("session", nil, nil)
+      result = El.CLI.Start.merge_session_opts("session", nil, nil, [agent_detector: NilAgentDetectorStub])
 
       assert Keyword.get(result, :model) == "sonnet"
     end
@@ -511,7 +501,7 @@ defmodule El.CLI.Spec do
     test "ignores env_model when explicit_model provided" do
       System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
 
-      result = El.CLI.Start.merge_session_opts("session", nil, "opus")
+      result = El.CLI.Start.merge_session_opts("session", nil, "opus", [agent_detector: NilAgentDetectorStub])
 
       assert Keyword.get(result, :model) == "opus"
     end
@@ -519,7 +509,7 @@ defmodule El.CLI.Spec do
     test "includes detected agent in opts" do
       setup_agent_detected()
 
-      result = El.CLI.Start.merge_session_opts("session", nil, nil)
+      result = El.CLI.Start.merge_session_opts("session", nil, nil, [agent_detector: IdentityAgentDetectorStub])
 
       assert Keyword.get(result, :agent) == "session"
     end
@@ -527,13 +517,13 @@ defmodule El.CLI.Spec do
     test "omits model when agent detected" do
       setup_agent_detected()
 
-      result = El.CLI.Start.merge_session_opts("session", nil, nil)
+      result = El.CLI.Start.merge_session_opts("session", nil, nil, [agent_detector: IdentityAgentDetectorStub])
 
       refute Keyword.has_key?(result, :model)
     end
 
     test "combines explicit_model and explicit_agent" do
-      result = El.CLI.Start.merge_session_opts("session", "kent", "haiku")
+      result = El.CLI.Start.merge_session_opts("session", "kent", "haiku", [agent_detector: NilAgentDetectorStub])
 
       assert Keyword.get(result, :model) == "haiku"
       assert Keyword.get(result, :agent) == "kent"
@@ -542,98 +532,60 @@ defmodule El.CLI.Spec do
     test "ignores env_model when explicit_agent provided" do
       System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
 
-      result = El.CLI.Start.merge_session_opts("session", "explicit", nil)
+      result = El.CLI.Start.merge_session_opts("session", "explicit", nil, [agent_detector: NilAgentDetectorStub])
 
       assert Keyword.get(result, :agent) == "explicit"
     end
 
     test "omits model when explicit_agent provided" do
-      result = El.CLI.Start.merge_session_opts("session", "explicit", nil)
+      result = El.CLI.Start.merge_session_opts("session", "explicit", nil, [agent_detector: NilAgentDetectorStub])
 
       refute Keyword.has_key?(result, :model)
     end
 
     test "merges model from agent metadata when agent detected and explicit_model is nil" do
       System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
-      Application.put_env(:el, :agent_detector, AgentDetectorStub)
-      Application.put_env(:el, :agent_metadata, AgentMetadataStub)
 
-      on_exit(fn ->
-        Application.delete_env(:el, :agent_detector)
-        Application.delete_env(:el, :agent_metadata)
-      end)
-
-      result = El.CLI.Start.merge_session_opts("kent", nil, nil)
+      result = El.CLI.Start.merge_session_opts("kent", nil, nil, [agent_detector: AgentDetectorStub, agent_metadata: AgentMetadataStub])
 
       assert Keyword.get(result, :model) == "opus"
     end
 
     test "omits model from agent metadata if model_for returns nil" do
       System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
-      Application.put_env(:el, :agent_detector, NilAgentDetectorStub)
-      Application.put_env(:el, :agent_metadata, NilAgentMetadataStub)
 
-      on_exit(fn ->
-        Application.delete_env(:el, :agent_detector)
-        Application.delete_env(:el, :agent_metadata)
-      end)
-
-      result = El.CLI.Start.merge_session_opts("agent", nil, nil)
+      result = El.CLI.Start.merge_session_opts("agent", nil, nil, [agent_detector: NilAgentDetectorStub, agent_metadata: NilAgentMetadataStub])
 
       refute Keyword.has_key?(result, :model)
     end
   end
 
-  describe "El.CLI.Start.detect_and_merge_agent/2" do
+  describe "El.CLI.Start.detect_and_merge_agent/3" do
     setup do
-      Application.put_env(:el, :agent_detector, NilAgentDetectorStub)
-
-      on_exit(fn ->
-        Application.delete_env(:el, :agent_detector)
-        System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
-      end)
-
+      System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
       :ok
     end
 
     test "detects agent through injected detector" do
-      Application.put_env(:el, :agent_detector, AgentDetectorStub)
-
-      on_exit(fn ->
-        Application.delete_env(:el, :agent_detector)
-      end)
-
-      result = El.CLI.Start.detect_and_merge_agent("kent", [])
+      result = El.CLI.Start.detect_and_merge_agent("kent", [], [agent_detector: AgentDetectorStub])
 
       assert Keyword.get(result, :agent) == "kent"
     end
 
     test "includes opts in result" do
-      Application.put_env(:el, :agent_detector, NilAgentDetectorStub)
-
-      on_exit(fn ->
-        Application.delete_env(:el, :agent_detector)
-      end)
-
-      result = El.CLI.Start.detect_and_merge_agent("session", [model: "haiku"])
+      result = El.CLI.Start.detect_and_merge_agent("session", [model: "haiku"], [agent_detector: NilAgentDetectorStub])
 
       assert Keyword.get(result, :model) == "haiku"
     end
 
     test "handles nil agent from detector" do
-      Application.put_env(:el, :agent_detector, NilAgentDetectorStub)
-
-      on_exit(fn ->
-        Application.delete_env(:el, :agent_detector)
-      end)
-
-      result = El.CLI.Start.detect_and_merge_agent("session", [])
+      result = El.CLI.Start.detect_and_merge_agent("session", [], [agent_detector: NilAgentDetectorStub])
 
       refute Keyword.has_key?(result, :agent)
     end
   end
 
-  describe "El.CLI.Start.handle_find_daemon_for_start/3" do
+  describe "El.CLI.Start.handle_find_daemon_for_start/4" do
     setup do
       stub(El.MockSessionApi, :info, fn :session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil} end)
       :ok
@@ -645,7 +597,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       assert output =~ "name:  session"
@@ -658,7 +610,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("session", [agent: "kent"], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("session", [agent: "kent"], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       assert output =~ "agent: kent"
@@ -670,7 +622,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("session", [model: "opus"], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("session", [model: "opus"], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       assert output =~ "model: opus"
@@ -682,7 +634,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       assert output =~ "msgs:  5"
@@ -694,7 +646,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       assert output =~ "> who are you?"
@@ -706,7 +658,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       assert output =~ "I am an agent"
@@ -718,7 +670,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       refute output =~ "agent:"
@@ -730,7 +682,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       refute output =~ "model:"
@@ -742,7 +694,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       assert output =~ "model: haiku"
@@ -754,7 +706,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       refute output =~ ">"
@@ -767,7 +719,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       assert output =~ "stack together."
@@ -780,7 +732,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       lines = String.split(output, "\n")
@@ -824,7 +776,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       refute output =~ "msgs:"
@@ -840,7 +792,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       assert output =~ "name:  session"
@@ -851,7 +803,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       refute output =~ "cwd:"
@@ -862,7 +814,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       assert output =~ "id: …23def456"
@@ -878,7 +830,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       assert output =~ "name:  anom"
@@ -889,7 +841,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       refute output =~ "cwd:"
@@ -900,7 +852,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       assert output =~ "id: …89abc123"
@@ -911,7 +863,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       refute output =~ "agent:"
@@ -922,7 +874,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       refute output =~ "model:"
@@ -933,7 +885,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       refute output =~ "msgs:"
@@ -950,7 +902,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       assert output =~ "name:  kent"
@@ -961,7 +913,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       assert output =~ "cwd: …ath/name"
@@ -972,7 +924,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       assert output =~ "agent: kent"
@@ -983,7 +935,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       assert output =~ "id: …34567890"
@@ -994,7 +946,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       assert output =~ "model: opus"
@@ -1005,7 +957,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       lines = String.split(output, "\n")
@@ -1018,7 +970,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       lines = String.split(output, "\n")
@@ -1031,7 +983,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       lines = String.split(output, "\n")
@@ -1044,7 +996,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("kent", [agent: "kent"], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       lines = String.split(output, "\n")
@@ -1058,7 +1010,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       lines = String.split(output, "\n")
@@ -1072,7 +1024,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       lines = String.split(output, "\n")
@@ -1086,7 +1038,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_for_start("anom", [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       lines = String.split(output, "\n")
@@ -1095,7 +1047,7 @@ defmodule El.CLI.Spec do
     end
   end
 
-  describe "El.CLI.Start.handle_find_daemon_with_rest/4" do
+  describe "El.CLI.Start.handle_find_daemon_with_rest/5" do
     setup do
       stub(El.MockSessionApi, :info, fn :kenny -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
       :ok
@@ -1106,7 +1058,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_with_rest("kenny", [agent: "kent"], [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_with_rest("kenny", [agent: "kent"], [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       assert output =~ "agent: kent"
@@ -1123,7 +1075,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_with_rest("kenny", [agent: "kent", model: "opus"], [], El.MockEl)
+          El.CLI.Start.handle_find_daemon_with_rest("kenny", [agent: "kent", model: "opus"], [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
       assert output =~ "model: opus"
