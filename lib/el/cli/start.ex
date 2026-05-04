@@ -242,18 +242,18 @@ defmodule El.CLI.Start do
     El.CLI.dispatch([name | rest])
   end
 
-  def start_daemon_node_for(name, model, el) do
+  def start_daemon_node_for(name, model, el, sleeper \\ El.SleeperImpl) do
     name_atom = String.to_atom(name)
     el.start(name_atom, start_opts(normalize_model(model)))
     report_daemon_up(name)
-    hold_forever()
+    hold_forever(sleeper)
   end
 
   defp report_daemon_up(name) do
     IO.puts("el: #{name} is up on #{Node.self()}")
   end
 
-  defp hold_forever do
-    Process.sleep(:infinity)
+  defp hold_forever(sleeper) do
+    sleeper.sleep(:infinity)
   end
 end
