@@ -92,4 +92,27 @@ defmodule El.Session.RouterSpec do
       assert_receive {:told, :target, "[from sender] question"}
     end
   end
+
+  describe "tell_response routing through session_api" do
+    test "process_tell_response tells via session_api with enveloped payload" do
+      test_pid = self()
+      expect(El.MockSessionApi, :tell, fn target, msg ->
+        send(test_pid, {:told_response, target, msg})
+        :ok
+      end)
+      stub(El.MockSessionApi, :cast_store_relay, fn _name, _payload, _response ->
+        :ok
+      end)
+
+      state = %{
+        name: :sender,
+        session_api: El.MockSessionApi,
+        alive_fn: fn _ -> true end
+      }
+
+      Router.process_tell_response(state, "response", [{:target, "payload"}])
+
+      assert_receive {:told_response, :target, "[from sender] payload"}
+    end
+  end
 end

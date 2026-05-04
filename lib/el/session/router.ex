@@ -59,7 +59,7 @@ defmodule El.Session.Router do
 
   defp process_tell_response_route(state, response, target, payload) do
     route_if_alive(state, target, fn ->
-      El.Session.Api.tell(target, envelope(state.name, payload))
+      state.session_api.tell(target, envelope(state.name, payload))
       state.session_api.cast_store_relay(state.name, response, "-> #{target}")
     end)
   end
