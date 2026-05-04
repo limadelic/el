@@ -199,16 +199,12 @@ defmodule El.ClaudePort do
       {lines, remaining} ->
         case process_lines(lines, {nil, nil, nil}, state.session_id) do
           {:complete, result, model, sid} ->
-            {:ok, format_extraction(result, model, sid, state.session_id), remaining}
+            {:ok, {nil_to_empty(result), model, sid || state.session_id}, remaining}
 
           :incomplete ->
             :incomplete
         end
     end
-  end
-
-  defp format_extraction(result, model, sid, session_id) do
-    {nil_to_empty(result), model, sid || session_id}
   end
 
   defp extract_all_lines(buffer, acc) do
