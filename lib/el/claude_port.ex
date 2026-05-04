@@ -30,6 +30,7 @@ defmodule El.ClaudePort do
       resume_id: Keyword.get(opts, :resume),
       cwd: Keyword.get(opts, :cwd) || File.cwd!(),
       cli_path: Application.get_env(:claude_code, :cli_path, :global),
+      port_module: Keyword.get(opts, :port_module, El.PortImpl),
       opts: opts,
       current_request_id: nil,
       responses: []
