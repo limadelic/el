@@ -2,6 +2,13 @@ defmodule El.CLI.DaemonConnector.Spec do
   use ExUnit.Case
   import Mox
 
+  setup_all do
+    Code.ensure_loaded!(El.CLI.Daemon)
+    Code.ensure_loaded!(El.CLI.DaemonConnector)
+    El.CLI.Daemon.dev?()
+    :ok
+  end
+
   setup :verify_on_exit!
 
   describe "wait_for_daemon/3" do
