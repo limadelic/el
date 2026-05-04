@@ -86,7 +86,3 @@ end
 defmodule El.Behaviours.NodeConnector do
   @callback connect(node()) :: boolean() | :ignored
 end
-
-defmodule El.Behaviours.RegistryReader do
-  @callback select(node()) :: list() | {:badrpc, term()}
-end

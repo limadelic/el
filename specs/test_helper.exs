@@ -63,10 +63,8 @@ Mox.defmock(El.MockDets, for: El.Behaviours.Dets)
 Mox.defmock(El.MockPort, for: El.Behaviours.Port)
 Mox.defmock(El.MockSleeper, for: El.Behaviours.Sleeper)
 Mox.defmock(El.MockNodeConnector, for: El.Behaviours.NodeConnector)
-Mox.defmock(El.MockRegistryReader, for: El.Behaviours.RegistryReader)
 
 Mox.stub(El.MockNodeConnector, :connect, fn _ -> false end)
-Mox.stub(El.MockRegistryReader, :select, fn _ -> [] end)
 
 defmodule MockClaudeCodeSession do
   def stream(_pid, _message) do
