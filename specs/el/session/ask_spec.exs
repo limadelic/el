@@ -42,8 +42,7 @@ defmodule El.Session.Ask.Spec do
         claude_pid: test_pid,
         messages: [],
         pending_calls: [],
-        task_module: Task,
-        completer: El.Session.ClaudeCompleter
+        task_module: Task
       }
 
       ask_info = {self(), "test message", make_ref()}
