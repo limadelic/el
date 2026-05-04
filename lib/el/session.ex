@@ -13,6 +13,7 @@ defmodule El.Session do
 
   @defaults %{
     claude_module: El.ClaudePort,
+    completer: El.Session.ClaudeCompleter,
     task_module: Task,
     ask_module: El.Session.Ask,
     alive_fn: &El.Session.Api.alive?/1,
