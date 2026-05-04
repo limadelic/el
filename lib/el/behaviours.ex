@@ -82,3 +82,7 @@ end
 defmodule El.Behaviours.Sleeper do
   @callback sleep(integer()) :: :ok
 end
+
+defmodule El.Behaviours.NodeConnector do
+  @callback connect(atom()) :: boolean()
+end

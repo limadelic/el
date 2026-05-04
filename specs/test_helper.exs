@@ -62,6 +62,7 @@ Mox.defmock(El.MockSessionAsk, for: El.Behaviours.SessionAsk)
 Mox.defmock(El.MockDets, for: El.Behaviours.Dets)
 Mox.defmock(El.MockPort, for: El.Behaviours.Port)
 Mox.defmock(El.MockSleeper, for: El.Behaviours.Sleeper)
+Mox.defmock(El.MockNodeConnector, for: El.Behaviours.NodeConnector)
 
 defmodule MockClaudeCodeSession do
   def stream(_pid, _message) do
