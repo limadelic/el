@@ -1,9 +1,12 @@
 defmodule El.Session.Store.Spec do
   use ExUnit.Case
 
-  describe "El.Session.Store.replace_ask/5" do
-    @moduletag timeout: 1_000
+  setup_all do
+    Code.ensure_loaded!(El.Session.Store)
+    :ok
+  end
 
+  describe "El.Session.Store.replace_ask/5" do
     test "empty list returns empty list" do
       result = El.Session.Store.replace_ask([], make_ref(), "message", "response")
       assert result == [{"ask", "message", "response", %{}}]
