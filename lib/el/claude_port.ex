@@ -173,12 +173,7 @@ defmodule El.ClaudePort do
       :stderr_to_stdout
     ]
 
-    try do
-      port = port_module.open({:spawn_executable, exe_path}, port_opts)
-      {:ok, port}
-    rescue
-      e -> {:error, {:port_open_failed, e}}
-    end
+    port_module.open({:spawn_executable, exe_path}, port_opts)
   end
 
   defp resolve_cli_and_args(_cli_path, opts, resume_id) do

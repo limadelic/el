@@ -2,7 +2,11 @@ defmodule El.PortImpl do
   @behaviour El.Behaviours.Port
 
   @impl true
-  def open(name, opts), do: Port.open(name, opts)
+  def open(name, opts) do
+    {:ok, Port.open(name, opts)}
+  rescue
+    e -> {:error, {:port_open_failed, e}}
+  end
 
   @impl true
   def command(port, data), do: Port.command(port, data)
