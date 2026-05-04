@@ -40,13 +40,14 @@ defmodule El.Session.Ask.Spec do
       ask_info = {self(), "test message", make_ref()}
       server_pid = self()
       routes = []
+      claude_pid = spawn(fn -> :ok end)
 
-      expect(El.MockCompleter, :complete, fn _target, ^server_pid, ^ask_info, ^routes ->
+      expect(El.MockCompleter, :complete, fn ^claude_pid, ^server_pid, ^ask_info, ^routes ->
         :ok
       end)
 
       state = %{
-        claude_pid: :unused,
+        claude_pid: claude_pid,
         messages: [],
         pending_calls: [],
         completer: El.MockCompleter
