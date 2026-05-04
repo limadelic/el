@@ -5,9 +5,9 @@ defmodule El.ClaudePort do
 
   alias ClaudeCode.CLI.Command
   alias ClaudeCode.CLI.Input
-  alias ClaudeCode.CLI.Parser
   alias ClaudeCode.Adapter.Port.Resolver
   alias ClaudeCode.Adapter.Port.Installer
+  alias El.ClaudePort.Parser
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts)
@@ -97,7 +97,7 @@ defmodule El.ClaudePort do
   end
 
   defp maybe_extract(%{current_request_id: nil} = state), do: state
-  defp maybe_extract(state), do: dispatch_extraction(try_extract_result(state), state)
+  defp maybe_extract(state), do: dispatch_extraction(Parser.try_extract_result(state.buffer, state.session_id), state)
 
   defp dispatch_extraction(:incomplete, state), do: state
   defp dispatch_extraction({:ok, result, remaining_buffer}, state) do
@@ -188,109 +188,4 @@ defmodule El.ClaudePort do
     {:error, {:cli_resolution_failed, reason}}
   end
 
-  defp try_extract_result(state) do
-    apply_extraction(extract_all_lines(state.buffer, []), state)
-  end
-
-  defp apply_extraction({[], _remaining}, _state), do: :incomplete
-  defp apply_extraction({lines, remaining}, state) do
-    apply_process_result(process_lines(lines, {nil, nil, nil}, state.session_id), remaining, state)
-  end
-
-  defp apply_process_result(:incomplete, _remaining, _state), do: :incomplete
-  defp apply_process_result({:complete, result, model, sid}, remaining, state) do
-    {:ok, {nil_to_empty(result), model, sid || state.session_id}, remaining}
-  end
-
-  defp extract_all_lines(buffer, acc) do
-    case extract_one_line(buffer) do
-      {nil, _} ->
-        {Enum.reverse(acc), buffer}
-
-      {line, remaining} ->
-        extract_all_lines(remaining, [line | acc])
-    end
-  end
-
-  defp process_lines([], _acc, _session_id), do: :incomplete
-
-  defp process_lines([line | rest], acc, session_id) do
-    apply_decode(Jason.decode(line), rest, acc, session_id)
-  end
-
-  defp apply_decode({:ok, json}, rest, acc, session_id) do
-    process_decoded(json, rest, acc, session_id)
-  end
-
-  defp apply_decode({:error, _reason}, rest, acc, session_id) do
-    process_lines(rest, acc, session_id)
-  end
-
-  defp process_decoded(json, rest, acc, session_id) do
-    normalized = Parser.normalize_keys(json)
-    {new_acc, complete?} = merge_line(normalized, acc)
-    emit_or_continue(complete?, new_acc, rest, session_id)
-  end
-
-  defp emit_or_continue(true, new_acc, _rest, _session_id) do
-    {new_result, new_model, new_sid} = new_acc
-    {:complete, new_result, new_model, new_sid}
-  end
-
-  defp emit_or_continue(false, new_acc, rest, session_id) do
-    process_lines(rest, new_acc, session_id)
-  end
-
-  defp merge_line(normalized, {result, model, sid}) do
-    {
-      {
-        pick_result(is_result_message(normalized), normalized, result),
-        pick_model(has_model(normalized), normalized, model),
-        pick_sid(has_session_id(normalized), normalized, sid)
-      },
-      is_result_message(normalized)
-    }
-  end
-
-  defp pick_result(true, normalized, _result), do: get_result(normalized)
-  defp pick_result(false, _normalized, result), do: result
-
-  defp pick_model(true, normalized, _model), do: get_model(normalized)
-  defp pick_model(false, _normalized, model), do: model
-
-  defp pick_sid(true, normalized, _sid), do: get_session_id(normalized)
-  defp pick_sid(false, _normalized, sid), do: sid
-
-  defp extract_one_line(buffer) do
-    case String.split(buffer, "\n", parts: 2) do
-      [line, rest] -> {line, rest}
-      [_incomplete] -> {nil, buffer}
-      [] -> {nil, ""}
-    end
-  end
-
-  defp is_result_message(%{"type" => "result"}), do: true
-  defp is_result_message(_), do: false
-
-  defp has_model(%{"type" => "system", "subtype" => "init"}), do: true
-  defp has_model(_), do: false
-
-  defp has_session_id(%{"type" => "system", "subtype" => "init"}), do: true
-  defp has_session_id(_), do: false
-
-  defp get_result(%{"type" => "result", "result" => result}), do: result
-  defp get_result(%{"type" => "result"} = event) do
-    Logger.debug("ClaudePort found result event but no 'result' key: #{inspect(event)}")
-    nil
-  end
-  defp get_result(_), do: nil
-
-  defp get_model(%{"type" => "system", "subtype" => "init", "model" => model}), do: model
-  defp get_model(_), do: nil
-
-  defp get_session_id(%{"type" => "system", "subtype" => "init", "session_id" => session_id}), do: session_id
-  defp get_session_id(_), do: nil
-
-  defp nil_to_empty(nil), do: ""
-  defp nil_to_empty(result), do: result
 end
