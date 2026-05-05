@@ -31,8 +31,8 @@ defmodule El.Session.Ask.Spec do
     setup do
       Application.put_env(:el, :store_module, El.MockStoreModule)
       on_exit(fn -> Application.delete_env(:el, :store_module) end)
-      stub(El.MockStoreModule, :delete_message, fn _, _ -> :ok end)
-      stub(El.MockStoreModule, :store_message, fn _, _ -> :ok end)
+      stub(El.MockStoreModule, :delete_message, fn _, _, _ -> :ok end)
+      stub(El.MockStoreModule, :store_message, fn _, _, _ -> :ok end)
       :ok
     end
 
@@ -41,7 +41,8 @@ defmodule El.Session.Ask.Spec do
         name: :test_session,
         messages: [],
         pending_calls: [self()],
-        store_module: El.MockStoreModule
+        store_module: El.MockStoreModule,
+        opts: []
       }
 
       from = {self(), make_ref()}
@@ -55,7 +56,8 @@ defmodule El.Session.Ask.Spec do
         name: :test_session,
         messages: [],
         pending_calls: [self()],
-        store_module: El.MockStoreModule
+        store_module: El.MockStoreModule,
+        opts: []
       }
 
       from = {self(), make_ref()}
@@ -69,7 +71,8 @@ defmodule El.Session.Ask.Spec do
         name: :test_session,
         messages: [],
         pending_calls: [self()],
-        store_module: El.MockStoreModule
+        store_module: El.MockStoreModule,
+        opts: []
       }
 
       caller_ref = make_ref()
@@ -86,7 +89,8 @@ defmodule El.Session.Ask.Spec do
         name: :test_session,
         messages: [{"ask", "question", "", %{ref: pending_ref}}],
         pending_calls: [self()],
-        store_module: El.MockStoreModule
+        store_module: El.MockStoreModule,
+        opts: []
       }
 
       from = {self(), make_ref()}
@@ -101,8 +105,8 @@ defmodule El.Session.Ask.Spec do
     setup do
       Application.put_env(:el, :store_module, El.MockStoreModule)
       on_exit(fn -> Application.delete_env(:el, :store_module) end)
-      stub(El.MockStoreModule, :delete_message, fn _, _ -> :ok end)
-      stub(El.MockStoreModule, :store_message, fn _, _ -> :ok end)
+      stub(El.MockStoreModule, :delete_message, fn _, _, _ -> :ok end)
+      stub(El.MockStoreModule, :store_message, fn _, _, _ -> :ok end)
       :ok
     end
 
@@ -111,7 +115,8 @@ defmodule El.Session.Ask.Spec do
         name: :test_session,
         messages: [],
         pending_calls: [],
-        store_module: El.MockStoreModule
+        store_module: El.MockStoreModule,
+        opts: []
       }
 
       from = {self(), make_ref()}
@@ -126,7 +131,8 @@ defmodule El.Session.Ask.Spec do
         name: :test_session,
         messages: [],
         pending_calls: [],
-        store_module: El.MockStoreModule
+        store_module: El.MockStoreModule,
+        opts: []
       }
 
       from = {self(), make_ref()}

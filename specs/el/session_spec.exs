@@ -893,6 +893,7 @@ defmodule MockSessionStore do
   def store_message(_, _, _), do: :ok
   def store_message(_, _), do: :ok
   def load_messages(_, _opts \\ []), do: []
+  def delete_message(_, _, _), do: :ok
   def delete_message(_, _), do: :ok
   def delete_session_messages(_), do: :ok
   def delete_ask_entry(_state, _message, _ref), do: :ok
@@ -925,6 +926,7 @@ defmodule MockLoadingStore do
 
   def store_message(_, _, _), do: :ok
   def store_message(_, _), do: :ok
+  def delete_message(_, _, _), do: :ok
   def delete_message(_, _), do: :ok
   def delete_session_messages(_), do: :ok
 end
@@ -936,6 +938,7 @@ defmodule MockVerifyingStore do
   end
 
   def load_messages(_, _opts \\ []), do: []
+  def delete_message(_, _, _), do: :ok
   def delete_message(_, _), do: :ok
 
   def delete_session_messages(name) do

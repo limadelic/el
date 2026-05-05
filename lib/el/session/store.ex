@@ -9,26 +9,29 @@ defmodule El.Session.Store do
   defp delete_tell_entry(state, message, ref) do
     state.store_module.delete_message(
       state.name,
-      {"tell", message, "", %{ref: ref}}
+      {"tell", message, "", %{ref: ref}},
+      message_store: state.opts[:message_store]
     )
   end
 
   defp store_tell_entry(state, message, response) do
     state.store_module.store_message(
       state.name,
-      {"tell", message, response, %{}}
+      {"tell", message, response, %{}},
+      message_store: state.opts[:message_store]
     )
   end
 
   def delete_ask_entry(state, message, ref) do
     state.store_module.delete_message(
       state.name,
-      {"ask", message, "", %{ref: ref}}
+      {"ask", message, "", %{ref: ref}},
+      message_store: state.opts[:message_store]
     )
   end
 
   def store_ask_entry(state, entry) do
-    state.store_module.store_message(state.name, entry)
+    state.store_module.store_message(state.name, entry, message_store: state.opts[:message_store])
   end
 
   def build_relay_entry(message, response, state) do
@@ -36,14 +39,14 @@ defmodule El.Session.Store do
   end
 
   def store_relay_entry(state, entry) do
-    state.store_module.store_message(state.name, entry)
+    state.store_module.store_message(state.name, entry, message_store: state.opts[:message_store])
     %{state | messages: state.messages ++ [entry]}
   end
 
   def store_ask_immediate(state, message, []) do
     ref = make_ref()
     entry = {"ask", message, "", %{ref: ref}}
-    state.store_module.store_message(state.name, entry)
+    state.store_module.store_message(state.name, entry, message_store: state.opts[:message_store])
     new_state = %{state | messages: state.messages ++ [entry]}
     {ref, new_state}
   end
@@ -55,7 +58,7 @@ defmodule El.Session.Store do
 
   def store_tell_immediate(state, message, ref, []) do
     entry = {"tell", message, "", %{ref: ref}}
-    state.store_module.store_message(state.name, entry)
+    state.store_module.store_message(state.name, entry, message_store: state.opts[:message_store])
     %{state | messages: state.messages ++ [entry]}
   end
 
