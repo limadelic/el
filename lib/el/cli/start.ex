@@ -221,11 +221,11 @@ defmodule El.CLI.Start do
   end
 
   defp truncate_right_block(right) do
-    case String.split(right, ": ", parts: 2) do
-      [label, value] -> label <> ": " <> truncate_value(value)
-      _ -> right
-    end
+    do_truncate_right(String.split(right, ": ", parts: 2), right)
   end
+
+  defp do_truncate_right([label, value], _right), do: label <> ": " <> truncate_value(value)
+  defp do_truncate_right(_parts, right), do: right
 
   defp truncate_value(value) do
     truncate_with_ellipsis(value, 9)
