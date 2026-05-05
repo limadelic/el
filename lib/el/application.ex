@@ -32,13 +32,21 @@ defmodule El.Application do
   end
 
   def restore_sessions(opts \\ []) do
-    el = Keyword.fetch!(opts, :el_module)
-    message_store = Keyword.fetch!(opts, :message_store)
-    session_meta = Keyword.fetch!(opts, :session_meta)
-    deps = El.Deps.production()
+    ctx = restore_context(opts)
+    ctx.message_store.session_names()
+    |> Enum.each(&restore_session(&1, ctx.el, ctx.session_meta, ctx.deps))
+  end
 
-    message_store.session_names()
-    |> Enum.each(&restore_session(&1, el, session_meta, deps))
+  defp restore_context(opts) do
+    Map.merge(opts_modules(opts), %{deps: El.Deps.production()})
+  end
+
+  defp opts_modules(opts) do
+    %{
+      el: Keyword.fetch!(opts, :el_module),
+      message_store: Keyword.fetch!(opts, :message_store),
+      session_meta: Keyword.fetch!(opts, :session_meta)
+    }
   end
 
   defp restore_session(name, el, _session_meta, deps, {:ok, session_id, agent, model}) do
