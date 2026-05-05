@@ -9,7 +9,7 @@ defmodule El.Session.Terminator do
 
   def handle(reason, state) do
     entry = {"crash", "Session crashed", inspect(reason), %{}}
-    state.store_module.store_message(state.name, entry)
+    state.store_module.store_message(state.name, entry, message_store: state.opts[:message_store])
     :ok
   end
 end
