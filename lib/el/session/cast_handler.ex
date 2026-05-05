@@ -22,12 +22,8 @@ defmodule El.Session.CastHandler do
   end
 
   def handle({:complete_ask, from, message, response, ref, model, session_id}, state) do
-    new_state = state.ask_module.finalize_ask(state, from, ref, message, response, model)
-    updated_state = %{new_state | session_id: session_id}
-    session_meta = Map.get(updated_state, :session_meta, El.SessionMeta)
-    agent = Keyword.get(updated_state.opts, :agent)
-    persisted_model = Keyword.get(updated_state.opts, :model) || model
-    session_meta.insert(updated_state.name, agent, session_id, persisted_model)
+    updated_state = build_updated_state(state, from, message, response, ref, model, session_id)
+    persist_session_meta(updated_state, session_id, model)
     {:noreply, updated_state}
   end
 
@@ -43,4 +39,23 @@ defmodule El.Session.CastHandler do
     state.store_module.store_message(state.name, entry, message_store: state.opts[:message_store])
     {:noreply, %{state | messages: state.messages ++ [entry]}}
   end
+
+  defp build_updated_state(state, from, message, response, ref, model, session_id) do
+    new_state = state.ask_module.finalize_ask(state, from, ref, message, response, model)
+    %{new_state | session_id: session_id}
+  end
+
+  defp persist_session_meta(state, session_id, model) do
+    session_meta = Map.get(state, :session_meta, El.SessionMeta)
+    session_meta.insert(state.name, agent_from(state), session_id, persisted_model(state, model))
+  end
+
+  defp agent_from(state), do: Keyword.get(state.opts, :agent)
+
+  defp persisted_model(state, model) do
+    resolve_model(Keyword.get(state.opts, :model), model)
+  end
+
+  defp resolve_model(nil, model), do: model
+  defp resolve_model(explicit, _model), do: explicit
 end
