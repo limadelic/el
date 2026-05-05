@@ -14,7 +14,7 @@ defmodule El.CLI.Start.CardBox do
     "│ " <> padded <> " │"
   end
 
-  defp frame_pair_row(left, right) do
+  def frame_pair_row(left, right) do
     right_block = truncate_right_block(right)
     content = compose_pair_content(left, right_block)
     "│ " <> String.pad_trailing(content, 46) <> " │"

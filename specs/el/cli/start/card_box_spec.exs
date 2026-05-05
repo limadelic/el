@@ -75,4 +75,32 @@ defmodule El.CLI.Start.CardBox.Spec do
       assert Enum.all?(framed_rows, fn line -> String.length(line) == 50 end)
     end
   end
+
+  describe "El.CLI.Start.CardBox.frame_pair_row/2" do
+    test "returns a row with left border" do
+      result = El.CLI.Start.CardBox.frame_pair_row("left", "right")
+      assert String.starts_with?(result, "│ ")
+    end
+
+    test "returns a row with right border" do
+      result = El.CLI.Start.CardBox.frame_pair_row("left", "right")
+      assert String.ends_with?(result, " │")
+    end
+
+    test "has 50 char width" do
+      result = El.CLI.Start.CardBox.frame_pair_row("left", "right")
+      assert String.length(result) == 50
+    end
+
+    test "includes both left and right content" do
+      result = El.CLI.Start.CardBox.frame_pair_row("left", "right")
+      assert String.contains?(result, "left")
+      assert String.contains?(result, "right")
+    end
+
+    test "truncates long right values" do
+      result = El.CLI.Start.CardBox.frame_pair_row("short", "key: very_long_value_here")
+      assert String.length(result) == 50
+    end
+  end
 end
