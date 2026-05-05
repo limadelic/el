@@ -1,6 +1,8 @@
 {
   "model": "opus",
-  "permissions": {},
+  "permissions": {
+    "deny": ["Bash(*cucumber*)"]
+  },
   "hooks": {
     "PreToolUse": [
       {
