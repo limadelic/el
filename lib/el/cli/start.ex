@@ -6,13 +6,19 @@ defmodule El.CLI.Start do
   def normalize_model(model), do: model
 
   def merge_session_opts(name, explicit_agent \\ nil, explicit_model \\ nil, deps \\ []) do
-    model_opts = start_opts(explicit_model)
-    agent = explicit_agent || agent_detector(deps).detect_agent(name)
-    agent_opts = agent_opt(agent)
-    agent_model_opts = agent_model_opt(agent, explicit_model, deps)
-    result = model_opts ++ agent_opts ++ agent_model_opts
-    result ++ env_model(result)
+    agent = resolve_agent(explicit_agent, name, deps)
+    base = build_base_opts(explicit_model, agent, deps)
+    base ++ env_model(base)
   end
+
+  defp build_base_opts(explicit_model, agent, deps) do
+    start_opts(explicit_model) ++
+      agent_opt(agent) ++
+      agent_model_opt(agent, explicit_model, deps)
+  end
+
+  defp resolve_agent(nil, name, deps), do: agent_detector(deps).detect_agent(name)
+  defp resolve_agent(agent, _name, _deps), do: agent
 
   def detect_and_merge_agent(name, opts, deps \\ []) do
     merged = opts ++ agent_opt(agent_detector(deps).detect_agent(name))
