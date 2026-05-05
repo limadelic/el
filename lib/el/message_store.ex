@@ -36,7 +36,5 @@ defmodule El.MessageStore do
 
   defp add_session_name({name, _}, acc), do: MapSet.put(acc, name)
 
-  defp dets_backend(deps) do
-    Keyword.get(deps, :dets_backend, Application.get_env(:el, :dets_backend, El.DetsBackend))
-  end
+  defp dets_backend(deps), do: Keyword.get(deps, :dets_backend, El.DetsBackend)
 end
