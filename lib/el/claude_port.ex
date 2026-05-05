@@ -42,11 +42,14 @@ defmodule El.ClaudePort do
 
   defp opts_env(opts) do
     %{
-      cwd: Keyword.get(opts, :cwd) || File.cwd!(),
+      cwd: cwd(Keyword.get(opts, :cwd)),
       cli_path: Keyword.get(opts, :cli_path, :global),
       port_module: Keyword.get(opts, :port_module, El.PortImpl)
     }
   end
+
+  defp cwd(nil), do: File.cwd!()
+  defp cwd(path), do: path
 
   @impl GenServer
   def handle_continue(:connect, state) do
