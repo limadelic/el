@@ -34,14 +34,14 @@ defmodule El.Lifecycle do
 
   defp delete_stores(name, reason, opts) when reason in [:normal, :shutdown] do
     app = Keyword.fetch!(opts, :app)
-    app.delete_session_messages(name)
+    app.delete_session_messages(name, opts)
     session_meta = Keyword.get(opts, :session_meta, El.SessionMeta)
     session_meta.delete(name)
   end
 
   defp delete_stores(name, {:shutdown, _}, opts) do
     app = Keyword.fetch!(opts, :app)
-    app.delete_session_messages(name)
+    app.delete_session_messages(name, opts)
     session_meta = Keyword.get(opts, :session_meta, El.SessionMeta)
     session_meta.delete(name)
   end

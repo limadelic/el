@@ -11,7 +11,8 @@ defmodule El.Deps do
       agent_detector: Application.get_env(:el, :agent_detector, El.AgentDetector),
       agent_metadata: Application.get_env(:el, :agent_metadata, El.AgentMetadata),
       group_leader: Application.get_env(:el, :group_leader, El.GroupLeaderImpl),
-      dets_backend: Application.get_env(:el, :dets_backend, El.DetsBackend)
+      dets_backend: Application.get_env(:el, :dets_backend, El.DetsBackend),
+      message_store: Application.get_env(:el, :message_store, El.MessageStore)
     ]
   end
 end

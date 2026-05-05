@@ -63,15 +63,15 @@ defmodule El.CLI do
   end
 
   def execute(:exit, [name, "exit"], opts) do
-    Pattern.exit_by_kind(el(opts), Pattern.pattern?(name), name)
+    Pattern.exit_by_kind(el(opts), Pattern.pattern?(name), name, opts)
   end
 
   def execute(:clear, [name, "clear"], opts) do
-    Pattern.clear_by_kind(el(opts), Pattern.pattern?(name), name)
+    Pattern.clear_by_kind(el(opts), Pattern.pattern?(name), name, opts)
   end
 
   def execute(:exit_all, ["exit"], opts) do
-    el(opts).exit(:all)
+    el(opts).exit(:all, opts)
     IO.puts("exited all")
   end
 

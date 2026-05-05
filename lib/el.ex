@@ -64,18 +64,18 @@ defmodule El do
   end
 
   def exit_pattern(pattern, opts \\ []) do
-    ls()
+    ls(opts)
     |> Enum.filter(&match_pattern?(&1, pattern))
     |> Enum.each(&El.exit(&1, opts))
   end
 
   def clear_pattern(pattern, opts \\ []) do
-    ls() |> Enum.filter(&match_pattern?(&1, pattern)) |> Enum.each(&El.clear(&1, opts))
+    ls(opts) |> Enum.filter(&match_pattern?(&1, pattern)) |> Enum.each(&El.clear(&1, opts))
   end
 
   def log_pattern(pattern, count, opts \\ []),
     do:
-      ls() |> Enum.filter(&match_pattern?(&1, pattern)) |> Enum.flat_map(&log_entries(&1, count, opts))
+      ls(opts) |> Enum.filter(&match_pattern?(&1, pattern)) |> Enum.flat_map(&log_entries(&1, count, opts))
 
   defp log_entries(name, count, opts) do
     name |> session_api(opts).log(count) |> filter_found()

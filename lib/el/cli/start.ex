@@ -73,10 +73,12 @@ defmodule El.CLI.Start do
     null_device = gl.open_null_device()
     original = gl.get()
     gl.set(self(), null_device)
-    result = session_api(deps).ask(name_atom, "who are you?")
-    gl.set(self(), original)
-    gl.close(null_device)
-    result
+    try do
+      session_api(deps).ask(name_atom, "who are you?")
+    after
+      gl.set(self(), original)
+      gl.close(null_device)
+    end
   end
 
   def print_session_info(name, opts, deps \\ []) do
