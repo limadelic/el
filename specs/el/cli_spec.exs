@@ -402,37 +402,37 @@ defmodule El.CLI.Spec do
 
   describe "dispatch/1" do
     test "version starts with v0.1." do
-      output = capture_io(fn -> El.CLI.dispatch(["-v"]) end)
+      output = capture_io(fn -> El.CLI.dispatch(["-v"], []) end)
       assert String.starts_with?(String.trim(output), "v0.1.")
     end
 
     test "usage message contains el ls" do
-      output = capture_io(fn -> El.CLI.dispatch([]) end)
+      output = capture_io(fn -> El.CLI.dispatch([], []) end)
       assert String.contains?(output, "el ls")
     end
 
     test "usage message contains el -v" do
-      output = capture_io(fn -> El.CLI.dispatch([]) end)
+      output = capture_io(fn -> El.CLI.dispatch([], []) end)
       assert String.contains?(output, "el -v")
     end
 
     test "usage message contains el exit" do
-      output = capture_io(fn -> El.CLI.dispatch([]) end)
+      output = capture_io(fn -> El.CLI.dispatch([], []) end)
       assert String.contains?(output, "el exit")
     end
 
     test "usage message contains el <name|glob> exit" do
-      output = capture_io(fn -> El.CLI.dispatch([]) end)
+      output = capture_io(fn -> El.CLI.dispatch([], []) end)
       assert String.contains?(output, "el <name|glob> exit")
     end
 
     test "version does not contain usage info" do
-      output = capture_io(fn -> El.CLI.dispatch(["-v"]) end)
+      output = capture_io(fn -> El.CLI.dispatch(["-v"], []) end)
       refute String.contains?(output, "el ls")
     end
 
     test "version matches version format" do
-      output = capture_io(fn -> El.CLI.dispatch(["-v"]) end)
+      output = capture_io(fn -> El.CLI.dispatch(["-v"], []) end)
       assert output =~ ~r/\d+\.\d+/
     end
   end
