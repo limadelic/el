@@ -6,14 +6,8 @@ defmodule El.CLI.Start do
 
   def merge_session_opts(name, explicit_agent \\ nil, explicit_model \\ nil, deps \\ []) do
     agent = Options.resolve_agent(explicit_agent, name, deps)
-    base = build_base_opts(explicit_model, agent, deps)
+    base = Options.build_base_opts(explicit_model, agent, deps)
     base ++ Options.env_model(base, deps)
-  end
-
-  defp build_base_opts(explicit_model, agent, deps) do
-    Options.start_opts(explicit_model) ++
-      Options.agent_opt(agent) ++
-      Options.agent_model_opt(agent, explicit_model, deps)
   end
 
   def detect_and_merge_agent(name, opts, deps \\ []) do

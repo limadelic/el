@@ -8,6 +8,12 @@ defmodule El.CLI.Start.Options do
   def agent_opt(nil), do: []
   def agent_opt(agent), do: [agent: agent]
 
+  def build_base_opts(explicit_model, agent, deps) do
+    start_opts(explicit_model) ++
+      agent_opt(agent) ++
+      agent_model_opt(agent, explicit_model, deps)
+  end
+
   def agent_model_for(nil), do: []
   def agent_model_for(model), do: [model: model]
 

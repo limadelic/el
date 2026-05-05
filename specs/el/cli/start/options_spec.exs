@@ -156,4 +156,12 @@ defmodule El.CLI.Start.Options.Spec do
       assert El.CLI.Start.Options.resolve_agent(nil, "name", deps) == :detected
     end
   end
+
+  describe "El.CLI.Start.Options.build_base_opts/3" do
+    test "composes start_opts ++ agent_opt ++ agent_model_opt in order" do
+      stub(El.MockAgentMetadata, :model_for, fn "kent" -> "opus" end)
+      deps = [agent_metadata: El.MockAgentMetadata]
+      assert El.CLI.Start.Options.build_base_opts(nil, "kent", deps) == [agent: "kent", model: "opus"]
+    end
+  end
 end
