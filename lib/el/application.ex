@@ -11,16 +11,26 @@ defmodule El.Application do
 
   @impl true
   def start(_type, _args) do
-    file_system = Application.get_env(:el, :file_system, El.FileSystemImpl)
-    dets_backend = Application.get_env(:el, :dets_backend, :dets)
-    daemon = Application.get_env(:el, :daemon, El.CLI.Daemon)
-    init_message_store(file_system: file_system, dets_backend: dets_backend, daemon: daemon)
+    init_message_store(message_store_opts())
     {:ok, pid} = Supervisor.start_link(children(), supervisor_opts())
-    el_module = Application.get_env(:el, :el_module, El)
-    session_meta = Application.get_env(:el, :session_meta, El.SessionMeta)
-    message_store = Application.get_env(:el, :message_store, El.MessageStore)
-    restore_sessions(el_module: el_module, session_meta: session_meta, message_store: message_store)
+    restore_sessions(restore_opts())
     {:ok, pid}
+  end
+
+  defp message_store_opts do
+    [
+      file_system: Application.get_env(:el, :file_system, El.FileSystemImpl),
+      dets_backend: Application.get_env(:el, :dets_backend, :dets),
+      daemon: Application.get_env(:el, :daemon, El.CLI.Daemon)
+    ]
+  end
+
+  defp restore_opts do
+    [
+      el_module: Application.get_env(:el, :el_module, El),
+      session_meta: Application.get_env(:el, :session_meta, El.SessionMeta),
+      message_store: Application.get_env(:el, :message_store, El.MessageStore)
+    ]
   end
 
   @impl true
