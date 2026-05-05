@@ -30,7 +30,7 @@ defmodule El.CLI.Start.DaemonHealth do
     Keyword.get(deps, :session_api, El.Session.Api)
   end
 
-  def group_leader(deps) do
+  defp group_leader(deps) do
     Keyword.get(deps, :group_leader, El.GroupLeaderImpl)
   end
 end
