@@ -892,7 +892,7 @@ end
 defmodule MockSessionStore do
   def store_message(_, _, _), do: :ok
   def store_message(_, _), do: :ok
-  def load_messages(_), do: []
+  def load_messages(_, _opts \\ []), do: []
   def delete_message(_, _), do: :ok
   def delete_session_messages(_), do: :ok
   def delete_ask_entry(_state, _message, _ref), do: :ok
@@ -919,7 +919,7 @@ defmodule MockSessionStore do
 end
 
 defmodule MockLoadingStore do
-  def load_messages(:test_session) do
+  def load_messages(:test_session, _opts \\ []) do
     [{"tell", "old_message", "old_response", %{}}]
   end
 
@@ -935,7 +935,7 @@ defmodule MockVerifyingStore do
     :ok
   end
 
-  def load_messages(_), do: []
+  def load_messages(_, _opts \\ []), do: []
   def delete_message(_, _), do: :ok
 
   def delete_session_messages(name) do
