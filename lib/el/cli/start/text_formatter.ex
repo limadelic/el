@@ -1,7 +1,9 @@
 defmodule El.CLI.Start.TextFormatter do
   @behaviour El.Behaviours.TextFormatter
 
+  @impl true
   def format_response(nil), do: []
+  @impl true
   def format_response(response) do
     response
     |> wrap_text(46)

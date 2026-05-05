@@ -1,6 +1,7 @@
 defmodule El.CLI.Start.SessionCard.Spec do
   use ExUnit.Case, async: false
   import Mox
+  setup :verify_on_exit!
 
   describe "El.CLI.Start.SessionCard.build_card_rows/3" do
     setup do

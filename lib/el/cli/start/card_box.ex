@@ -1,7 +1,9 @@
 defmodule El.CLI.Start.CardBox do
   @behaviour El.Behaviours.CardBox
 
+  @impl true
   def box_frame([]), do: [top_border(), bottom_border()]
+  @impl true
   def box_frame(rows) do
     first_two = Enum.take(rows, 2)
     rest = Enum.drop(rows, 2)
@@ -16,6 +18,7 @@ defmodule El.CLI.Start.CardBox do
     "│ " <> padded <> " │"
   end
 
+  @impl true
   def frame_pair_row(left, right) do
     right_block = truncate_right_block(right)
     content = compose_pair_content(left, right_block)
