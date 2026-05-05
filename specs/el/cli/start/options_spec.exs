@@ -1,5 +1,5 @@
 defmodule El.CLI.Start.Options.Spec do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   import Mox
 
   setup :verify_on_exit!
