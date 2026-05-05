@@ -136,7 +136,7 @@ defmodule El.CLI.Start.Options.Spec do
     end
   end
 
-  describe "Options.env_model/2" do
+  describe "El.CLI.Start.Options.env_model/2" do
     test "returns model from env when opts has neither :model nor :agent" do
       stub(El.MockEnv, :get, fn _ -> "from-env" end)
       deps = [env: El.MockEnv]
@@ -144,7 +144,7 @@ defmodule El.CLI.Start.Options.Spec do
     end
   end
 
-  describe "Options.resolve_agent/3" do
+  describe "El.CLI.Start.Options.resolve_agent/3" do
     test "returns explicit agent unchanged when not nil" do
       deps = [agent_detector: El.MockAgentDetector]
       assert El.CLI.Start.Options.resolve_agent(:explicit, "name", deps) == :explicit
