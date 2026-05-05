@@ -111,3 +111,12 @@ defmodule El.Behaviours.GroupLeader do
   @callback get() :: pid()
   @callback set(pid(), pid()) :: true
 end
+
+defmodule El.Behaviours.MessageStore do
+  @callback delete(atom()) :: :ok
+  @callback delete_entry(atom(), tuple()) :: :ok
+  @callback insert(atom(), tuple()) :: :ok
+  @callback lookup(atom()) :: list()
+  @callback session_names() :: [atom()]
+  @callback close() :: :ok
+end

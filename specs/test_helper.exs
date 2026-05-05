@@ -76,6 +76,7 @@ Mox.defmock(El.MockNetKernel, for: El.Behaviours.NetKernel)
 Mox.defmock(El.MockSessionClaude, for: El.Behaviours.SessionClaude)
 Mox.defmock(El.MockSystem, for: El.Behaviours.System)
 Mox.defmock(El.MockGroupLeader, for: El.Behaviours.GroupLeader)
+Mox.defmock(El.MockMessageStore, for: El.Behaviours.MessageStore)
 
 Mox.stub(El.MockNodeConnector, :connect, fn _ -> false end)
 Mox.stub(El.MockNodeConnector, :set_cookie, fn _ -> true end)
