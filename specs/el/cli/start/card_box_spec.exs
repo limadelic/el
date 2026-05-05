@@ -77,24 +77,27 @@ defmodule El.CLI.Start.CardBox.Spec do
   end
 
   describe "El.CLI.Start.CardBox.frame_pair_row/2" do
-    test "returns a row with left border" do
-      result = El.CLI.Start.CardBox.frame_pair_row("left", "right")
+    setup do
+      {:ok, result: El.CLI.Start.CardBox.frame_pair_row("left", "right")}
+    end
+
+    test "returns a row with left border", %{result: result} do
       assert String.starts_with?(result, "│ ")
     end
 
-    test "returns a row with right border" do
-      result = El.CLI.Start.CardBox.frame_pair_row("left", "right")
+    test "returns a row with right border", %{result: result} do
       assert String.ends_with?(result, " │")
     end
 
-    test "has 50 char width" do
-      result = El.CLI.Start.CardBox.frame_pair_row("left", "right")
+    test "has 50 char width", %{result: result} do
       assert String.length(result) == 50
     end
 
-    test "includes both left and right content" do
-      result = El.CLI.Start.CardBox.frame_pair_row("left", "right")
+    test "includes left content", %{result: result} do
       assert String.contains?(result, "left")
+    end
+
+    test "includes right content", %{result: result} do
       assert String.contains?(result, "right")
     end
 
