@@ -1061,6 +1061,15 @@ defmodule El.CLI.Spec do
 
       assert output =~ "model: opus"
     end
+
+    test "threads opts to recursive dispatch with non-empty rest" do
+      expect(El.MockEl, :start, fn :kenny, opts when is_list(opts) -> :ok end)
+      expect(El.MockEl, :log, fn :kenny, 1, [agent: "kent", el_module: El.MockEl] -> [] end)
+
+      capture_io(fn ->
+        El.CLI.Start.handle_find_daemon_with_rest("kenny", [agent: "kent", el_module: El.MockEl], ["log"], El.MockEl, [session_api: El.MockSessionApi])
+      end)
+    end
   end
 
   describe "El.CLI.Start.format_response/1" do
