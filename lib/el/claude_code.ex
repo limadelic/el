@@ -9,11 +9,14 @@ defmodule El.ClaudeCode do
   end
 
   defp build_and_start(session_module, session_id, remaining_opts, opts) do
-    cli_path = opts[:cli_path] || :global
+    cli_path = resolve_cli_path(opts[:cli_path])
     session_opts = base_session_opts(session_id, cli_path)
     final_opts = build_final_opts(session_opts, remaining_opts, opts)
     session_module.start_link(final_opts)
   end
+
+  defp resolve_cli_path(nil), do: :global
+  defp resolve_cli_path(path), do: path
 
   defp build_final_opts(session_opts, remaining_opts, opts) do
     session_opts
