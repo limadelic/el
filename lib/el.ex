@@ -1,7 +1,7 @@
 defmodule El do
   def registry, do: Application.get_env(:el, :registry, Registry)
   def supervisor, do: Application.get_env(:el, :supervisor, DynamicSupervisor)
-  def session, do: Application.get_env(:el, :session, El.Session)
+  def session(opts \\ []), do: Keyword.get(opts, :session, Application.get_env(:el, :session, El.Session))
   def app(opts \\ []), do: Keyword.get(opts, :app, Application.get_env(:el, :app, El.Application))
   def monitor(opts \\ []), do: Keyword.get(opts, :monitor, Application.get_env(:el, :monitor, El.ProcessMonitor))
 
