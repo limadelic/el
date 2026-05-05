@@ -81,6 +81,7 @@ Mox.defmock(El.MockAgentDetector, for: El.Behaviours.AgentDetector)
 Mox.defmock(El.MockAgentMetadata, for: El.Behaviours.AgentMetadata)
 Mox.defmock(El.MockEnv, for: El.Behaviours.Env)
 Mox.defmock(El.MockCCParser, for: El.Behaviours.CCParser)
+Mox.defmock(El.MockJSONDecoder, for: El.Behaviours.JSONDecoder)
 
 Mox.stub(El.MockNodeConnector, :connect, fn _ -> false end)
 Mox.stub(El.MockNodeConnector, :set_cookie, fn _ -> true end)

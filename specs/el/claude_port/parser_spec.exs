@@ -6,8 +6,13 @@ defmodule El.ClaudePort.Parser.Spec do
 
   setup do
     Application.put_env(:el, :cc_parser, El.MockCCParser)
+    Application.put_env(:el, :json_decoder, El.MockJSONDecoder)
     stub(El.MockCCParser, :normalize_keys, fn json -> json end)
-    on_exit(fn -> Application.delete_env(:el, :cc_parser) end)
+    stub(El.MockJSONDecoder, :decode, fn line -> Jason.decode(line) end)
+    on_exit(fn ->
+      Application.delete_env(:el, :cc_parser)
+      Application.delete_env(:el, :json_decoder)
+    end)
     :ok
   end
 

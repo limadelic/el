@@ -35,7 +35,7 @@ defmodule El.ClaudePort.Parser do
 
   defp process_lines([], _acc, _session_id), do: :incomplete
   defp process_lines([line | rest], acc, session_id) do
-    apply_decode(Jason.decode(line), rest, acc, session_id)
+    apply_decode(json_decoder().decode(line), rest, acc, session_id)
   end
 
   defp apply_decode({:ok, json}, rest, acc, session_id) do
@@ -106,4 +106,5 @@ defmodule El.ClaudePort.Parser do
   defp nil_to_empty(result), do: result
 
   defp cc_parser, do: Application.get_env(:el, :cc_parser, El.CCParser)
+  defp json_decoder, do: Application.get_env(:el, :json_decoder, El.JSONDecoder)
 end
