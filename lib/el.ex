@@ -1,12 +1,12 @@
 defmodule El do
-  def registry(opts \\ []), do: Keyword.get(opts, :registry, Application.get_env(:el, :registry, Registry))
-  def supervisor(opts \\ []), do: Keyword.get(opts, :supervisor, Application.get_env(:el, :supervisor, DynamicSupervisor))
-  def session(opts \\ []), do: Keyword.get(opts, :session, Application.get_env(:el, :session, El.Session))
-  def app(opts \\ []), do: Keyword.get(opts, :app, Application.get_env(:el, :app, El.Application))
-  def monitor(opts \\ []), do: Keyword.get(opts, :monitor, Application.get_env(:el, :monitor, El.ProcessMonitor))
+  def app(opts \\ []), do: Keyword.fetch!(opts, :app)
+  def session(opts \\ []), do: Keyword.fetch!(opts, :session)
+  def registry(opts \\ []), do: Keyword.fetch!(opts, :registry)
+  def supervisor(opts \\ []), do: Keyword.fetch!(opts, :supervisor)
+  def monitor(opts \\ []), do: Keyword.fetch!(opts, :monitor)
 
   def start(name, opts \\ []) when is_atom(name) do
-    start_if_needed(name, opts, registry().lookup(El.Registry, name))
+    start_if_needed(name, opts, registry(opts).lookup(El.Registry, name))
   end
 
   defp start_if_needed(_name, _opts, [{_pid, _}]) do
@@ -15,12 +15,12 @@ defmodule El do
 
   defp start_if_needed(name, opts, []) do
     filtered_opts = filter_session_opts(opts)
-    start_session_child(name, filtered_opts)
+    start_session_child(name, opts, filtered_opts)
     :created
   end
 
-  defp start_session_child(name, opts) do
-    supervisor().start_child(El.SessionSupervisor, session_spec(name, opts))
+  defp start_session_child(name, opts, filtered_opts) do
+    supervisor(opts).start_child(El.SessionSupervisor, session_spec(name, filtered_opts))
   end
 
   defp session_spec(name, opts) do
@@ -57,7 +57,7 @@ defmodule El do
   def tell_ask(name, target, message, opts \\ []), do: session_api(opts).tell_ask(name, target, message)
   def ask_tell(name, target, message, opts \\ []), do: session_api(opts).ask_tell(name, target, message)
   def agent(name, opts \\ []), do: session_api(opts).agent(name)
-  defp session_api(opts), do: Keyword.get(opts, :session_api, Application.get_env(:el, :session_api, El.Session.Api))
+  defp session_api(opts), do: Keyword.fetch!(opts, :session_api)
 
   def exit(name, opts \\ []) do
     El.Lifecycle.exit(name, :normal, opts)
@@ -93,8 +93,8 @@ defmodule El do
   defp pattern_to_regex(pattern),
     do: pattern |> String.replace("*", ".*") |> String.replace("?", ".")
 
-  def ls do
-    registry().select(El.Registry, [{{:"$1", :_, :_}, [], [:"$1"]}])
+  def ls(opts \\ []) do
+    registry(opts).select(El.Registry, [{{:"$1", :_, :_}, [], [:"$1"]}])
     |> Enum.sort()
   end
 end

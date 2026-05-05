@@ -2,7 +2,7 @@ defmodule El.Lifecycle do
   def exit(target, reason \\ :normal, opts \\ [])
 
   def exit(:all, reason, opts) do
-    El.ls() |> Enum.each(&El.Lifecycle.exit(&1, reason, opts))
+    El.ls(opts) |> Enum.each(&El.Lifecycle.exit(&1, reason, opts))
   end
 
   def exit(name, reason, opts) do
@@ -28,21 +28,21 @@ defmodule El.Lifecycle do
   defp terminate(pid, name, opts) do
     ref = Process.monitor(pid)
     El.supervisor(opts).terminate_child(El.SessionSupervisor, pid)
-    app = Keyword.get(opts, :app, El.app())
+    app = Keyword.fetch!(opts, :app)
     El.monitor(opts).wait_for_down(ref, name, app: app)
   end
 
   defp delete_stores(name, reason, opts) when reason in [:normal, :shutdown] do
-    app = Keyword.get(opts, :app, El.app())
+    app = Keyword.fetch!(opts, :app)
     app.delete_session_messages(name)
-    session_meta = Keyword.get(opts, :session_meta, Application.get_env(:el, :session_meta, El.SessionMeta))
+    session_meta = Keyword.get(opts, :session_meta, El.SessionMeta)
     session_meta.delete(name)
   end
 
   defp delete_stores(name, {:shutdown, _}, opts) do
-    app = Keyword.get(opts, :app, El.app())
+    app = Keyword.fetch!(opts, :app)
     app.delete_session_messages(name)
-    session_meta = Keyword.get(opts, :session_meta, Application.get_env(:el, :session_meta, El.SessionMeta))
+    session_meta = Keyword.get(opts, :session_meta, El.SessionMeta)
     session_meta.delete(name)
   end
 
