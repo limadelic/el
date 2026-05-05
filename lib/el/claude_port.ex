@@ -51,6 +51,11 @@ defmodule El.ClaudePort do
     {:noreply, %{connected_state | current_request_id: from}}
   end
 
+  defp dispatch_ask({:error, reason}, _message, _from, state) do
+    Logger.error("ClaudePort ensure_connected failed: #{inspect(reason)}")
+    {:reply, {"(unavailable)", nil, nil}, state}
+  end
+
   defp send_message(state, message) do
     session_id = session_id_or_default(state.session_id)
     ndjson = Input.user_message(message, session_id)
@@ -59,11 +64,6 @@ defmodule El.ClaudePort do
 
   defp session_id_or_default(nil), do: "default"
   defp session_id_or_default(id), do: id
-
-  defp dispatch_ask({:error, reason}, _message, _from, state) do
-    Logger.error("ClaudePort ensure_connected failed: #{inspect(reason)}")
-    {:reply, {"(unavailable)", nil, nil}, state}
-  end
 
   @impl GenServer
   def handle_info({port, {:data, data}}, %{port: port} = state) do
