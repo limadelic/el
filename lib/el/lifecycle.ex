@@ -8,7 +8,7 @@ defmodule El.Lifecycle do
   def exit(name, reason), do: exit(name, reason, [])
 
   def exit(name, reason, deps) do
-    name |> lookup() |> exit_found(name)
+    name |> lookup() |> exit_found(name, deps)
     delete_stores(name, reason, deps)
   end
 
@@ -16,20 +16,20 @@ defmodule El.Lifecycle do
     El.registry().lookup(El.Registry, name)
   end
 
-  defp exit_found([{pid, _}], name) do
-    terminate(pid, name)
+  defp exit_found([{pid, _}], name, deps) do
+    terminate(pid, name, deps)
   rescue
     _ -> :ok
   end
 
-  defp exit_found([], _name) do
+  defp exit_found([], _name, _deps) do
     :not_found
   end
 
-  defp terminate(pid, name) do
+  defp terminate(pid, name, deps) do
     ref = Process.monitor(pid)
     El.supervisor().terminate_child(El.SessionSupervisor, pid)
-    El.monitor().wait_for_down(ref, name)
+    El.monitor(deps).wait_for_down(ref, name)
   end
 
   defp delete_stores(name, reason, deps) when reason in [:normal, :shutdown] do
