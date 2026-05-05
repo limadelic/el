@@ -1,5 +1,15 @@
 defmodule El.ClaudePort.Parser.Spec do
   use ExUnit.Case
+  import Mox
+
+  setup :verify_on_exit!
+
+  setup do
+    Application.put_env(:el, :cc_parser, El.MockCCParser)
+    stub(El.MockCCParser, :normalize_keys, fn json -> json end)
+    on_exit(fn -> Application.delete_env(:el, :cc_parser) end)
+    :ok
+  end
 
   describe "try_extract_result/2" do
     test "preserves sid when present in result" do

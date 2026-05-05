@@ -1,8 +1,6 @@
 defmodule El.ClaudePort.Parser do
   require Logger
 
-  alias ClaudeCode.CLI.Parser, as: CCParser
-
   def try_extract_result(buffer, session_id) do
     apply_extraction(extract_all_lines(buffer, []), session_id)
   end
@@ -48,7 +46,7 @@ defmodule El.ClaudePort.Parser do
   end
 
   defp process_decoded(json, rest, acc, session_id) do
-    normalized = CCParser.normalize_keys(json)
+    normalized = cc_parser().normalize_keys(json)
     {new_acc, complete?} = merge_line(normalized, acc)
     emit_or_continue(complete?, new_acc, rest, session_id)
   end
@@ -106,4 +104,6 @@ defmodule El.ClaudePort.Parser do
 
   defp nil_to_empty(nil), do: ""
   defp nil_to_empty(result), do: result
+
+  defp cc_parser, do: Application.get_env(:el, :cc_parser, El.CCParser)
 end
