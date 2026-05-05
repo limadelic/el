@@ -89,26 +89,39 @@ defmodule El.CLI.Start do
 
   defp build_card_rows(name, opts, info) do
     []
-    |> add_session_meta(name, opts, info)
+    |> add_identity(name, opts, info)
+    |> add_stats(opts, info)
     |> add_message_history(info)
   end
 
-  defp add_session_meta(rows, name, opts, info) do
-    agent = Keyword.get(opts, :agent)
-    opts_model = Keyword.get(opts, :model)
+  defp add_identity(rows, name, opts, info) do
     rows
     |> add_name_id(name, info.id)
-    |> add_second_with_cwd(agent, opts_model, info.model, info.cwd)
-    |> add_model(opts_model, info.model)
+    |> add_second_with_cwd(opts[:agent], opts[:model], info.model, info.cwd)
+  end
+
+  defp add_stats(rows, opts, info) do
+    rows
+    |> add_model(opts[:model], info.model)
     |> add_msgs(info.messages)
   end
 
   defp add_message_history(rows, info) do
     rows
-    |> add_prompt_separator(info.last_prompt)
-    |> add_prompt(info.last_prompt)
-    |> add_response_separator(info.last_response)
-    |> add_response_lines(info.last_response)
+    |> add_prompt_section(info.last_prompt)
+    |> add_response_section(info.last_response)
+  end
+
+  defp add_prompt_section(rows, prompt) do
+    rows
+    |> add_prompt_separator(prompt)
+    |> add_prompt(prompt)
+  end
+
+  defp add_response_section(rows, response) do
+    rows
+    |> add_response_separator(response)
+    |> add_response_lines(response)
   end
 
   defp add_name_id(rows, name, id) do
