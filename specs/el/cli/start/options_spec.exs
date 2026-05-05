@@ -168,30 +168,26 @@ defmodule El.CLI.Start.Options.Spec do
   describe "El.CLI.Start.Options.detect_and_merge_agent/3" do
     setup do
       System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
-      :ok
+      stub(El.MockEnv, :get, fn _ -> nil end)
+      {:ok, deps: [agent_detector: El.MockAgentDetector, env: El.MockEnv]}
     end
 
-    test "detects agent through injected detector" do
+    test "detects agent through injected detector", %{deps: deps} do
       expect(El.MockAgentDetector, :detect_agent, fn "kent" -> "kent" end)
-      deps = [agent_detector: El.MockAgentDetector]
       result = El.CLI.Start.Options.detect_and_merge_agent("kent", [], deps)
 
       assert Keyword.get(result, :agent) == "kent"
     end
 
-    test "includes opts in result" do
+    test "includes opts in result", %{deps: deps} do
       expect(El.MockAgentDetector, :detect_agent, fn "session" -> nil end)
-      stub(El.MockEnv, :get, fn _ -> nil end)
-      deps = [agent_detector: El.MockAgentDetector, env: El.MockEnv]
       result = El.CLI.Start.Options.detect_and_merge_agent("session", [model: "haiku"], deps)
 
       assert Keyword.get(result, :model) == "haiku"
     end
 
-    test "handles nil agent from detector" do
+    test "handles nil agent from detector", %{deps: deps} do
       expect(El.MockAgentDetector, :detect_agent, fn "session" -> nil end)
-      stub(El.MockEnv, :get, fn _ -> nil end)
-      deps = [agent_detector: El.MockAgentDetector, env: El.MockEnv]
       result = El.CLI.Start.Options.detect_and_merge_agent("session", [], deps)
 
       refute Keyword.has_key?(result, :agent)
