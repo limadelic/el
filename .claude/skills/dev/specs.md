@@ -1,7 +1,7 @@
 # Spec Rules
 
 ## Philosophy
-- Growing Object Oriented Sytem Guided By Test
+- Growing Object Oriented System Guided By Test
 - London School of TDD
 
 ## What gets mocked 
@@ -14,8 +14,8 @@
 - import Mox + setup :verify_on_exit! in each spec
 - stub the happy path in setup, expect in tests
 - each test overrides ONLY the one thing that makes that scenario different
-- for modules without behaviours, use simple stub modules via Application.get_env
-- Erlang wrappers (:dets) are tested through the layer above, not directly
+- code we don't own that breaks Feathers gets wrapped in our own adapter (own code with a behaviour)
+- adapters are tested through the layer above, not directly
 - 10ms timeout per test — if it's slower, it's not a unit test
 
 ## DRY
