@@ -156,13 +156,13 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :clear calls El.clear with name" do
-      expect(El.MockEl, :clear, fn :session -> "cleared" end)
+      expect(El.MockEl, :clear, fn :session, _opts -> "cleared" end)
 
       capture_io(fn -> El.CLI.execute(:clear, ["session", "clear"], [el_module: El.MockEl]) end)
     end
 
     test "execute :clear handles not_found" do
-      stub(El.MockEl, :clear, fn _ -> :not_found end)
+      stub(El.MockEl, :clear, fn _, _opts -> :not_found end)
 
       output =
         capture_io(fn -> El.CLI.execute(:clear, ["session", "clear"], [el_module: El.MockEl]) end)
@@ -171,7 +171,7 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :exit_all calls El.exit(:all)" do
-      expect(El.MockEl, :exit, fn :all -> :ok end)
+      expect(El.MockEl, :exit, fn :all, _opts -> :ok end)
 
       output =
         capture_io(fn -> El.CLI.execute(:exit_all, ["exit"], [el_module: El.MockEl]) end)
@@ -180,7 +180,7 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :exit with glob pattern calls El.exit_pattern" do
-      expect(El.MockEl, :exit_pattern, fn "dud*" -> :ok end)
+      expect(El.MockEl, :exit_pattern, fn "dud*", _opts -> :ok end)
 
       output =
         capture_io(fn -> El.CLI.execute(:exit, ["dud*", "exit"], [el_module: El.MockEl]) end)
@@ -189,13 +189,13 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :exit with session name calls El.exit" do
-      expect(El.MockEl, :exit, fn :session -> :ok end)
+      expect(El.MockEl, :exit, fn :session, _opts -> :ok end)
 
       capture_io(fn -> El.CLI.execute(:exit, ["session", "exit"], [el_module: El.MockEl]) end)
     end
 
     test "execute :clear with glob pattern calls El.clear_pattern" do
-      expect(El.MockEl, :clear_pattern, fn "dud*" -> :ok end)
+      expect(El.MockEl, :clear_pattern, fn "dud*", _opts -> :ok end)
 
       output =
         capture_io(fn -> El.CLI.execute(:clear, ["dud*", "clear"], [el_module: El.MockEl]) end)
@@ -204,7 +204,7 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :clear with session name calls El.clear" do
-      expect(El.MockEl, :clear, fn :session -> "cleared" end)
+      expect(El.MockEl, :clear, fn :session, _opts -> "cleared" end)
 
       capture_io(fn -> El.CLI.execute(:clear, ["session", "clear"], [el_module: El.MockEl]) end)
     end
@@ -235,8 +235,8 @@ defmodule El.CLI.Spec do
 
     test "execute :msg auto-starts session with agent detection" do
       expect(El.MockEl, :start, fn :session, opts when is_list(opts) -> :created end)
-      expect(El.MockEl, :ask, fn :session, "hello world" -> "reply" end)
-      expect(El.MockEl, :agent, fn :session -> "session" end)
+      expect(El.MockEl, :ask, fn :session, "hello world", _opts -> "reply" end)
+      expect(El.MockEl, :agent, fn :session, _opts -> "session" end)
 
       output =
         capture_io(fn -> El.CLI.execute(:msg, ["session", "hello", "world"], [agent_detector: IdentityAgentDetectorStub, el_module: El.MockEl]) end)
@@ -246,8 +246,8 @@ defmodule El.CLI.Spec do
 
     test "execute :msg without agent uses session name" do
       expect(El.MockEl, :start, fn :session, opts when is_list(opts) -> :created end)
-      expect(El.MockEl, :ask, fn :session, "hello" -> "reply" end)
-      expect(El.MockEl, :agent, fn :session -> nil end)
+      expect(El.MockEl, :ask, fn :session, "hello", _opts -> "reply" end)
+      expect(El.MockEl, :agent, fn :session, _opts -> nil end)
 
       output =
         capture_io(fn -> El.CLI.execute(:msg, ["session", "hello"], [agent_detector: NilAgentDetectorStub, el_module: El.MockEl]) end)
@@ -257,8 +257,8 @@ defmodule El.CLI.Spec do
 
     test "execute :msg prints boxed card after response" do
       expect(El.MockEl, :start, fn :session, opts when is_list(opts) -> :created end)
-      expect(El.MockEl, :ask, fn :session, "hello" -> "reply" end)
-      expect(El.MockEl, :agent, fn :session -> nil end)
+      expect(El.MockEl, :ask, fn :session, "hello", _opts -> "reply" end)
+      expect(El.MockEl, :agent, fn :session, _opts -> nil end)
 
       output =
         capture_io(fn -> El.CLI.execute(:msg, ["session", "hello"], [agent_detector: NilAgentDetectorStub, el_module: El.MockEl]) end)
@@ -268,8 +268,8 @@ defmodule El.CLI.Spec do
 
     test "execute :msg skips card when session already running" do
       expect(El.MockEl, :start, fn :session, opts when is_list(opts) -> :already_running end)
-      expect(El.MockEl, :ask, fn :session, "hello" -> "reply" end)
-      expect(El.MockEl, :agent, fn :session -> nil end)
+      expect(El.MockEl, :ask, fn :session, "hello", _opts -> "reply" end)
+      expect(El.MockEl, :agent, fn :session, _opts -> nil end)
 
       output =
         capture_io(fn -> El.CLI.execute(:msg, ["session", "hello"], [agent_detector: NilAgentDetectorStub, el_module: El.MockEl]) end)
@@ -280,8 +280,8 @@ defmodule El.CLI.Spec do
 
     test "execute :msg shows card when session newly created" do
       expect(El.MockEl, :start, fn :session, opts when is_list(opts) -> :created end)
-      expect(El.MockEl, :ask, fn :session, "hello" -> "reply" end)
-      expect(El.MockEl, :agent, fn :session -> nil end)
+      expect(El.MockEl, :ask, fn :session, "hello", _opts -> "reply" end)
+      expect(El.MockEl, :agent, fn :session, _opts -> nil end)
 
       output =
         capture_io(fn -> El.CLI.execute(:msg, ["session", "hello"], [agent_detector: NilAgentDetectorStub, el_module: El.MockEl]) end)
