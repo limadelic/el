@@ -32,17 +32,29 @@ defmodule El.ClaudePort.Connection do
   end
 
   defp spawn_port(exe_path, args, cwd, port_module) do
-    env = System.get_env() |> Enum.map(fn {k, v} -> {String.to_charlist(k), String.to_charlist(v)} end)
-    port_opts = [
+    port_module.open({:spawn_executable, exe_path}, port_opts(args, cwd))
+  end
+
+  defp port_opts(args, cwd) do
+    named_opts(args, cwd) ++ port_flags()
+  end
+
+  defp named_opts(args, cwd) do
+    [
       {:args, args},
       {:cd, String.to_charlist(cwd)},
-      {:env, env},
-      :binary,
-      :exit_status,
-      :stderr_to_stdout
+      {:env, env_charlist()}
     ]
+  end
 
-    port_module.open({:spawn_executable, exe_path}, port_opts)
+  defp port_flags, do: [:binary, :exit_status, :stderr_to_stdout]
+
+  defp env_charlist do
+    Enum.map(System.get_env(), &charlist_pair/1)
+  end
+
+  defp charlist_pair({k, v}) do
+    {String.to_charlist(k), String.to_charlist(v)}
   end
 
   defp resolve_cli_and_args(_cli_path, opts, resume_id) do
