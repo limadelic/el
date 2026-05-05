@@ -242,15 +242,15 @@ defmodule El.CLI.Start do
     name_atom = String.to_atom(name)
     el.start(name_atom, opts ++ deps)
     print_session_info(name, opts, deps)
-    dispatch_rest(rest, name)
+    dispatch_rest(rest, name, opts)
   end
 
-  def dispatch_rest([], _name) do
+  def dispatch_rest([], _name, _opts) do
     :ok
   end
 
-  def dispatch_rest(rest, name) do
-    El.CLI.dispatch([name | rest])
+  def dispatch_rest(rest, name, opts) do
+    El.CLI.dispatch([name | rest], opts)
   end
 
   def start_daemon_node_for(name, model, el, sleeper \\ El.SleeperImpl, deps \\ []) do
