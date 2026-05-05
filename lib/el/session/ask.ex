@@ -24,14 +24,14 @@ defmodule El.Session.Ask do
     GenServer.cast(server_pid, {:complete_ask, from, message, response, ref, model, session_id})
   end
 
-  def finalize_ask(state, from, ref, message, response, model) do
+  def finalize_ask(state, %{from: from, ref: ref, message: message, response: response, model: model} = ask) do
     Store.delete_ask_entry(state, message, ref)
     Store.store_ask_entry(state, {"ask", message, response, metadata_for(model)})
     Claude.safe_reply(from, response)
-    finalize_ask_state(state, from, ref, message, response, model)
+    finalize_ask_state(state, ask)
   end
 
-  defp finalize_ask_state(state, from, ref, message, response, model) do
+  defp finalize_ask_state(state, %{from: from, ref: ref, message: message, response: response, model: model}) do
     new_messages = Store.replace_ask(state.messages, ref, message, response, model)
     new_pending = List.delete(state.pending_calls, from)
     %{state | messages: new_messages, pending_calls: new_pending}

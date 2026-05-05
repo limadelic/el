@@ -10,7 +10,7 @@ defmodule El.Session.Spec do
       {make_ref(), state}
     end)
     Mox.stub(El.MockSessionAsk, :spawn_ask, fn _state, _ask_info, _routes, _server -> :ok end)
-    Mox.stub(El.MockSessionAsk, :finalize_ask, fn state, _from, _ref, _msg, _resp, _model -> state end)
+    Mox.stub(El.MockSessionAsk, :finalize_ask, fn state, _ask -> state end)
     Mox.stub(El.MockSessionAsk, :reset_session, fn state -> state end)
     Mox.stub(El.MockSessionApi, :cast_store_relay, fn _, _, _ -> :ok end)
 

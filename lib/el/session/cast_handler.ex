@@ -17,7 +17,8 @@ defmodule El.Session.CastHandler do
   end
 
   def handle({:complete_ask, from, message, response, ref, model, nil}, state) do
-    new_state = state.ask_module.finalize_ask(state, from, ref, message, response, model)
+    ask = %{from: from, ref: ref, message: message, response: response, model: model}
+    new_state = state.ask_module.finalize_ask(state, ask)
     {:noreply, new_state}
   end
 
@@ -41,8 +42,8 @@ defmodule El.Session.CastHandler do
     {:noreply, %{state | messages: state.messages ++ [entry]}}
   end
 
-  defp build_updated_state(state, %{from: from, ref: ref, message: message, response: response, model: model}, session_id) do
-    new_state = state.ask_module.finalize_ask(state, from, ref, message, response, model)
+  defp build_updated_state(state, ask, session_id) do
+    new_state = state.ask_module.finalize_ask(state, ask)
     %{new_state | session_id: session_id}
   end
 
