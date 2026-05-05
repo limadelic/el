@@ -109,34 +109,29 @@ defmodule El.CLI.Start.Options.Spec do
   describe "El.CLI.Start.Options.env_model_for/3" do
     setup do
       stub(El.MockEnv, :get, fn _ -> nil end)
-      :ok
+      {:ok, deps: [env: El.MockEnv]}
     end
 
-    test "returns empty list when model is set" do
-      deps = [env: El.MockEnv]
+    test "returns empty list when model is set", %{deps: deps} do
       assert El.CLI.Start.Options.env_model_for("haiku", nil, deps) == []
     end
 
-    test "returns empty list when agent is set" do
-      deps = [env: El.MockEnv]
+    test "returns empty list when agent is set", %{deps: deps} do
       assert El.CLI.Start.Options.env_model_for(nil, "kent", deps) == []
     end
 
-    test "returns empty list when both model and agent are set" do
-      deps = [env: El.MockEnv]
+    test "returns empty list when both model and agent are set", %{deps: deps} do
       assert El.CLI.Start.Options.env_model_for("haiku", "kent", deps) == []
     end
 
-    test "reads CLAUDE_CODE_SUBAGENT_MODEL when model and agent are nil" do
+    test "reads CLAUDE_CODE_SUBAGENT_MODEL when model and agent are nil", %{deps: deps} do
       expect(El.MockEnv, :get, fn name ->
         if name == "CLAUDE_CODE_SUBAGENT_MODEL", do: "opus", else: nil
       end)
-      deps = [env: El.MockEnv]
       assert El.CLI.Start.Options.env_model_for(nil, nil, deps) == [model: "opus"]
     end
 
-    test "returns empty list when env var not set" do
-      deps = [env: El.MockEnv]
+    test "returns empty list when env var not set", %{deps: deps} do
       assert El.CLI.Start.Options.env_model_for(nil, nil, deps) == []
     end
   end
