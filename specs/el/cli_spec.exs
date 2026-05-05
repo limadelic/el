@@ -568,7 +568,7 @@ defmodule El.CLI.Spec do
 
   describe "El.CLI.Start.handle_find_daemon_for_start/4" do
     setup do
-      stub(El.MockSessionApi, :info, fn :session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil} end)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
       :ok
     end
 
