@@ -14,9 +14,13 @@ defmodule El.CLI.Start.SessionCard.Spec do
       {:ok, info: info}
     end
 
-    test "includes name and id row", %{info: info} do
+    test "includes name in first row", %{info: info} do
       result = El.CLI.Start.SessionCard.build_card_rows("test_session", [], info)
       assert Enum.any?(result, &String.contains?(&1, "name:  test_session"))
+    end
+
+    test "includes id in first row", %{info: info} do
+      result = El.CLI.Start.SessionCard.build_card_rows("test_session", [], info)
       assert Enum.any?(result, &String.contains?(&1, "id:"))
     end
 
@@ -38,11 +42,17 @@ defmodule El.CLI.Start.SessionCard.Spec do
       assert Enum.any?(result, &String.contains?(&1, "model: claude-3-5-sonnet"))
     end
 
-    test "prefers opts model over info model", %{info: info} do
+    test "shows preferred model from opts", %{info: info} do
       opts = [model: "claude-3-5-opus"]
       new_info = %{info | model: "claude-3-5-sonnet"}
       result = El.CLI.Start.SessionCard.build_card_rows("test_session", opts, new_info)
       assert Enum.any?(result, &String.contains?(&1, "model: claude-3-5-opus"))
+    end
+
+    test "does not show non-preferred model from info", %{info: info} do
+      opts = [model: "claude-3-5-opus"]
+      new_info = %{info | model: "claude-3-5-sonnet"}
+      result = El.CLI.Start.SessionCard.build_card_rows("test_session", opts, new_info)
       assert Enum.all?(result, &(!String.contains?(&1, "model: claude-3-5-sonnet")))
     end
 
@@ -120,19 +130,30 @@ defmodule El.CLI.Start.SessionCard.Spec do
       assert length(separators) == 0
     end
 
-    test "agent takes precedence over info model in second left value", %{info: info} do
+    test "agent appears in second left value", %{info: info} do
       opts = [agent: "kent"]
       result = El.CLI.Start.SessionCard.build_card_rows("test_session", opts, info)
       assert Enum.any?(result, &String.contains?(&1, "agent: kent"))
+    end
+
+    test "agent second left value is not nil", %{info: info} do
+      opts = [agent: "kent"]
+      result = El.CLI.Start.SessionCard.build_card_rows("test_session", opts, info)
       pair_row = Enum.find(result, &String.contains?(&1, "agent: kent"))
       assert pair_row != nil
     end
 
-    test "opts model takes precedence over info model in display", %{info: info} do
+    test "opts model is shown in display", %{info: info} do
       opts = [model: "opus"]
       new_info = %{info | model: "sonnet"}
       result = El.CLI.Start.SessionCard.build_card_rows("test_session", opts, new_info)
       assert Enum.any?(result, &String.contains?(&1, "opus"))
+    end
+
+    test "info model is not shown when opts model present", %{info: info} do
+      opts = [model: "opus"]
+      new_info = %{info | model: "sonnet"}
+      result = El.CLI.Start.SessionCard.build_card_rows("test_session", opts, new_info)
       displayed_models = result |> Enum.filter(&String.contains?(&1, "model:"))
       assert Enum.all?(displayed_models, &(!String.contains?(&1, "sonnet")))
     end
