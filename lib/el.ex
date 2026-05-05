@@ -3,7 +3,7 @@ defmodule El do
   def supervisor, do: Application.get_env(:el, :supervisor, DynamicSupervisor)
   def session, do: Application.get_env(:el, :session, El.Session)
   def app, do: Application.get_env(:el, :app, El.Application)
-  def monitor, do: Application.get_env(:el, :monitor, El.ProcessMonitor)
+  def monitor(opts \\ []), do: Keyword.get(opts, :monitor, Application.get_env(:el, :monitor, El.ProcessMonitor))
 
   def start(name, opts \\ []) when is_atom(name) do
     start_if_needed(name, opts, registry().lookup(El.Registry, name))
