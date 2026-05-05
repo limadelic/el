@@ -88,14 +88,23 @@ defmodule El.CLI.Start do
   end
 
   defp build_card_rows(name, opts, info) do
+    []
+    |> add_session_meta(name, opts, info)
+    |> add_message_history(info)
+  end
+
+  defp add_session_meta(rows, name, opts, info) do
     agent = Keyword.get(opts, :agent)
     opts_model = Keyword.get(opts, :model)
-
-    []
+    rows
     |> add_name_id(name, info.id)
     |> add_second_with_cwd(agent, opts_model, info.model, info.cwd)
     |> add_model(opts_model, info.model)
     |> add_msgs(info.messages)
+  end
+
+  defp add_message_history(rows, info) do
+    rows
     |> add_prompt_separator(info.last_prompt)
     |> add_prompt(info.last_prompt)
     |> add_response_separator(info.last_response)
