@@ -21,4 +21,22 @@ defmodule El.CLI.Start.Options do
 
   def subagent_model(nil), do: []
   def subagent_model(model), do: [model: model]
+
+  def agent_model_opt(nil, _, _), do: []
+  def agent_model_opt(_, explicit_model, _) when explicit_model != nil, do: []
+  def agent_model_opt(agent, nil, deps) do
+    metadata = agent_metadata(deps)
+    agent_model_for(metadata.model_for(agent))
+  end
+
+  def env_model_for(nil, nil, deps) do
+    env = env_adapter(deps)
+    subagent_model(env.get("CLAUDE_CODE_SUBAGENT_MODEL"))
+  end
+
+  def env_model_for(_, _, _), do: []
+
+  defp env_adapter(deps) do
+    Keyword.get(deps, :env, El.Env)
+  end
 end

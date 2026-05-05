@@ -7,13 +7,13 @@ defmodule El.CLI.Start do
   def merge_session_opts(name, explicit_agent \\ nil, explicit_model \\ nil, deps \\ []) do
     agent = resolve_agent(explicit_agent, name, deps)
     base = build_base_opts(explicit_model, agent, deps)
-    base ++ env_model(base)
+    base ++ env_model(base, deps)
   end
 
   defp build_base_opts(explicit_model, agent, deps) do
     Options.start_opts(explicit_model) ++
       Options.agent_opt(agent) ++
-      agent_model_opt(agent, explicit_model, deps)
+      Options.agent_model_opt(agent, explicit_model, deps)
   end
 
   defp resolve_agent(nil, name, deps), do: Options.agent_detector(deps).detect_agent(name)
@@ -21,25 +21,12 @@ defmodule El.CLI.Start do
 
   def detect_and_merge_agent(name, opts, deps \\ []) do
     merged = opts ++ Options.agent_opt(Options.agent_detector(deps).detect_agent(name))
-    merged ++ env_model(merged)
+    merged ++ env_model(merged, deps)
   end
 
-  defp agent_model_opt(nil, _, _), do: []
-  defp agent_model_opt(_, explicit_model, _) when explicit_model != nil, do: []
-  defp agent_model_opt(agent, nil, deps) do
-    metadata = Options.agent_metadata(deps)
-    Options.agent_model_for(metadata.model_for(agent))
+  defp env_model(opts, deps) do
+    Options.env_model_for(Keyword.get(opts, :model), Keyword.get(opts, :agent), deps)
   end
-
-  defp env_model(opts) do
-    env_model_for(Keyword.get(opts, :model), Keyword.get(opts, :agent))
-  end
-
-  defp env_model_for(nil, nil) do
-    Options.subagent_model(System.get_env("CLAUDE_CODE_SUBAGENT_MODEL"))
-  end
-
-  defp env_model_for(_, _), do: []
 
   def handle_find_daemon_for_start(name, opts, el, deps \\ []) do
     name_atom = String.to_atom(name)

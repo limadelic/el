@@ -77,4 +77,67 @@ defmodule El.CLI.Start.Options.Spec do
       assert El.CLI.Start.Options.subagent_model("haiku") == [model: "haiku"]
     end
   end
+
+  describe "El.CLI.Start.Options.agent_model_opt/3" do
+    setup do
+      stub(El.MockAgentMetadata, :model_for, fn
+        "kent" -> "opus"
+        _ -> nil
+      end)
+      :ok
+    end
+
+    test "returns empty list when agent is nil" do
+      assert El.CLI.Start.Options.agent_model_opt(nil, nil, []) == []
+    end
+
+    test "returns empty list when explicit model is provided" do
+      assert El.CLI.Start.Options.agent_model_opt("kent", "sonnet", []) == []
+    end
+
+    test "resolves model from metadata when agent present and no explicit model" do
+      deps = [agent_metadata: El.MockAgentMetadata]
+      assert El.CLI.Start.Options.agent_model_opt("kent", nil, deps) == [model: "opus"]
+    end
+
+    test "returns empty list when agent has no model in metadata" do
+      deps = [agent_metadata: El.MockAgentMetadata]
+      assert El.CLI.Start.Options.agent_model_opt("unknown", nil, deps) == []
+    end
+  end
+
+  describe "El.CLI.Start.Options.env_model_for/3" do
+    setup do
+      stub(El.MockEnv, :get, fn _ -> nil end)
+      :ok
+    end
+
+    test "returns empty list when model is set" do
+      deps = [env: El.MockEnv]
+      assert El.CLI.Start.Options.env_model_for("haiku", nil, deps) == []
+    end
+
+    test "returns empty list when agent is set" do
+      deps = [env: El.MockEnv]
+      assert El.CLI.Start.Options.env_model_for(nil, "kent", deps) == []
+    end
+
+    test "returns empty list when both model and agent are set" do
+      deps = [env: El.MockEnv]
+      assert El.CLI.Start.Options.env_model_for("haiku", "kent", deps) == []
+    end
+
+    test "reads CLAUDE_CODE_SUBAGENT_MODEL when model and agent are nil" do
+      expect(El.MockEnv, :get, fn name ->
+        if name == "CLAUDE_CODE_SUBAGENT_MODEL", do: "opus", else: nil
+      end)
+      deps = [env: El.MockEnv]
+      assert El.CLI.Start.Options.env_model_for(nil, nil, deps) == [model: "opus"]
+    end
+
+    test "returns empty list when env var not set" do
+      deps = [env: El.MockEnv]
+      assert El.CLI.Start.Options.env_model_for(nil, nil, deps) == []
+    end
+  end
 end
