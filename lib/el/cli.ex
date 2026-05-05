@@ -42,7 +42,7 @@ defmodule El.CLI do
   end
 
   def execute(:msg, [name, word | more_words], deps) do
-    opts = Start.detect_and_merge_agent(name, Start.start_opts(nil), deps)
+    opts = Start.detect_and_merge_agent(name, Start.Options.start_opts(nil), deps)
     status = el(deps).start(String.to_atom(name), opts ++ deps)
     Msg.dispatch(name, [word | more_words], el(deps), deps)
     maybe_print_card(status, name, opts, deps)
