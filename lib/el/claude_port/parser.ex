@@ -14,8 +14,11 @@ defmodule El.ClaudePort.Parser do
 
   defp apply_process_result(:incomplete, _remaining, _session_id), do: :incomplete
   defp apply_process_result({:complete, result, model, sid}, remaining, session_id) do
-    {:ok, {nil_to_empty(result), model, sid || session_id}, remaining}
+    {:ok, {nil_to_empty(result), model, resolve_sid(sid, session_id)}, remaining}
   end
+
+  defp resolve_sid(nil, fallback), do: fallback
+  defp resolve_sid(sid, _fallback), do: sid
 
   defp extract_all_lines(buffer, acc) do
     apply_extracted_line(extract_one_line(buffer), buffer, acc)
