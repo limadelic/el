@@ -63,13 +63,13 @@ defmodule El.Application do
 
   def supervisor_opts, do: @supervisor_opts
 
-  def init_message_store do
+  def init_message_store(opts \\ []) do
     dir = store_dir()
     messages_path = Path.expand("#{dir}/messages.dets") |> String.to_charlist()
     session_meta_path = Path.expand("#{dir}/session_meta.dets") |> String.to_charlist()
-    file_system = Application.get_env(:el, :file_system, El.FileSystemImpl)
+    file_system = opts[:file_system] || Application.get_env(:el, :file_system, El.FileSystemImpl)
     file_system.mkdir_p!(Path.expand(dir))
-    dets_backend = Application.get_env(:el, :dets_backend, :dets)
+    dets_backend = opts[:dets_backend] || Application.get_env(:el, :dets_backend, :dets)
     {:ok, _} = dets_backend.open_file(:message_store, file: messages_path, type: :bag)
     {:ok, _} = dets_backend.open_file(:session_meta, file: session_meta_path, type: :bag)
   end
