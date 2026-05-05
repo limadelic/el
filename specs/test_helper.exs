@@ -125,6 +125,7 @@ Enum.each(
     El.CLI,
     El.CLI.Start,
     El.CLI.Start.CardBox,
+    El.CLI.Start.DaemonHealth,
     El.CLI.Start.TextFormatter,
     El.CLI.Log,
     El.CLI.Pattern,
