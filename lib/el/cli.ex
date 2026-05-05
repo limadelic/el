@@ -5,9 +5,11 @@ defmodule El.CLI do
     Application.spec(:el, :vsn) |> Output.format_version()
   end
 
-  defp el(opts), do: Keyword.fetch!(opts, :el_module)
+  defp el(opts), do: Keyword.get(opts, :el_module, Application.get_env(:el, :el_module, El))
 
-  def dispatch(args, opts \\ []) do
+  def dispatch(args), do: dispatch(args, El.Deps.production())
+
+  def dispatch(args, opts) do
     args |> Router.parse_route() |> execute(args, opts)
   end
 
