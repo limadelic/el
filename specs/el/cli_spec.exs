@@ -1063,6 +1063,7 @@ defmodule El.CLI.Spec do
     end
 
     test "threads opts to recursive dispatch with non-empty rest" do
+      stub(El.MockSessionApi, :info, fn :kenny -> %{messages: 0, last_prompt: nil, last_response: nil, model: "opus", cwd: "/verylong/path/name", id: "kenny1234567890"} end)
       expect(El.MockEl, :start, fn :kenny, opts when is_list(opts) -> :ok end)
       expect(El.MockEl, :log, fn :kenny, 1, [agent: "kent", el_module: El.MockEl] -> [] end)
 
