@@ -262,19 +262,20 @@ defmodule El.CLI.Start do
   end
 
   defp build_lines([word | rest], width, current, acc) do
-    add_word(word, rest, width, current, acc, String.trim(current <> " " <> word))
+    wrap = %{rest: rest, width: width, current: current, acc: acc}
+    add_word(word, wrap, String.trim(current <> " " <> word))
   end
 
-  defp add_word(word, rest, width, current, acc, new_line) do
-    do_add_word(String.length(new_line), word, rest, width, current, acc, new_line)
+  defp add_word(word, wrap, new_line) do
+    do_add_word(String.length(new_line), word, wrap, new_line)
   end
 
-  defp do_add_word(len, _word, rest, width, _current, acc, new_line) when len <= width do
-    build_lines(rest, width, new_line, acc)
+  defp do_add_word(len, _word, wrap, new_line) when len <= wrap.width do
+    build_lines(wrap.rest, wrap.width, new_line, wrap.acc)
   end
 
-  defp do_add_word(_len, word, rest, width, current, acc, _new_line) do
-    build_lines(rest, width, word, [String.trim(current) | acc])
+  defp do_add_word(_len, word, wrap, _new_line) do
+    build_lines(wrap.rest, wrap.width, word, [String.trim(wrap.current) | wrap.acc])
   end
 
   defp cap_lines(lines, max), do: Enum.take(lines, max)
