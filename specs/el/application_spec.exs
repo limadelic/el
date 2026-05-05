@@ -88,11 +88,11 @@ defmodule El.Application.Spec do
     name = :test_session
     entry = {"tell", "hello", "response", %{}}
 
-    assert El.Application.store_message(name, entry) == :ok
+    assert El.Application.store_message(name, entry, message_store: El.MessageStoreStub) == :ok
   end
 
   test "load_messages returns empty list when store returns empty" do
-    messages = El.Application.load_messages(:new_session)
+    messages = El.Application.load_messages(:new_session, message_store: El.MessageStoreStub)
     assert messages == []
   end
 
@@ -101,14 +101,14 @@ defmodule El.Application.Spec do
     _entry1 = {"tell", "msg1", "resp1", %{}}
     _entry2 = {"tell", "msg2", "resp2", %{}}
 
-    messages = El.Application.load_messages(name)
+    messages = El.Application.load_messages(name, message_store: El.MessageStoreStub)
     assert messages == []
   end
 
   test "delete_session_messages delegates to message store" do
     name = :delete_test
 
-    assert El.Application.delete_session_messages(name) == :ok
+    assert El.Application.delete_session_messages(name, message_store: El.MessageStoreStub) == :ok
   end
 
   test "uses dev DETS path when DEV is set" do
