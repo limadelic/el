@@ -33,3 +33,7 @@
 - only 1 branch besides main 
 - dont make branches
 - dont commit to main
+
+# PLANS
+
+- Use `.claude/plans/` (local) for plans/scratch — never `~/.claude/plans/`

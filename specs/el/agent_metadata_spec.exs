@@ -1,6 +1,12 @@
 defmodule El.AgentMetadata.Spec do
   use ExUnit.Case
 
+  setup_all do
+    Code.ensure_loaded!(El.AgentMetadata)
+    Code.ensure_loaded!(El.Agent.Paths)
+    :ok
+  end
+
   setup do
     fixture_dir = Path.expand("../fixtures", __DIR__)
     File.mkdir_p!(fixture_dir)

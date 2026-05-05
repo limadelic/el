@@ -1,4 +1,6 @@
 defmodule El.Session.Ask do
+  @behaviour El.Behaviours.SessionAsk
+
   alias El.Session.Router
   alias El.Session.Store
   alias El.Session.Claude
@@ -18,21 +20,19 @@ defmodule El.Session.Ask do
 
   defp spawn_ask_task(state, ask_info, valid_routes, server_pid) do
     {from, message, ref} = ask_info
-    {response, model, session_id} = Claude.ask_work(state.claude_pid, message, valid_routes)
+    {response, model, session_id} = state.claude_session.ask_work(state.claude_pid, message, valid_routes)
     GenServer.cast(server_pid, {:complete_ask, from, message, response, ref, model, session_id})
   end
 
   def finalize_ask(state, from, ref, message, response, model) do
-    store_module = Application.get_env(:el, :store_module, Store)
-    store_module.delete_ask_entry(state, message, ref)
-    store_module.store_ask_entry(state, {"ask", message, response, metadata_for(model)})
+    Store.delete_ask_entry(state, message, ref)
+    Store.store_ask_entry(state, {"ask", message, response, metadata_for(model)})
     Claude.safe_reply(from, response)
     finalize_ask_state(state, from, ref, message, response, model)
   end
 
   defp finalize_ask_state(state, from, ref, message, response, model) do
-    store_module = Application.get_env(:el, :store_module, Store)
-    new_messages = store_module.replace_ask(state.messages, ref, message, response, model)
+    new_messages = Store.replace_ask(state.messages, ref, message, response, model)
     new_pending = List.delete(state.pending_calls, from)
     %{state | messages: new_messages, pending_calls: new_pending}
   end
@@ -47,7 +47,7 @@ defmodule El.Session.Ask do
   end
 
   defp clear_messages(state) do
-    state.store_module.delete_session_messages(state.name)
+    state.store_module.delete_session_messages(state.name, message_store: state.opts[:message_store])
     %{state | messages: []}
   end
 

@@ -1,19 +1,19 @@
 defmodule El.CLI.Log do
-  def execute_log(name, count, el_module) when is_binary(name) do
-    result = log_for_name(name, count, el_module)
+  def execute_log(name, count, el_module, opts) when is_binary(name) do
+    result = log_for_name(name, count, el_module, opts)
     El.CLI.Output.handle_log_result(result, name)
   end
 
-  def log_for_name(name, count, el_module) when is_binary(name) do
-    log_by_kind(pattern?(name), name, count, el_module)
+  def log_for_name(name, count, el_module, opts) when is_binary(name) do
+    log_by_kind(pattern?(name), name, count, el_module, opts)
   end
 
-  def log_by_kind(true, name, count, el_module) do
-    el_module.log_pattern(name, count)
+  def log_by_kind(true, name, count, el_module, opts) do
+    el_module.log_pattern(name, count, opts)
   end
 
-  def log_by_kind(false, name, count, el_module) do
-    el_module.log(String.to_atom(name), count)
+  def log_by_kind(false, name, count, el_module, opts) do
+    el_module.log(String.to_atom(name), count, opts)
   end
 
   def parse_log_count("all"), do: :all

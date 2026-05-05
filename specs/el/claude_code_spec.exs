@@ -58,16 +58,14 @@ defmodule El.ClaudeCode.Spec do
       El.ClaudeCode.start_link(session_module: El.MockClaudeCodeSession)
     end
 
-    test "passes configured cli_path from application environment" do
-      Application.put_env(:claude_code, :cli_path, "/custom/path")
-
+    test "passes configured cli_path from options" do
       Mox.expect(El.MockClaudeCodeSession, :start_link, fn opts ->
         {ClaudeCode.Adapter.Port, adapter_opts} = opts[:adapter]
         assert adapter_opts[:cli_path] == "/custom/path"
         {:ok, self()}
       end)
 
-      El.ClaudeCode.start_link(session_module: El.MockClaudeCodeSession)
+      El.ClaudeCode.start_link(cli_path: "/custom/path", session_module: El.MockClaudeCodeSession)
     end
 
     test "defaults cli_path to :global when not configured" do
@@ -127,7 +125,7 @@ defmodule El.ClaudeCode.Spec do
         {:ok, self()}
       end)
 
-      El.ClaudeCode.start_link(session_id: "session-abc", resume: "session-abc")
+      El.ClaudeCode.start_link(session_id: "session-abc", resume: "session-abc", session_module: El.MockClaudeCodeSession)
     end
 
     test "omits session_id when not provided" do

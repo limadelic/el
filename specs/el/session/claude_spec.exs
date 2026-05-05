@@ -1,6 +1,16 @@
 defmodule El.Session.Claude.Spec do
   use ExUnit.Case
 
+  setup_all do
+    Code.ensure_loaded!(El.Session.Claude)
+    Code.ensure_loaded!(El.ClaudePort)
+    Code.ensure_loaded!(TestClaudePortStub)
+    {:ok, warmup_pid} = TestClaudePortStub.start_link(nil)
+    El.Session.Claude.ask(warmup_pid, "warmup")
+    GenServer.stop(warmup_pid)
+    :ok
+  end
+
   setup do
     Application.put_env(:claude_code, :session_module, MockClaudeCodeSession)
     {:ok, pid} = TestClaudePortStub.start_link(nil)
@@ -20,17 +30,14 @@ defmodule El.Session.Claude.Spec do
   end
 
   describe "ask/2" do
-    @tag timeout: 1000
     test "returns result from ask", %{test_pid: test_pid} do
       assert {"test result", _, _} = El.Session.Claude.ask(test_pid, "test")
     end
 
-    @tag timeout: 1000
     test "captures model from Init event", %{test_pid: test_pid} do
       assert {_, "test-model", _} = El.Session.Claude.ask(test_pid, "test")
     end
 
-    @tag timeout: 1000
     test "captures session_id from Init event", %{test_pid: test_pid} do
       assert {_, _, "test-session-id"} = El.Session.Claude.ask(test_pid, "test")
     end

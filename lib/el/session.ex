@@ -13,11 +13,15 @@ defmodule El.Session do
 
   @defaults %{
     claude_module: El.ClaudePort,
+    claude_session: El.Session.Claude,
     task_module: Task,
+    ask_module: El.Session.Ask,
     alive_fn: &El.Session.Api.alive?/1,
     registry_module: Registry,
     store_module: El.Application,
-    session_meta: El.SessionMeta
+    session_meta: El.SessionMeta,
+    session_api: El.Session.Api,
+    el_module: El
   }
   @base_state_defaults %{
     name: nil,
@@ -48,6 +52,15 @@ defmodule El.Session do
     rest
     |> add_resume(Keyword.has_key?(opts, :resume), opts)
     |> add_continue(Keyword.has_key?(opts, :continue), opts)
+    |> ensure_setting_sources()
+  end
+
+  defp ensure_setting_sources(opts) do
+    if Keyword.has_key?(opts, :setting_sources) do
+      opts
+    else
+      Keyword.put(opts, :setting_sources, ["user", "project", "local"])
+    end
   end
 
   defp add_resume(claude_opts, true, opts) do
@@ -74,12 +87,12 @@ defmodule El.Session do
   defp get_opts(o), do: @defaults |> Map.merge(Map.new(o))
 
   defp file_system(opts) do
-    Keyword.get(opts, :file_system, Application.get_env(:el, :file_system, El.FileSystemImpl))
+    Keyword.get(opts, :file_system, El.FileSystemImpl)
   end
 
   @impl true
   def handle_continue(:start_claude, state) do
-    messages = state.store_module.load_messages(state.name)
+    messages = state.store_module.load_messages(state.name, message_store: state.opts[:message_store])
     claude_pid = Claude.start(state.claude_module, state.claude_opts)
     {:noreply, %{state | claude_pid: claude_pid, messages: messages}}
   end

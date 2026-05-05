@@ -11,39 +11,47 @@ defmodule El.Application do
 
   @impl true
   def start(_type, _args) do
-    init_message_store()
+    file_system = Application.get_env(:el, :file_system, El.FileSystemImpl)
+    dets_backend = Application.get_env(:el, :dets_backend, :dets)
+    daemon = Application.get_env(:el, :daemon, El.CLI.Daemon)
+    init_message_store(file_system: file_system, dets_backend: dets_backend, daemon: daemon)
     {:ok, pid} = Supervisor.start_link(children(), supervisor_opts())
-    restore_sessions()
+    el_module = Application.get_env(:el, :el_module, El)
+    session_meta = Application.get_env(:el, :session_meta, El.SessionMeta)
+    message_store = Application.get_env(:el, :message_store, El.MessageStore)
+    restore_sessions(el_module: el_module, session_meta: session_meta, message_store: message_store)
     {:ok, pid}
   end
 
   @impl true
   def stop(_state) do
-    :dets.close(:session_meta)
+    dets_backend = Application.get_env(:el, :dets_backend, :dets)
+    dets_backend.close(:session_meta)
     message_store = Application.get_env(:el, :message_store, El.MessageStore)
     message_store.close()
   end
 
-  def restore_sessions do
-    el = Application.get_env(:el, :el_module, El)
-    message_store = Application.get_env(:el, :message_store, El.MessageStore)
-    session_meta = Application.get_env(:el, :session_meta, El.SessionMeta)
+  def restore_sessions(opts \\ []) do
+    el = Keyword.fetch!(opts, :el_module)
+    message_store = Keyword.fetch!(opts, :message_store)
+    session_meta = Keyword.fetch!(opts, :session_meta)
+    deps = El.Deps.production()
 
     message_store.session_names()
-    |> Enum.each(&restore_session(&1, el, session_meta))
+    |> Enum.each(&restore_session(&1, el, session_meta, deps))
   end
 
-  defp restore_session(name, el, _session_meta, {:ok, session_id, agent, model}) do
-    opts = [resume: session_id, agent: agent, model: model]
+  defp restore_session(name, el, _session_meta, deps, {:ok, session_id, agent, model}) do
+    opts = [resume: session_id, agent: agent, model: model] ++ deps
     el.start(name, opts)
   end
 
-  defp restore_session(name, el, _session_meta, {:error, :not_found}) do
-    el.start(name, [])
+  defp restore_session(name, el, _session_meta, deps, {:error, :not_found}) do
+    el.start(name, deps)
   end
 
-  defp restore_session(name, el, session_meta) do
-    restore_session(name, el, session_meta, session_meta.lookup(name))
+  defp restore_session(name, el, session_meta, deps) do
+    restore_session(name, el, session_meta, deps, session_meta.lookup(name))
   end
 
   def children do
@@ -59,41 +67,39 @@ defmodule El.Application do
 
   def supervisor_opts, do: @supervisor_opts
 
-  def init_message_store do
-    dir = store_dir()
+  def init_message_store(opts \\ []) do
+    daemon = Keyword.fetch!(opts, :daemon)
+    dir = store_dir(daemon)
     messages_path = Path.expand("#{dir}/messages.dets") |> String.to_charlist()
     session_meta_path = Path.expand("#{dir}/session_meta.dets") |> String.to_charlist()
-    File.mkdir_p!(Path.expand(dir))
-    dets_backend = Application.get_env(:el, :dets_backend, :dets)
+    file_system = Keyword.fetch!(opts, :file_system)
+    file_system.mkdir_p!(Path.expand(dir))
+    dets_backend = Keyword.fetch!(opts, :dets_backend)
     {:ok, _} = dets_backend.open_file(:message_store, file: messages_path, type: :bag)
     {:ok, _} = dets_backend.open_file(:session_meta, file: session_meta_path, type: :bag)
   end
 
-  defp store_dir do
-    daemon = Application.get_env(:el, :daemon, El.CLI.Daemon)
-    store_dir(daemon.dev?())
-  end
-
   defp store_dir(true), do: "~/.el/dev"
   defp store_dir(false), do: "~/.el"
+  defp store_dir(daemon) when is_atom(daemon), do: store_dir(daemon.dev?())
 
-  def delete_session_messages(name) do
-    message_store = Application.get_env(:el, :message_store, El.MessageStore)
-    message_store.delete(name)
+  def delete_session_messages(name, opts \\ []) do
+    ms = Keyword.fetch!(opts, :message_store)
+    ms.delete(name)
   end
 
-  def store_message(name, message_entry) do
-    message_store = Application.get_env(:el, :message_store, El.MessageStore)
-    message_store.insert(name, message_entry)
+  def store_message(name, message_entry, opts \\ []) do
+    ms = Keyword.fetch!(opts, :message_store)
+    ms.insert(name, message_entry)
   end
 
-  def load_messages(name) do
-    message_store = Application.get_env(:el, :message_store, El.MessageStore)
-    message_store.lookup(name)
+  def load_messages(name, opts \\ []) do
+    ms = Keyword.fetch!(opts, :message_store)
+    ms.lookup(name)
   end
 
-  def delete_message(name, entry) do
-    message_store = Application.get_env(:el, :message_store, El.MessageStore)
-    message_store.delete_entry(name, entry)
+  def delete_message(name, entry, opts \\ []) do
+    ms = Keyword.fetch!(opts, :message_store)
+    ms.delete_entry(name, entry)
   end
 end

@@ -9,7 +9,7 @@ defmodule El.ClaudeCode do
   end
 
   defp build_and_start(session_module, session_id, remaining_opts, opts) do
-    cli_path = Application.get_env(:claude_code, :cli_path, :global)
+    cli_path = opts[:cli_path] || :global
     session_opts = base_session_opts(session_id, cli_path)
     final_opts = build_final_opts(session_opts, remaining_opts, opts)
     session_module.start_link(final_opts)
@@ -23,7 +23,7 @@ defmodule El.ClaudeCode do
   end
 
   defp extract_session_module(nil) do
-    Application.get_env(:el, :claude_code_session_module, @default_session_module)
+    @default_session_module
   end
 
   defp extract_session_module(module), do: module
@@ -65,7 +65,7 @@ defmodule El.ClaudeCode do
   end
 
   defp extract_stream_session_module(nil) do
-    Application.get_env(:claude_code, :session_module, @default_session_module)
+    @default_session_module
   end
 
   defp extract_stream_session_module(module), do: module

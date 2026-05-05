@@ -1,14 +1,12 @@
 # Spec Rules
 
 ## Philosophy
-- ONLY unit tests, NEVER integration tests
-- NEVER start real processes (no start_link, no GenServer.start, no Application.ensure_all_started)
-- mock the next module: each spec tests ONE module
-- mock EVERYTHING that's not in this module
-- whatever is external gets mocked, whatever is internal gets tested
-- GenServer callbacks (init, handle_cast, handle_call, handle_info) are functions, test them directly
-- no end-to-end through the whole stack
-- no Process.sleep, ever
+- Growing Object Oriented System Guided By Test
+- London School of TDD
+
+## What gets mocked 
+- Code we own: every collaborator gets a behaviour and a Mox mock
+- Code we don't own: wrap + mock only when it breaks Feathers' rules (FS, network, DB, clock, processes outside the unit). Otherwise call directly.
 
 ## Mock Style
 - use Mox with behaviours (lib/el/behaviours.ex)
@@ -16,8 +14,8 @@
 - import Mox + setup :verify_on_exit! in each spec
 - stub the happy path in setup, expect in tests
 - each test overrides ONLY the one thing that makes that scenario different
-- for modules without behaviours, use simple stub modules via Application.get_env
-- Erlang wrappers (:dets) are tested through the layer above, not directly
+- code we don't own that breaks Feathers gets wrapped in our own adapter (own code with a behaviour)
+- adapters are tested through the layer above, not directly
 - 10ms timeout per test — if it's slower, it's not a unit test
 
 ## DRY

@@ -9,38 +9,30 @@ end
 
 defmodule El.MessageStore.Spec do
   use ExUnit.Case
+  import Mox
 
-  setup do
-    on_exit(fn ->
-      Application.delete_env(:el, :dets_backend)
-    end)
+  setup :verify_on_exit!
 
-    Application.put_env(:el, :dets_backend, El.DetsBackendStub)
-    :ok
-  end
-
-  describe "delete_entry/2" do
+  describe "delete_entry/3" do
     test "calls dets.delete_object with correct arguments" do
       name = :test_entry
       entry = {"tell", "hello", "response", %{}}
 
-      result = El.MessageStore.delete_entry(name, entry)
+      expect(El.MockDets, :delete_object, fn :message_store, {^name, ^entry} -> :ok end)
 
-      assert result == :ok
+      assert El.MessageStore.delete_entry(name, entry, [dets_backend: El.MockDets]) == :ok
     end
   end
 
-  describe "session_names/0" do
+  describe "session_names/1" do
     test "returns empty list when no sessions" do
-      result = El.MessageStore.session_names()
+      result = El.MessageStore.session_names([dets_backend: El.DetsBackendStub])
 
       assert result == []
     end
 
     test "returns unique names from store entries" do
-      Application.put_env(:el, :dets_backend, DetsBackendWithEntries)
-
-      result = El.MessageStore.session_names()
+      result = El.MessageStore.session_names([dets_backend: DetsBackendWithEntries])
       sorted_result = Enum.sort(result)
 
       assert sorted_result == [:dude, :kent]

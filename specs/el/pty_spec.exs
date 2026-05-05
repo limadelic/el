@@ -29,6 +29,13 @@ end
 defmodule El.PTY.Spec do
   use ExUnit.Case
 
+  setup_all do
+    Code.ensure_loaded!(El.PTY)
+    Code.ensure_loaded!(MockPort)
+    Code.ensure_loaded!(MockFile)
+    :ok
+  end
+
   describe "init/1" do
     test "opens port with cmd" do
       El.PTY.init({"test_cmd", [port: MockPort, file: MockFile]})

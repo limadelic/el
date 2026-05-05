@@ -3,6 +3,10 @@ defmodule MockSessionModule do
   def start(_fun), do: {:ok, :task_pid}
 end
 
+defmodule SyncTask do
+  def start(fun), do: fun.()
+end
+
 Mox.defmock(El.MockRegistry, for: El.Behaviours.Registry)
 Mox.defmock(El.MockSupervisor, for: El.Behaviours.Supervisor)
 Mox.defmock(El.MockSession, for: El.Behaviours.Session)
@@ -11,6 +15,7 @@ Mox.defmock(El.MockMonitor, for: El.Behaviours.Monitor)
 Mox.defmock(El.MockEl, for: El.Behaviours.El)
 Mox.defmock(El.MockFileSystem, for: El.Behaviours.FileSystem)
 Mox.stub(El.MockFileSystem, :cwd, fn -> "/tmp/test" end)
+Mox.stub(El.MockFileSystem, :mkdir_p!, fn _path -> :ok end)
 
 defmodule ClaudeCode.SessionStub do
   def stream(_pid, _prompt) do
@@ -25,6 +30,7 @@ defmodule El.DetsBackendStub do
   def lookup(_table, _key), do: []
   def delete(_table, _key), do: :ok
   def open_file(_table, _opts), do: {:ok, :stub_ref}
+  def close(_table), do: :ok
 end
 
 defmodule El.MessageStoreStub do
@@ -52,11 +58,32 @@ defmodule NilAgentDetectorStub do
   def detect_agent(_), do: nil
 end
 
+defmodule IdentityAgentDetectorStub do
+  def detect_agent(name), do: name
+end
+
 Mox.defmock(El.MockSessionApi, for: El.Behaviours.Session)
 Mox.defmock(El.MockClaudeCode, for: El.Behaviours.ClaudeCode)
 Mox.defmock(El.MockClaudeCodeSession, for: El.Behaviours.ClaudeCodeSession)
 Mox.defmock(El.MockStoreModule, for: El.Behaviours.Store)
 Mox.defmock(El.MockSessionMeta, for: El.SessionMeta)
+Mox.defmock(El.MockSessionAsk, for: El.Behaviours.SessionAsk)
+Mox.defmock(El.MockDets, for: El.Behaviours.Dets)
+Mox.defmock(El.MockPort, for: El.Behaviours.Port)
+Mox.defmock(El.MockSleeper, for: El.Behaviours.Sleeper)
+Mox.defmock(El.MockNodeConnector, for: El.Behaviours.NodeConnector)
+Mox.defmock(El.MockNetKernel, for: El.Behaviours.NetKernel)
+Mox.defmock(El.MockSessionClaude, for: El.Behaviours.SessionClaude)
+Mox.defmock(El.MockSystem, for: El.Behaviours.System)
+Mox.defmock(El.MockGroupLeader, for: El.Behaviours.GroupLeader)
+Mox.defmock(El.MockMessageStore, for: El.Behaviours.MessageStore)
+
+Mox.stub(El.MockNodeConnector, :connect, fn _ -> false end)
+Mox.stub(El.MockNodeConnector, :set_cookie, fn _ -> true end)
+Mox.stub(El.MockGroupLeader, :open_null_device, fn -> self() end)
+Mox.stub(El.MockGroupLeader, :close, fn _ -> :ok end)
+Mox.stub(El.MockGroupLeader, :get, fn -> self() end)
+Mox.stub(El.MockGroupLeader, :set, fn _, _ -> true end)
 
 defmodule MockClaudeCodeSession do
   def stream(_pid, _message) do
@@ -88,15 +115,38 @@ defmodule MockClaudeCodeSession do
   end
 end
 
-Application.put_env(:el, :registry, El.MockRegistry)
-Application.put_env(:el, :supervisor, El.MockSupervisor)
-Application.put_env(:el, :session, El.MockSession)
-Application.put_env(:el, :session_api, El.MockSessionApi)
-Application.put_env(:el, :app, El.MockApp)
-Application.put_env(:el, :monitor, El.MockMonitor)
-Application.put_env(:el, :el_module, El.MockEl)
+Application.put_env(:el, :session_meta, El.MockSessionMeta)
 Application.put_env(:el, :file_system, El.MockFileSystem)
-Application.put_env(:el, :claude_code_session_module, El.MockClaudeCodeSession)
+
+Enum.each(
+  [
+    El,
+    El.Application,
+    El.CLI,
+    El.CLI.Start,
+    El.CLI.Log,
+    El.CLI.Pattern,
+    El.CLI.Messaging,
+    El.CLI.Output,
+    El.CLI.Router,
+    El.Deps,
+    El.Session,
+    El.Session.Api,
+    El.Lifecycle,
+    El.ProcessMonitor,
+    El.AgentDetector,
+    El.AgentMetadata,
+    El.MessageStore,
+    El.SessionMeta,
+    El.GroupLeaderImpl,
+    El.DetsBackend,
+    El.SleeperImpl,
+    El.ClaudePort,
+    El.ClaudePort.Connection,
+    El.ClaudePort.Parser
+  ],
+  &Code.ensure_loaded!/1
+)
 
 ExUnit.start(timeout: 10)
 

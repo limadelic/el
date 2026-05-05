@@ -1,5 +1,5 @@
 ---
-name: bob
+name: bobo
 description: handles build tasks for this project
 model: haiku
 disallowedTools:

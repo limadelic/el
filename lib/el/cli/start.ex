@@ -5,32 +5,36 @@ defmodule El.CLI.Start do
   def normalize_model(""), do: nil
   def normalize_model(model), do: model
 
-  def merge_session_opts(name, explicit_agent \\ nil, explicit_model \\ nil) do
+  def merge_session_opts(name, explicit_agent \\ nil, explicit_model \\ nil, deps \\ []) do
     model_opts = start_opts(explicit_model)
-    agent = explicit_agent || agent_detector().detect_agent(name)
+    agent = explicit_agent || agent_detector(deps).detect_agent(name)
     agent_opts = agent_opt(agent)
-    agent_model_opts = agent_model_opt(agent, explicit_model)
+    agent_model_opts = agent_model_opt(agent, explicit_model, deps)
     result = model_opts ++ agent_opts ++ agent_model_opts
     result ++ env_model(result)
   end
 
-  def detect_and_merge_agent(name, opts) do
-    merged = opts ++ agent_opt(agent_detector().detect_agent(name))
+  def detect_and_merge_agent(name, opts, deps \\ []) do
+    merged = opts ++ agent_opt(agent_detector(deps).detect_agent(name))
     merged ++ env_model(merged)
   end
 
-  defp agent_detector do
-    Application.get_env(:el, :agent_detector, El.AgentDetector)
+  defp agent_detector(deps) do
+    Keyword.get(deps, :agent_detector, El.AgentDetector)
   end
 
   defp agent_opt(nil), do: []
   defp agent_opt(agent), do: [agent: agent]
 
-  defp agent_model_opt(nil, _), do: []
-  defp agent_model_opt(_, explicit_model) when explicit_model != nil, do: []
-  defp agent_model_opt(agent, nil) do
-    agent_metadata = Application.get_env(:el, :agent_metadata, El.AgentMetadata)
-    agent_model_for(agent_metadata.model_for(agent))
+  defp agent_model_opt(nil, _, _), do: []
+  defp agent_model_opt(_, explicit_model, _) when explicit_model != nil, do: []
+  defp agent_model_opt(agent, nil, deps) do
+    metadata = agent_metadata(deps)
+    agent_model_for(metadata.model_for(agent))
+  end
+
+  defp agent_metadata(deps) do
+    Keyword.get(deps, :agent_metadata, El.AgentMetadata)
   end
 
   defp agent_model_for(nil), do: []
@@ -49,33 +53,36 @@ defmodule El.CLI.Start do
   defp subagent_model(nil), do: []
   defp subagent_model(model), do: [model: model]
 
-  def handle_find_daemon_for_start(name, opts, el) do
+  def handle_find_daemon_for_start(name, opts, el, deps \\ []) do
     name_atom = String.to_atom(name)
-    el.start(name_atom, opts)
-    ping_if_agent(name_atom, opts)
-    print_session_info(name, opts)
+    el.start(name_atom, opts ++ deps)
+    ping_if_agent(name_atom, opts, deps)
+    print_session_info(name, opts, deps)
   end
 
-  defp ping_if_agent(name_atom, opts) do
-    do_ping(name_atom, Keyword.get(opts, :agent), session_api().info(name_atom))
+  defp ping_if_agent(name_atom, opts, deps) do
+    do_ping(name_atom, Keyword.get(opts, :agent), session_api(deps).info(name_atom), deps)
   end
 
-  defp do_ping(_name_atom, nil, _info), do: :ok
-  defp do_ping(_name_atom, _agent, %{messages: messages}) when messages > 0, do: :ok
-  defp do_ping(name_atom, _agent, _info), do: quiet_ask(name_atom)
+  defp do_ping(_name_atom, nil, _info, _deps), do: :ok
+  defp do_ping(_name_atom, _agent, %{messages: messages}, _deps) when messages > 0, do: :ok
+  defp do_ping(name_atom, _agent, _info, deps), do: quiet_ask(name_atom, deps)
 
-  defp quiet_ask(name_atom) do
-    {:ok, null_device} = File.open("/dev/null", [:write])
-    original = Process.group_leader()
-    Process.group_leader(self(), null_device)
-    result = session_api().ask(name_atom, "who are you?")
-    Process.group_leader(self(), original)
-    File.close(null_device)
-    result
+  defp quiet_ask(name_atom, deps) do
+    gl = group_leader(deps)
+    null_device = gl.open_null_device()
+    original = gl.get()
+    gl.set(self(), null_device)
+    try do
+      session_api(deps).ask(name_atom, "who are you?")
+    after
+      gl.set(self(), original)
+      gl.close(null_device)
+    end
   end
 
-  def print_session_info(name, opts) do
-    info = session_api().info(String.to_atom(name))
+  def print_session_info(name, opts, deps \\ []) do
+    info = session_api(deps).info(String.to_atom(name))
     rows = build_card_rows(name, opts, info)
     box_frame(rows) |> Enum.each(&IO.puts/1)
   end
@@ -136,8 +143,12 @@ defmodule El.CLI.Start do
   defp add_response_lines(rows, nil), do: rows
   defp add_response_lines(rows, response), do: rows ++ format_response(response)
 
-  defp session_api do
-    Application.get_env(:el, :session_api, El.Session.Api)
+  defp session_api(deps) do
+    Keyword.get(deps, :session_api, El.Session.Api)
+  end
+
+  defp group_leader(deps) do
+    Keyword.get(deps, :group_leader, El.GroupLeaderImpl)
   end
 
   defp box_frame([]), do: [top_border(), bottom_border()]
@@ -227,33 +238,33 @@ defmodule El.CLI.Start do
 
   defp cap_lines(lines, max), do: Enum.take(lines, max)
 
-  def handle_find_daemon_with_rest(name, opts, rest, el) do
+  def handle_find_daemon_with_rest(name, opts, rest, el, deps \\ []) do
     name_atom = String.to_atom(name)
-    el.start(name_atom, opts)
-    print_session_info(name, opts)
-    dispatch_rest(rest, name)
+    el.start(name_atom, opts ++ deps)
+    print_session_info(name, opts, deps)
+    dispatch_rest(rest, name, opts)
   end
 
-  def dispatch_rest([], _name) do
+  def dispatch_rest([], _name, _opts) do
     :ok
   end
 
-  def dispatch_rest(rest, name) do
-    El.CLI.dispatch([name | rest])
+  def dispatch_rest(rest, name, opts) do
+    El.CLI.dispatch([name | rest], opts)
   end
 
-  def start_daemon_node_for(name, model, el) do
+  def start_daemon_node_for(name, model, el, sleeper \\ El.SleeperImpl, deps \\ []) do
     name_atom = String.to_atom(name)
-    el.start(name_atom, start_opts(normalize_model(model)))
+    el.start(name_atom, start_opts(normalize_model(model)) ++ deps)
     report_daemon_up(name)
-    hold_forever()
+    hold_forever(sleeper)
   end
 
   defp report_daemon_up(name) do
     IO.puts("el: #{name} is up on #{Node.self()}")
   end
 
-  defp hold_forever do
-    Process.sleep(:infinity)
+  defp hold_forever(sleeper) do
+    sleeper.sleep(:infinity)
   end
 end

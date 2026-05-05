@@ -3,7 +3,6 @@ defmodule El.Session.CastHandler do
   alias El.Session.Tell
   alias El.Session.Store
   alias El.Session.Router
-  alias El.Session.Ask
 
   def handle({:tell, message}, state) do
     state = Claude.maybe_respawn_claude(state)
@@ -18,14 +17,14 @@ defmodule El.Session.CastHandler do
   end
 
   def handle({:complete_ask, from, message, response, ref, model, nil}, state) do
-    new_state = Ask.finalize_ask(state, from, ref, message, response, model)
+    new_state = state.ask_module.finalize_ask(state, from, ref, message, response, model)
     {:noreply, new_state}
   end
 
   def handle({:complete_ask, from, message, response, ref, model, session_id}, state) do
-    new_state = Ask.finalize_ask(state, from, ref, message, response, model)
+    new_state = state.ask_module.finalize_ask(state, from, ref, message, response, model)
     updated_state = %{new_state | session_id: session_id}
-    session_meta = Map.get(updated_state, :session_meta, Application.get_env(:el, :session_meta, El.SessionMeta))
+    session_meta = Map.get(updated_state, :session_meta, El.SessionMeta)
     agent = Keyword.get(updated_state.opts, :agent)
     persisted_model = Keyword.get(updated_state.opts, :model) || model
     session_meta.insert(updated_state.name, agent, session_id, persisted_model)
@@ -34,14 +33,14 @@ defmodule El.Session.CastHandler do
 
   def handle({:cast_store_relay, message, response}, state) do
     entry = {"relay", message, response, %{from: state.name}}
-    state.store_module.store_message(state.name, entry)
+    state.store_module.store_message(state.name, entry, message_store: state.opts[:message_store])
     {:noreply, %{state | messages: state.messages ++ [entry]}}
   end
 
   def handle({:tell_ask, target, message}, state) do
     response = Router.process_tell_ask(state, target, message)
     entry = {"relay", message, response, %{from: state.name}}
-    state.store_module.store_message(state.name, entry)
+    state.store_module.store_message(state.name, entry, message_store: state.opts[:message_store])
     {:noreply, %{state | messages: state.messages ++ [entry]}}
   end
 end

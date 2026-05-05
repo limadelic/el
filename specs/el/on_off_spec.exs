@@ -22,7 +22,7 @@ defmodule El.Features.OnOffSpec do
         {:ok, :mock_pid}
       end)
 
-      El.start(:dude)
+      El.start(:dude, registry: El.MockRegistry, supervisor: El.MockSupervisor)
     end
 
     test "passes options through to El.Session" do
@@ -36,41 +36,30 @@ defmodule El.Features.OnOffSpec do
         {:ok, :mock_pid}
       end)
 
-      El.start(:dude, claude_module: TestClaudeCode)
+      El.start(:dude, claude_module: TestClaudeCode, registry: El.MockRegistry, supervisor: El.MockSupervisor)
     end
 
     test "returns :created when starting new session" do
-      assert El.start(:dude) == :created
+      assert El.start(:dude, registry: El.MockRegistry, supervisor: El.MockSupervisor) == :created
     end
 
     test "returns :already_running when session exists" do
       lookup_fn = fn El.Registry, :dude -> [{:existing_pid, :registered}] end
       expect(El.MockRegistry, :lookup, lookup_fn)
-      assert El.start(:dude) == :already_running
+      assert El.start(:dude, registry: El.MockRegistry, supervisor: El.MockSupervisor) == :already_running
     end
   end
 
   describe "El.exit/1" do
     setup do
-      original_session_meta = Application.get_env(:el, :session_meta)
-
-      on_exit(fn ->
-        if original_session_meta do
-          Application.put_env(:el, :session_meta, original_session_meta)
-        else
-          Application.delete_env(:el, :session_meta)
-        end
-      end)
-
-      Application.put_env(:el, :session_meta, El.MockSessionMeta)
       stub(El.MockSessionMeta, :delete, fn _ -> :ok end)
+      stub(El.MockApp, :delete_session_messages, fn _, _ -> :ok end)
       :ok
     end
 
     test "looks up session in registry" do
       expect(El.MockRegistry, :lookup, fn El.Registry, :dude -> [] end)
-      stub(El.MockApp, :delete_session_messages, fn _ -> :ok end)
-      El.exit(:dude)
+      El.Lifecycle.exit(:dude, :normal, registry: El.MockRegistry, supervisor: El.MockSupervisor, app: El.MockApp, monitor: El.MockMonitor, session_meta: El.MockSessionMeta)
     end
 
     test "terminates child when session found" do
@@ -78,9 +67,8 @@ defmodule El.Features.OnOffSpec do
       expect(El.MockRegistry, :lookup, lookup_fn)
       term_fn = fn El.SessionSupervisor, :mock_pid -> :ok end
       stub(El.MockSupervisor, :terminate_child, term_fn)
-      stub(El.MockMonitor, :wait_for_down, fn _, _ -> :ok end)
-      stub(El.MockApp, :delete_session_messages, fn _ -> :ok end)
-      El.exit(:dude)
+      stub(El.MockMonitor, :wait_for_down, fn _, _, _ -> :ok end)
+      El.Lifecycle.exit(:dude, :normal, registry: El.MockRegistry, supervisor: El.MockSupervisor, app: El.MockApp, monitor: El.MockMonitor, session_meta: El.MockSessionMeta)
     end
 
     test "monitors process and waits for DOWN" do
@@ -88,9 +76,8 @@ defmodule El.Features.OnOffSpec do
       expect(El.MockRegistry, :lookup, lookup_fn)
       stub_fn = fn El.SessionSupervisor, _pid -> :ok end
       stub(El.MockSupervisor, :terminate_child, stub_fn)
-      stub(El.MockMonitor, :wait_for_down, fn _ref, :dude -> :ok end)
-      stub(El.MockApp, :delete_session_messages, fn _ -> :ok end)
-      El.exit(:dude)
+      stub(El.MockMonitor, :wait_for_down, fn _ref, :dude, _opts -> :ok end)
+      El.Lifecycle.exit(:dude, :normal, registry: El.MockRegistry, supervisor: El.MockSupervisor, app: El.MockApp, monitor: El.MockMonitor, session_meta: El.MockSessionMeta)
     end
   end
 
@@ -101,20 +88,20 @@ defmodule El.Features.OnOffSpec do
       end
 
       expect(El.MockRegistry, :select, select_fn)
-      sessions = El.ls()
+      sessions = El.ls(registry: El.MockRegistry)
       assert sessions == [:dude, :duder, :dudito]
     end
 
     test "returns sorted list" do
       select_fn = fn El.Registry, _ -> [:dudito, :dude, :duder] end
       expect(El.MockRegistry, :select, select_fn)
-      sessions = El.ls()
+      sessions = El.ls(registry: El.MockRegistry)
       assert sessions == [:dude, :duder, :dudito]
     end
 
     test "returns empty list when no sessions" do
       expect(El.MockRegistry, :select, fn El.Registry, _ -> [] end)
-      sessions = El.ls()
+      sessions = El.ls(registry: El.MockRegistry)
       assert sessions == []
     end
   end

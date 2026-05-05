@@ -12,6 +12,10 @@ defmodule El.Session.Api do
     GenServer.cast(Registry.via_tuple(name), {:tell, message})
   end
 
+  def cast_store_relay(name, message, response) do
+    GenServer.cast(Registry.via_tuple(name), {:cast_store_relay, message, response})
+  end
+
   def ask(name, message) do
     GenServer.call(Registry.via_tuple(name), {:ask, message}, :infinity)
   end

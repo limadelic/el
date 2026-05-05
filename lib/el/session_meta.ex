@@ -4,14 +4,14 @@ defmodule El.SessionMeta do
   @callback delete(term()) :: term()
   @callback close() :: term()
 
-  def insert(name, agent, session_id, model \\ nil) do
-    backend = Application.get_env(:el, :dets_backend, El.DetsBackend)
+  def insert(name, agent, session_id, model \\ nil, deps \\ []) do
+    backend = dets_backend(deps)
     backend.insert(:session_meta, {name, session_id, agent, model})
     :ok
   end
 
-  def lookup(name) do
-    backend = Application.get_env(:el, :dets_backend, El.DetsBackend)
+  def lookup(name, deps \\ []) do
+    backend = dets_backend(deps)
 
     backend.lookup(:session_meta, name)
     |> match_session()
@@ -20,13 +20,16 @@ defmodule El.SessionMeta do
   defp match_session([{_name, session_id, agent, model}]), do: {:ok, session_id, agent, model}
   defp match_session([]), do: {:error, :not_found}
 
-  def delete(name) do
-    backend = Application.get_env(:el, :dets_backend, El.DetsBackend)
+  def delete(name, deps \\ []) do
+    backend = dets_backend(deps)
     backend.delete(:session_meta, name)
     :ok
   end
 
-  def close do
-    :dets.close(:session_meta)
+  def close(deps \\ []) do
+    backend = dets_backend(deps)
+    backend.close(:session_meta)
   end
+
+  defp dets_backend(deps), do: Keyword.get(deps, :dets_backend, El.DetsBackend)
 end

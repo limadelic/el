@@ -8,4 +8,8 @@ defmodule El.FileSystemImpl do
   def cwd do
     File.cwd!()
   end
+
+  def mkdir_p!(path) do
+    File.mkdir_p!(path)
+  end
 end

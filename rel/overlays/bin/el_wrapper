@@ -60,6 +60,9 @@ case "$1" in
 
     "$RELEASE_ROOT/bin/el" rpc "El.CLI.dispatch([$args])" 2>/dev/null
     if [ $? -ne 0 ]; then
+      if [ "$1" = "exit" ]; then
+        exit 0
+      fi
       "$RELEASE_ROOT/bin/el" daemon >/dev/null 2>&1
       n=0
       while [ $n -lt 10 ]; do
