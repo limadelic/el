@@ -316,9 +316,10 @@ defmodule El.CLI.Spec do
 
     test "execute :start when no agent detected does not merge agent into opts" do
       expect(El.MockEl, :start, fn :my_session, opts when is_list(opts) -> :ok end)
+      expect(El.MockSessionApi, :info, 2, fn :my_session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
 
       capture_io(fn ->
-        El.CLI.execute(:start, ["my_session"], [agent_detector: NilAgentDetectorStub, el_module: El.MockEl])
+        El.CLI.execute(:start, ["my_session"], [agent_detector: NilAgentDetectorStub, session_api: El.MockSessionApi, el_module: El.MockEl])
       end)
     end
 
@@ -333,21 +334,23 @@ defmodule El.CLI.Spec do
 
     test "execute :start uses env model when no model or agent" do
       expect(El.MockEl, :start, fn :my_session, opts when is_list(opts) -> :ok end)
+      expect(El.MockSessionApi, :info, 2, fn :my_session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
 
       System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
 
       capture_io(fn ->
-        El.CLI.execute(:start, ["my_session"], [agent_detector: NilAgentDetectorStub, el_module: El.MockEl])
+        El.CLI.execute(:start, ["my_session"], [agent_detector: NilAgentDetectorStub, session_api: El.MockSessionApi, el_module: El.MockEl])
       end)
     end
 
     test "execute :start ignores env model when model provided" do
       expect(El.MockEl, :start, fn :my_session, opts when is_list(opts) -> :ok end)
+      expect(El.MockSessionApi, :info, fn :my_session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
 
       System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
 
       capture_io(fn ->
-        El.CLI.execute(:start, ["my_session", "-m", "opus"], [agent_detector: NilAgentDetectorStub, el_module: El.MockEl])
+        El.CLI.execute(:start, ["my_session", "-m", "opus"], [agent_detector: NilAgentDetectorStub, session_api: El.MockSessionApi, el_module: El.MockEl])
       end)
     end
 

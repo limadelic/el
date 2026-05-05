@@ -9,7 +9,14 @@ end
 
 :application.load(:el)
 
-el_modules = Application.spec(:el, :modules) |> Kernel.||([])
+el_ebin_dir = "#{File.cwd!()}/_build/test/lib/el/ebin"
+el_modules = case File.ls(el_ebin_dir) do
+  {:ok, files} -> files
+  :error -> []
+end
+|> Enum.filter(&String.ends_with?(&1, ".beam"))
+|> Enum.map(&String.replace(&1, ".beam", ""))
+|> Enum.map(&String.to_atom/1)
 
 extra_dirs = [
   "#{File.cwd!()}/_build/test/lib/claude_code/ebin",
@@ -29,6 +36,7 @@ extra_modules = extra_dirs
   |> Enum.map(&String.to_atom/1)
 
 (el_modules ++ extra_modules)
+|> Enum.uniq()
 |> Enum.each(&Code.ensure_loaded!/1)
 
 Mox.defmock(El.MockRegistry, for: El.Behaviours.Registry)
@@ -149,7 +157,7 @@ end
 Application.put_env(:el, :session_meta, El.MockSessionMeta)
 Application.put_env(:el, :file_system, El.MockFileSystem)
 
-ExUnit.start(timeout: 30)
+ExUnit.start(timeout: 20)
 
 defmodule TestClaudeCode do
   def start_link(_opts) do
