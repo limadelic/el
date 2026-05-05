@@ -1,26 +1,15 @@
 defmodule El.SessionMeta.Spec do
   use ExUnit.Case
 
-  setup do
-    on_exit(fn ->
-      Application.delete_env(:el, :dets_backend)
-    end)
-
-    Application.put_env(:el, :dets_backend, El.DetsBackendStub)
-    :ok
-  end
-
   describe "insert/4" do
     test "stores meta tuple with name, agent, session_id, and model" do
-      result = El.SessionMeta.insert(:test_name, "kent", "session-123", "haiku")
+      result = El.SessionMeta.insert(:test_name, "kent", "session-123", "haiku", dets_backend: El.DetsBackendStub)
 
       assert result == :ok
     end
 
     test "persists model alongside agent and session_id" do
-      Application.put_env(:el, :dets_backend, ModelCapturingBackend)
-
-      El.SessionMeta.insert(:foo, "donny", "abc-123", "haiku")
+      El.SessionMeta.insert(:foo, "donny", "abc-123", "haiku", dets_backend: ModelCapturingBackend)
 
       received = Application.get_env(:el, :captured_tuple)
       assert received == {:foo, "abc-123", "donny", "haiku"}
@@ -29,15 +18,13 @@ defmodule El.SessionMeta.Spec do
 
   describe "lookup/1" do
     test "returns not_found on miss" do
-      result = El.SessionMeta.lookup(:missing_name)
+      result = El.SessionMeta.lookup(:missing_name, dets_backend: El.DetsBackendStub)
 
       assert result == {:error, :not_found}
     end
 
     test "returns ok with agent and session_id on hit" do
-      Application.put_env(:el, :dets_backend, DetsBackendWithSession)
-
-      result = El.SessionMeta.lookup(:test_name)
+      result = El.SessionMeta.lookup(:test_name, dets_backend: DetsBackendWithSession)
 
       assert result == {:ok, "session-123", "kent", nil}
     end
@@ -45,7 +32,7 @@ defmodule El.SessionMeta.Spec do
 
   describe "delete/1" do
     test "removes meta tuple by name" do
-      result = El.SessionMeta.delete(:test_name)
+      result = El.SessionMeta.delete(:test_name, dets_backend: El.DetsBackendStub)
 
       assert result == :ok
     end
