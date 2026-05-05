@@ -52,15 +52,6 @@ defmodule El.CLI do
     maybe_print_card(status, name, opts, deps)
   end
 
-  defp agent_safe(el_module, name_atom, _fallback, opts) do
-    el_module.agent(name_atom, opts)
-  catch
-    _ -> nil
-  end
-
-  defp resolve_name(nil, fallback), do: fallback
-  defp resolve_name(agent, _fallback), do: agent
-
   def execute(:log, [name, "log"], opts), do: Log.execute_log(name, 1, el(opts), opts)
 
   def execute(:log_n, [name, "log", n], opts) do
@@ -82,4 +73,13 @@ defmodule El.CLI do
 
   defp maybe_print_card(:created, name, opts, deps), do: Start.print_session_info(name, opts, deps)
   defp maybe_print_card(:already_running, _name, _opts, _deps), do: :ok
+
+  defp agent_safe(el_module, name_atom, _fallback, opts) do
+    el_module.agent(name_atom, opts)
+  catch
+    _ -> nil
+  end
+
+  defp resolve_name(nil, fallback), do: fallback
+  defp resolve_name(agent, _fallback), do: agent
 end
