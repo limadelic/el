@@ -216,6 +216,31 @@ defmodule El.Session.Spec do
 
       assert Keyword.get(state.claude_opts, :resume) == "my-resume-id"
     end
+
+    test "preserves :setting_sources when already in opts" do
+      opts = [
+        claude_module: MockSessionModule,
+        session_meta: El.MockSessionMeta,
+        setting_sources: ["custom"]
+      ]
+
+      {:ok, state, {:continue, :start_claude}} =
+        El.Session.init({:test_session, opts})
+
+      assert Keyword.get(state.claude_opts, :setting_sources) == ["custom"]
+    end
+
+    test "adds default :setting_sources when not in opts" do
+      opts = [
+        claude_module: MockSessionModule,
+        session_meta: El.MockSessionMeta
+      ]
+
+      {:ok, state, {:continue, :start_claude}} =
+        El.Session.init({:test_session, opts})
+
+      assert Keyword.get(state.claude_opts, :setting_sources) == ["user", "project", "local"]
+    end
   end
 
   describe "handle_continue/2 :start_claude" do
