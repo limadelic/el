@@ -35,31 +35,29 @@ defmodule El do
     Keyword.drop(opts, [:registry, :supervisor, :monitor, :app])
   end
 
-  def tell(name, message) do
-    session_api().tell(name, message)
+  def tell(name, message, opts \\ []) do
+    session_api(opts).tell(name, message)
   end
 
-  def ask(name, message) do
-    session_api().ask(name, message)
+  def ask(name, message, opts \\ []) do
+    session_api(opts).ask(name, message)
   end
 
-  def log(name) do
-    session_api().log(name)
+  def log(name, count \\ nil, opts \\ []) do
+    case count do
+      nil -> session_api(opts).log(name)
+      _ -> session_api(opts).log(name, count)
+    end
   end
 
-  def log(name, count) do
-    session_api().log(name, count)
+  def clear(name, opts \\ []) do
+    session_api(opts).clear(name)
   end
 
-  def clear(name) do
-    session_api().clear(name)
-  end
-
-  def tell_ask(name, target, message), do: session_api().tell_ask(name, target, message)
-  def ask_tell(name, target, message), do: session_api().ask_tell(name, target, message)
-  def agent(name), do: session_api().agent(name)
-  defp session_api, do: Application.get_env(:el, :session_api, El.Session.Api)
-  defp session_api(opts), do: Keyword.get(opts, :session_api, session_api())
+  def tell_ask(name, target, message, opts \\ []), do: session_api(opts).tell_ask(name, target, message)
+  def ask_tell(name, target, message, opts \\ []), do: session_api(opts).ask_tell(name, target, message)
+  def agent(name, opts \\ []), do: session_api(opts).agent(name)
+  defp session_api(opts), do: Keyword.get(opts, :session_api, Application.get_env(:el, :session_api, El.Session.Api))
 
   def exit(name) do
     El.Lifecycle.exit(name)
@@ -80,7 +78,7 @@ defmodule El do
       ls() |> Enum.filter(&match_pattern?(&1, pattern)) |> Enum.flat_map(&log_entries(&1, count))
 
   defp log_entries(name, count) do
-    name |> session_api().log(count) |> filter_found()
+    name |> session_api([]).log(count) |> filter_found()
   end
 
   defp filter_found(:not_found), do: []
