@@ -104,3 +104,10 @@ end
 defmodule El.Behaviours.System do
   @callback cmd(binary(), [binary()]) :: {Collectable.t(), exit_status :: non_neg_integer()}
 end
+
+defmodule El.Behaviours.GroupLeader do
+  @callback open_null_device() :: pid()
+  @callback close(pid()) :: :ok
+  @callback get() :: pid()
+  @callback set(pid(), pid()) :: true
+end

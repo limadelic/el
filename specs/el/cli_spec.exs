@@ -293,9 +293,14 @@ defmodule El.CLI.Spec do
     test "execute :start uses merge_session_opts to combine agent and model" do
       expect(El.MockEl, :start, fn :my_session, [agent: "my_session"] -> :ok end)
       expect(El.MockSessionApi, :ask, fn :my_session, "who are you?" -> "response" end)
+      expect(El.MockGroupLeader, :open_null_device, fn -> self() end)
+      expect(El.MockGroupLeader, :get, fn -> self() end)
+      expect(El.MockGroupLeader, :set, fn _, _ -> true end)
+      expect(El.MockGroupLeader, :set, fn _, _ -> true end)
+      expect(El.MockGroupLeader, :close, fn _ -> :ok end)
 
       capture_io(fn ->
-        El.CLI.execute(:start, ["my_session"], [agent_detector: IdentityAgentDetectorStub, session_api: El.MockSessionApi])
+        El.CLI.execute(:start, ["my_session"], [agent_detector: IdentityAgentDetectorStub, session_api: El.MockSessionApi, group_leader: El.MockGroupLeader])
       end)
     end
 
@@ -354,11 +359,16 @@ defmodule El.CLI.Spec do
     test "execute :start ignores env model when agent detected" do
       expect(El.MockEl, :start, fn :my_session, [agent: "my_session"] -> :ok end)
       expect(El.MockSessionApi, :ask, fn :my_session, "who are you?" -> "response" end)
+      expect(El.MockGroupLeader, :open_null_device, fn -> self() end)
+      expect(El.MockGroupLeader, :get, fn -> self() end)
+      expect(El.MockGroupLeader, :set, fn _, _ -> true end)
+      expect(El.MockGroupLeader, :set, fn _, _ -> true end)
+      expect(El.MockGroupLeader, :close, fn _ -> :ok end)
 
       System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
 
       capture_io(fn ->
-        El.CLI.execute(:start, ["my_session"], [agent_detector: IdentityAgentDetectorStub, session_api: El.MockSessionApi])
+        El.CLI.execute(:start, ["my_session"], [agent_detector: IdentityAgentDetectorStub, session_api: El.MockSessionApi, group_leader: El.MockGroupLeader])
       end)
     end
 

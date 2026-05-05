@@ -69,12 +69,13 @@ defmodule El.CLI.Start do
   defp do_ping(name_atom, _agent, _info, deps), do: quiet_ask(name_atom, deps)
 
   defp quiet_ask(name_atom, deps) do
-    {:ok, null_device} = File.open("/dev/null", [:write])
-    original = Process.group_leader()
-    Process.group_leader(self(), null_device)
+    gl = group_leader(deps)
+    null_device = gl.open_null_device()
+    original = gl.get()
+    gl.set(self(), null_device)
     result = session_api(deps).ask(name_atom, "who are you?")
-    Process.group_leader(self(), original)
-    File.close(null_device)
+    gl.set(self(), original)
+    gl.close(null_device)
     result
   end
 
@@ -142,6 +143,10 @@ defmodule El.CLI.Start do
 
   defp session_api(deps) do
     Keyword.get(deps, :session_api, El.Session.Api)
+  end
+
+  defp group_leader(deps) do
+    Keyword.get(deps, :group_leader, El.GroupLeaderImpl)
   end
 
   defp box_frame([]), do: [top_border(), bottom_border()]

@@ -75,9 +75,14 @@ Mox.defmock(El.MockNodeConnector, for: El.Behaviours.NodeConnector)
 Mox.defmock(El.MockNetKernel, for: El.Behaviours.NetKernel)
 Mox.defmock(El.MockSessionClaude, for: El.Behaviours.SessionClaude)
 Mox.defmock(El.MockSystem, for: El.Behaviours.System)
+Mox.defmock(El.MockGroupLeader, for: El.Behaviours.GroupLeader)
 
 Mox.stub(El.MockNodeConnector, :connect, fn _ -> false end)
 Mox.stub(El.MockNodeConnector, :set_cookie, fn _ -> true end)
+Mox.stub(El.MockGroupLeader, :open_null_device, fn -> self() end)
+Mox.stub(El.MockGroupLeader, :close, fn _ -> :ok end)
+Mox.stub(El.MockGroupLeader, :get, fn -> self() end)
+Mox.stub(El.MockGroupLeader, :set, fn _, _ -> true end)
 
 defmodule MockClaudeCodeSession do
   def stream(_pid, _message) do
