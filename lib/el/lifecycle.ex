@@ -6,13 +6,13 @@ defmodule El.Lifecycle do
   end
 
   def exit(name, reason, opts) do
-    result = name |> lookup() |> exit_found(name, opts)
+    result = name |> lookup(opts) |> exit_found(name, opts)
     delete_stores(name, reason, opts)
     result
   end
 
-  defp lookup(name) do
-    El.registry().lookup(El.Registry, name)
+  defp lookup(name, opts) do
+    El.registry(opts).lookup(El.Registry, name)
   end
 
   defp exit_found([{pid, _}], name, opts) do

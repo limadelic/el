@@ -9,11 +9,6 @@ defmodule El.Lifecycle.Spec do
     :ok
   end
 
-  setup do
-    Application.put_env(:el, :registry, El.MockRegistry)
-    :ok
-  end
-
   test "deletes session_meta on explicit exit" do
     expect(El.MockRegistry, :lookup, fn El.Registry, :test_session -> [] end)
     expect(El.MockApp, :delete_session_messages, fn :test_session -> :ok end)
@@ -21,6 +16,7 @@ defmodule El.Lifecycle.Spec do
     stub(El.MockMonitor, :wait_for_down, fn _, _, _ -> :ok end)
 
     El.Lifecycle.exit(:test_session, :normal, [
+      registry: El.MockRegistry,
       app: El.MockApp,
       session_meta: El.MockSessionMeta,
       monitor: El.MockMonitor
@@ -32,6 +28,7 @@ defmodule El.Lifecycle.Spec do
     stub(El.MockMonitor, :wait_for_down, fn _, _, _ -> :ok end)
 
     El.Lifecycle.exit(:crashed_session, :crash, [
+      registry: El.MockRegistry,
       session_meta: El.MockSessionMeta,
       monitor: El.MockMonitor
     ])
