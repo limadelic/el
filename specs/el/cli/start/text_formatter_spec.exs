@@ -2,22 +2,22 @@ defmodule El.CLI.Start.TextFormatter.Spec do
   use ExUnit.Case
 
   describe "format_response/1" do
+    setup do
+      long_text = "This is a very long response that should wrap to multiple lines because it exceeds the maximum width of 46 characters"
+      result = El.CLI.Start.TextFormatter.format_response(long_text)
+      {:ok, long_text: long_text, result: result}
+    end
+
     test "returns empty list for nil input" do
       assert El.CLI.Start.TextFormatter.format_response(nil) == []
     end
 
-    test "caps wrapped text at 2 lines" do
-      long_text = "This is a very long response that should wrap to multiple lines because it exceeds the maximum width of 46 characters"
-      result = El.CLI.Start.TextFormatter.format_response(long_text)
-
+    test "caps wrapped text at 2 lines", %{result: result} do
       assert length(result) <= 2
     end
 
-    test "wraps text to 46 char width" do
-      long_text = "This is a very long response that should wrap to multiple lines because it exceeds the maximum width of 46 characters"
-      result = El.CLI.Start.TextFormatter.format_response(long_text)
-
-      Enum.each(result, fn line -> assert String.length(line) <= 46 end)
+    test "wraps text to 46 char width", %{result: result} do
+      assert Enum.all?(result, fn line -> String.length(line) <= 46 end)
     end
 
     test "caps lines at 2 even with many lines of input" do
