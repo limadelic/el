@@ -890,6 +890,7 @@ defmodule El.Session.Spec do
 end
 
 defmodule MockSessionStore do
+  def store_message(_, _, _), do: :ok
   def store_message(_, _), do: :ok
   def load_messages(_), do: []
   def delete_message(_, _), do: :ok
@@ -922,13 +923,14 @@ defmodule MockLoadingStore do
     [{"tell", "old_message", "old_response", %{}}]
   end
 
+  def store_message(_, _, _), do: :ok
   def store_message(_, _), do: :ok
   def delete_message(_, _), do: :ok
   def delete_session_messages(_), do: :ok
 end
 
 defmodule MockVerifyingStore do
-  def store_message(name, entry) do
+  def store_message(name, entry, _opts \\ []) do
     send(self(), {:store_message, name, entry})
     :ok
   end
