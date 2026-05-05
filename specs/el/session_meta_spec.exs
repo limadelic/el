@@ -1,5 +1,8 @@
 defmodule El.SessionMeta.Spec do
   use ExUnit.Case
+  import Mox
+
+  setup :verify_on_exit!
 
   describe "insert/4" do
     test "stores meta tuple with name, agent, session_id, and model" do
@@ -9,10 +12,8 @@ defmodule El.SessionMeta.Spec do
     end
 
     test "persists model alongside agent and session_id" do
-      El.SessionMeta.insert(:foo, "donny", "abc-123", "haiku", dets_backend: ModelCapturingBackend)
-
-      received = Application.get_env(:el, :captured_tuple)
-      assert received == {:foo, "abc-123", "donny", "haiku"}
+      expect(El.MockDets, :insert, fn :session_meta, {:foo, "abc-123", "donny", "haiku"} -> :ok end)
+      El.SessionMeta.insert(:foo, "donny", "abc-123", "haiku", dets_backend: El.MockDets)
     end
   end
 
@@ -52,17 +53,5 @@ defmodule DetsBackendWithSession do
 
   def delete_object(_table, _key), do: :ok
 
-  def foldl(_table, acc, _fun), do: acc
-end
-
-defmodule ModelCapturingBackend do
-  def insert(_table, tuple) do
-    Application.put_env(:el, :captured_tuple, tuple)
-    :ok
-  end
-
-  def delete(_table, _key), do: :ok
-  def lookup(_table, _key), do: []
-  def delete_object(_table, _key), do: :ok
   def foldl(_table, acc, _fun), do: acc
 end
