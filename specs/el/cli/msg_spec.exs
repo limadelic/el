@@ -9,7 +9,7 @@ defmodule El.CLI.Msg.Spec do
 
   describe "dispatch/4" do
     test "calls el_module.ask with name as atom and joined message" do
-      stub(El.MockEl, :ask, fn :session, "hello world", _deps -> "reply" end)
+      expect(El.MockEl, :ask, fn :session, "hello world", _deps -> "reply" end)
       stub(El.MockEl, :agent, fn :session, _opts -> nil end)
 
       capture_io(fn ->
