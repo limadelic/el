@@ -1,5 +1,5 @@
 defmodule El.CLI.Start.SessionCard.Spec do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   import Mox
 
   describe "El.CLI.Start.SessionCard.build_card_rows/3" do
