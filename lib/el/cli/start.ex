@@ -196,13 +196,20 @@ defmodule El.CLI.Start do
 
   defp frame_pair_row(left, right) do
     right_block = truncate_right_block(right)
-    left_len = String.length(left)
-    right_len = String.length(right_block)
-    filler_len = max(0, 46 - left_len - right_len)
-    filler = String.duplicate(" ", filler_len)
-    content = left <> filler <> right_block
-    padded = String.pad_trailing(content, 46)
-    "│ " <> padded <> " │"
+    content = compose_pair_content(left, right_block)
+    "│ " <> String.pad_trailing(content, 46) <> " │"
+  end
+
+  defp compose_pair_content(left, right_block) do
+    left <> filler_between(left, right_block) <> right_block
+  end
+
+  defp filler_between(left, right) do
+    String.duplicate(" ", filler_length(left, right))
+  end
+
+  defp filler_length(left, right) do
+    max(0, 46 - String.length(left) - String.length(right))
   end
 
   defp truncate_right_block(right) do
