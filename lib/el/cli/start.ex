@@ -10,11 +10,6 @@ defmodule El.CLI.Start do
     base ++ Options.env_model(base, deps)
   end
 
-  def detect_and_merge_agent(name, opts, deps \\ []) do
-    merged = opts ++ Options.agent_opt(Options.agent_detector(deps).detect_agent(name))
-    merged ++ Options.env_model(merged, deps)
-  end
-
   def handle_find_daemon_for_start(name, opts, el, deps \\ []) do
     name_atom = String.to_atom(name)
     el.start(name_atom, opts ++ deps)

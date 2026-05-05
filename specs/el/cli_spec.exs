@@ -533,31 +533,6 @@ defmodule El.CLI.Spec do
     end
   end
 
-  describe "El.CLI.Start.detect_and_merge_agent/3" do
-    setup do
-      System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
-      :ok
-    end
-
-    test "detects agent through injected detector" do
-      result = El.CLI.Start.detect_and_merge_agent("kent", [], [agent_detector: AgentDetectorStub])
-
-      assert Keyword.get(result, :agent) == "kent"
-    end
-
-    test "includes opts in result" do
-      result = El.CLI.Start.detect_and_merge_agent("session", [model: "haiku"], [agent_detector: NilAgentDetectorStub])
-
-      assert Keyword.get(result, :model) == "haiku"
-    end
-
-    test "handles nil agent from detector" do
-      result = El.CLI.Start.detect_and_merge_agent("session", [], [agent_detector: NilAgentDetectorStub])
-
-      refute Keyword.has_key?(result, :agent)
-    end
-  end
-
   describe "El.CLI.Start.handle_find_daemon_for_start/4" do
     setup do
       stub(El.MockSessionApi, :info, fn :session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)

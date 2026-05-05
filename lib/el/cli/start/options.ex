@@ -52,4 +52,9 @@ defmodule El.CLI.Start.Options do
   defp env_adapter(deps) do
     Keyword.get(deps, :env, El.Env)
   end
+
+  def detect_and_merge_agent(name, opts, deps \\ []) do
+    merged = opts ++ agent_opt(agent_detector(deps).detect_agent(name))
+    merged ++ env_model(merged, deps)
+  end
 end
