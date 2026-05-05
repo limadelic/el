@@ -63,22 +63,22 @@ defmodule El do
     El.Lifecycle.exit(name, :normal, opts)
   end
 
-  def exit_pattern(pattern) do
+  def exit_pattern(pattern, opts \\ []) do
     ls()
     |> Enum.filter(&match_pattern?(&1, pattern))
-    |> Enum.each(&El.exit/1)
+    |> Enum.each(&El.exit(&1, opts))
   end
 
-  def clear_pattern(pattern) do
-    ls() |> Enum.filter(&match_pattern?(&1, pattern)) |> Enum.each(&El.clear/1)
+  def clear_pattern(pattern, opts \\ []) do
+    ls() |> Enum.filter(&match_pattern?(&1, pattern)) |> Enum.each(&El.clear(&1, opts))
   end
 
-  def log_pattern(pattern, count),
+  def log_pattern(pattern, count, opts \\ []),
     do:
-      ls() |> Enum.filter(&match_pattern?(&1, pattern)) |> Enum.flat_map(&log_entries(&1, count))
+      ls() |> Enum.filter(&match_pattern?(&1, pattern)) |> Enum.flat_map(&log_entries(&1, count, opts))
 
-  defp log_entries(name, count) do
-    name |> session_api([]).log(count) |> filter_found()
+  defp log_entries(name, count, opts) do
+    name |> session_api(opts).log(count) |> filter_found()
   end
 
   defp filter_found(:not_found), do: []
