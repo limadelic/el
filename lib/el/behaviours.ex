@@ -27,6 +27,7 @@ end
 
 defmodule El.Behaviours.Monitor do
   @callback wait_for_down(term(), term()) :: term()
+  @callback wait_for_down(term(), term(), keyword()) :: term()
 end
 
 defmodule El.Behaviours.El do

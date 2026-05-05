@@ -26,16 +26,5 @@ defmodule El.ProcessMonitorSpec do
 
       assert result == :ok
     end
-
-    test "returns :ok" do
-      expect(El.MockApp, :delete_session_messages, fn :test_session -> :ok end)
-
-      ref = Process.monitor(self())
-      send(self(), {:DOWN, ref, :process, self(), :normal})
-
-      result = El.ProcessMonitor.wait_for_down(ref, :test_session, app: El.MockApp)
-
-      assert result == :ok
-    end
   end
 end
