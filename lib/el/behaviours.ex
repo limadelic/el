@@ -132,3 +132,15 @@ defmodule El.Behaviours.MessageStore do
   @callback session_names() :: [atom()]
   @callback close() :: :ok
 end
+
+defmodule El.Behaviours.AgentDetector do
+  @callback detect_agent(term()) :: term()
+end
+
+defmodule El.Behaviours.AgentMetadata do
+  @callback model_for(term()) :: term()
+end
+
+defmodule El.Behaviours.Env do
+  @callback get(String.t()) :: String.t() | nil
+end
