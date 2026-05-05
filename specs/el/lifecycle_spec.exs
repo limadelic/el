@@ -11,7 +11,7 @@ defmodule El.Lifecycle.Spec do
 
   test "deletes session_meta on explicit exit" do
     expect(El.MockRegistry, :lookup, fn El.Registry, :test_session -> [] end)
-    expect(El.MockApp, :delete_session_messages, fn :test_session -> :ok end)
+    expect(El.MockApp, :delete_session_messages, fn :test_session, _opts -> :ok end)
     expect(El.MockSessionMeta, :delete, fn :test_session -> :ok end)
     stub(El.MockMonitor, :wait_for_down, fn _, _, _ -> :ok end)
 

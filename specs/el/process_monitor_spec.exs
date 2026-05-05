@@ -6,8 +6,8 @@ defmodule El.ProcessMonitorSpec do
   setup :verify_on_exit!
 
   describe "wait_for_down/3" do
-    test "calls app.delete_session_messages(name) when :DOWN arrives" do
-      expect(El.MockApp, :delete_session_messages, fn :test_session -> :ok end)
+    test "calls app.delete_session_messages(name, opts) when :DOWN arrives" do
+      expect(El.MockApp, :delete_session_messages, fn :test_session, _opts -> :ok end)
 
       ref = Process.monitor(self())
       send(self(), {:DOWN, ref, :process, self(), :normal})
@@ -17,8 +17,8 @@ defmodule El.ProcessMonitorSpec do
       assert result == :ok
     end
 
-    test "calls app.delete_session_messages(name) after timeout" do
-      expect(El.MockApp, :delete_session_messages, fn :test_session -> :ok end)
+    test "calls app.delete_session_messages(name, opts) after timeout" do
+      expect(El.MockApp, :delete_session_messages, fn :test_session, _opts -> :ok end)
 
       ref = Process.monitor(self())
 

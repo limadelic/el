@@ -23,6 +23,7 @@ end
 
 defmodule El.Behaviours.App do
   @callback delete_session_messages(term()) :: term()
+  @callback delete_session_messages(term(), keyword()) :: term()
 end
 
 defmodule El.Behaviours.Monitor do
