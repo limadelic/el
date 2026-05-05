@@ -59,6 +59,7 @@ defmodule El do
   def ask_tell(name, target, message), do: session_api().ask_tell(name, target, message)
   def agent(name), do: session_api().agent(name)
   defp session_api, do: Application.get_env(:el, :session_api, El.Session.Api)
+  defp session_api(opts), do: Keyword.get(opts, :session_api, session_api())
 
   def exit(name) do
     El.Lifecycle.exit(name)
