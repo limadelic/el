@@ -11,7 +11,9 @@ defmodule El.Application do
 
   @impl true
   def start(_type, _args) do
-    init_message_store()
+    file_system = Application.get_env(:el, :file_system, El.FileSystemImpl)
+    dets_backend = Application.get_env(:el, :dets_backend, :dets)
+    init_message_store(file_system: file_system, dets_backend: dets_backend)
     {:ok, pid} = Supervisor.start_link(children(), supervisor_opts())
     el_module = Application.get_env(:el, :el_module, El)
     session_meta = Application.get_env(:el, :session_meta, El.SessionMeta)
