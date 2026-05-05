@@ -1,5 +1,8 @@
 defmodule El.CLI.Start.DaemonHealth.Spec do
   use ExUnit.Case, async: true
+  import Mox
+
+  setup :verify_on_exit!
 
   describe "El.CLI.Start.DaemonHealth.ping_if_agent/3" do
     test "is no-op when agent_atom is nil" do
