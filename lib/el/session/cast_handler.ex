@@ -33,14 +33,14 @@ defmodule El.Session.CastHandler do
 
   def handle({:cast_store_relay, message, response}, state) do
     entry = {"relay", message, response, %{from: state.name}}
-    state.store_module.store_message(state.name, entry)
+    state.store_module.store_message(state.name, entry, message_store: state.opts[:message_store])
     {:noreply, %{state | messages: state.messages ++ [entry]}}
   end
 
   def handle({:tell_ask, target, message}, state) do
     response = Router.process_tell_ask(state, target, message)
     entry = {"relay", message, response, %{from: state.name}}
-    state.store_module.store_message(state.name, entry)
+    state.store_module.store_message(state.name, entry, message_store: state.opts[:message_store])
     {:noreply, %{state | messages: state.messages ++ [entry]}}
   end
 end
