@@ -58,14 +58,15 @@ defmodule El.ClaudePort.Parser do
     process_lines(rest, new_acc, session_id)
   end
 
-  defp merge_line(normalized, {result, model, sid}) do
+  defp merge_line(normalized, acc) do
+    {build_acc(normalized, acc), is_result_message(normalized)}
+  end
+
+  defp build_acc(normalized, {result, model, sid}) do
     {
-      {
-        pick_result(is_result_message(normalized), normalized, result),
-        pick_model(has_model(normalized), normalized, model),
-        pick_sid(has_session_id(normalized), normalized, sid)
-      },
-      is_result_message(normalized)
+      pick_result(is_result_message(normalized), normalized, result),
+      pick_model(has_model(normalized), normalized, model),
+      pick_sid(has_session_id(normalized), normalized, sid)
     }
   end
 
