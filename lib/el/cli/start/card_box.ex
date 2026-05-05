@@ -1,4 +1,6 @@
 defmodule El.CLI.Start.CardBox do
+  @behaviour El.Behaviours.CardBox
+
   def box_frame([]), do: [top_border(), bottom_border()]
   def box_frame(rows) do
     first_two = Enum.take(rows, 2)

@@ -1,8 +1,18 @@
 defmodule El.CLI.Start.SessionCard.Spec do
   use ExUnit.Case, async: true
+  import Mox
 
   describe "El.CLI.Start.SessionCard.build_card_rows/3" do
     setup do
+      Application.put_env(:el, :card_box, El.MockCardBox)
+      Application.put_env(:el, :text_formatter, El.MockTextFormatter)
+      stub_with(El.MockCardBox, El.CLI.Start.CardBox)
+      stub_with(El.MockTextFormatter, El.CLI.Start.TextFormatter)
+      on_exit(fn ->
+        Application.delete_env(:el, :card_box)
+        Application.delete_env(:el, :text_formatter)
+      end)
+
       info = %{
         id: "session-123",
         model: "claude-3-5-sonnet",

@@ -1,7 +1,4 @@
 defmodule El.CLI.Start.SessionCard do
-  alias El.CLI.Start.CardBox
-  alias El.CLI.Start.TextFormatter
-
   def build_card_rows(name, opts, info) do
     []
     |> add_identity(name, opts, info)
@@ -42,7 +39,7 @@ defmodule El.CLI.Start.SessionCard do
   defp add_name_id(rows, name, id) do
     left = "name:  #{name}"
     right = "id: #{id}"
-    rows ++ [CardBox.frame_pair_row(left, right)]
+    rows ++ [card_box().frame_pair_row(left, right)]
   end
 
   defp add_second_with_cwd(rows, agent, opts_model, info_model, cwd) do
@@ -58,7 +55,7 @@ defmodule El.CLI.Start.SessionCard do
   defp do_add_second_with_cwd(rows, nil, _cwd), do: rows
   defp do_add_second_with_cwd(rows, left, cwd) do
     right = "cwd: #{cwd}"
-    rows ++ [CardBox.frame_pair_row(left, right)]
+    rows ++ [card_box().frame_pair_row(left, right)]
   end
 
   defp add_model(rows, nil, nil), do: rows
@@ -78,5 +75,8 @@ defmodule El.CLI.Start.SessionCard do
   defp add_response_separator(rows, _response), do: rows ++ [String.duplicate("─", 46)]
 
   defp add_response_lines(rows, nil), do: rows
-  defp add_response_lines(rows, response), do: rows ++ TextFormatter.format_response(response)
+  defp add_response_lines(rows, response), do: rows ++ text_formatter().format_response(response)
+
+  defp card_box, do: Application.get_env(:el, :card_box, El.CLI.Start.CardBox)
+  defp text_formatter, do: Application.get_env(:el, :text_formatter, El.CLI.Start.TextFormatter)
 end
