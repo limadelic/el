@@ -166,7 +166,7 @@ defmodule El.Session.Ask.Spec do
 
       stub(El.MockStoreModule, :delete_message, fn _, _ -> :ok end)
       stub(El.MockStoreModule, :store_message, fn _, _ -> :ok end)
-      stub(El.MockStoreModule, :delete_session_messages, fn _ -> :ok end)
+      stub(El.MockStoreModule, :delete_session_messages, fn _, _ -> :ok end)
 
       state = %{
         name: :test_session,
@@ -199,7 +199,7 @@ defmodule El.Session.Ask.Spec do
 
     test "deletes DETS messages via store_module.delete_session_messages", %{state: state} do
       test_pid = self()
-      expect(El.MockStoreModule, :delete_session_messages, fn name ->
+      expect(El.MockStoreModule, :delete_session_messages, fn name, _opts ->
         send(test_pid, {:delete_session_messages, name})
         :ok
       end)

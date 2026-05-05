@@ -47,7 +47,7 @@ defmodule El.Session.Ask do
   end
 
   defp clear_messages(state) do
-    state.store_module.delete_session_messages(state.name)
+    state.store_module.delete_session_messages(state.name, message_store: state.opts[:message_store])
     %{state | messages: []}
   end
 
