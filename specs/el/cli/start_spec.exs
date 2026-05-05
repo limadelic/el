@@ -9,6 +9,7 @@ defmodule El.CLI.Start.Spec do
 
   setup_all do
     Code.ensure_loaded!(El.CLI.Start)
+    Code.ensure_loaded!(El.CLI.Start.CardBox)
     :ok
   end
 

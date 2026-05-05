@@ -1,4 +1,6 @@
 defmodule El.CLI.Start do
+  alias El.CLI.Start.CardBox
+
   def start_opts(nil), do: []
   def start_opts(model), do: [model: model]
 
@@ -98,7 +100,7 @@ defmodule El.CLI.Start do
   def print_session_info(name, opts, deps \\ []) do
     info = session_api(deps).info(String.to_atom(name))
     rows = build_card_rows(name, opts, info)
-    box_frame(rows) |> Enum.each(&IO.puts/1)
+    CardBox.box_frame(rows) |> Enum.each(&IO.puts/1)
   end
 
   defp build_card_rows(name, opts, info) do
@@ -141,7 +143,7 @@ defmodule El.CLI.Start do
   defp add_name_id(rows, name, id) do
     left = "name:  #{name}"
     right = "id: #{id}"
-    rows ++ [frame_pair_row(left, right)]
+    rows ++ [CardBox.frame_pair_row(left, right)]
   end
 
   defp add_second_with_cwd(rows, agent, opts_model, info_model, cwd) do
@@ -157,7 +159,7 @@ defmodule El.CLI.Start do
   defp do_add_second_with_cwd(rows, nil, _cwd), do: rows
   defp do_add_second_with_cwd(rows, left, cwd) do
     right = "cwd: #{cwd}"
-    rows ++ [frame_pair_row(left, right)]
+    rows ++ [CardBox.frame_pair_row(left, right)]
   end
 
   defp add_model(rows, nil, nil), do: rows
@@ -185,62 +187,6 @@ defmodule El.CLI.Start do
 
   defp group_leader(deps) do
     Keyword.get(deps, :group_leader, El.GroupLeaderImpl)
-  end
-
-  defp box_frame([]), do: [top_border(), bottom_border()]
-  defp box_frame(rows) do
-    first_two = Enum.take(rows, 2)
-    rest = Enum.drop(rows, 2)
-    [top_border()] ++ first_two ++ Enum.map(rest, &frame_row/1) ++ [bottom_border()]
-  end
-
-  defp top_border, do: "╭" <> String.duplicate("─", 48) <> "╮"
-  defp bottom_border, do: "╰" <> String.duplicate("─", 48) <> "╯"
-
-  defp frame_row(content) do
-    padded = String.pad_trailing(content, 46)
-    "│ " <> padded <> " │"
-  end
-
-  defp frame_pair_row(left, right) do
-    right_block = truncate_right_block(right)
-    content = compose_pair_content(left, right_block)
-    "│ " <> String.pad_trailing(content, 46) <> " │"
-  end
-
-  defp compose_pair_content(left, right_block) do
-    left <> filler_between(left, right_block) <> right_block
-  end
-
-  defp filler_between(left, right) do
-    String.duplicate(" ", filler_length(left, right))
-  end
-
-  defp filler_length(left, right) do
-    max(0, 46 - String.length(left) - String.length(right))
-  end
-
-  defp truncate_right_block(right) do
-    do_truncate_right(String.split(right, ": ", parts: 2), right)
-  end
-
-  defp do_truncate_right([label, value], _right), do: label <> ": " <> truncate_value(value)
-  defp do_truncate_right(_parts, right), do: right
-
-  defp truncate_value(value) do
-    truncate_with_ellipsis(value, 9)
-  end
-
-  defp truncate_with_ellipsis(text, max_len) do
-    text_len = String.length(text)
-    do_truncate(text_len, text, max_len)
-  end
-
-  defp do_truncate(len, text, max_len) when len <= max_len, do: text
-  defp do_truncate(_len, text, max_len) do
-    ellipsis = "…"
-    available = max_len - String.length(ellipsis)
-    ellipsis <> String.slice(text, -available..-1)
   end
 
   def handle_find_daemon_with_rest(name, opts, rest, el, deps \\ []) do
