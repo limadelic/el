@@ -127,7 +127,10 @@ defmodule El.Application.Spec do
   test "init_message_store opens session_meta table alongside message_store" do
     Application.put_env(:el, :dets_backend, El.DetsBackendStub)
     stub(El.MockFileSystem, :mkdir_p!, fn _path -> :ok end)
-    El.Application.init_message_store()
+    El.Application.init_message_store(
+      file_system: El.MockFileSystem,
+      dets_backend: El.DetsBackendStub
+    )
     assert El.DetsBackendStub.insert(:session_meta, {:key, :value}) == :ok
   end
 
