@@ -43,12 +43,9 @@ defmodule El do
     session_api(opts).ask(name, message)
   end
 
-  def log(name, count \\ nil, opts \\ []) do
-    case count do
-      nil -> session_api(opts).log(name)
-      _ -> session_api(opts).log(name, count)
-    end
-  end
+  def log(name, count \\ nil, opts \\ [])
+  def log(name, nil, opts), do: session_api(opts).log(name)
+  def log(name, count, opts), do: session_api(opts).log(name, count)
 
   def clear(name, opts \\ []) do
     session_api(opts).clear(name)
