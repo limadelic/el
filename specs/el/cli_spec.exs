@@ -110,13 +110,13 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :log_n with number calls El.log with count" do
-      expect(El.MockEl, :log, fn :session, 5 -> [] end)
+      expect(El.MockEl, :log, fn :session, 5, _opts -> [] end)
 
       capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "5"], [el_module: El.MockEl]) end)
     end
 
     test "execute :log_n with number prints result" do
-      expect(El.MockEl, :log, fn :session, 5 -> [{"ask", "hello", "world", %{}}] end)
+      expect(El.MockEl, :log, fn :session, 5, _opts -> [{"ask", "hello", "world", %{}}] end)
 
       output =
         capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "5"], [el_module: El.MockEl]) end)
@@ -125,13 +125,13 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :log_n with 'all' calls El.log with :all" do
-      expect(El.MockEl, :log, fn :session, :all -> [] end)
+      expect(El.MockEl, :log, fn :session, :all, _opts -> [] end)
 
       capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "all"], [el_module: El.MockEl]) end)
     end
 
     test "execute :log_n with 'all' prints result" do
-      expect(El.MockEl, :log, fn :session, :all ->
+      expect(El.MockEl, :log, fn :session, :all, _opts ->
         [{"tell", "goodbye", "see ya", %{}}]
       end)
 
@@ -142,13 +142,13 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :log calls El.log with count 1" do
-      expect(El.MockEl, :log, fn :session, 1 -> [] end)
+      expect(El.MockEl, :log, fn :session, 1, _opts -> [] end)
 
       capture_io(fn -> El.CLI.execute(:log, ["session", "log"], [el_module: El.MockEl]) end)
     end
 
     test "execute :log prints result" do
-      expect(El.MockEl, :log, fn :session, 1 -> [{"ask", "hi", "reply", %{}}] end)
+      expect(El.MockEl, :log, fn :session, 1, _opts -> [{"ask", "hi", "reply", %{}}] end)
 
       output = capture_io(fn -> El.CLI.execute(:log, ["session", "log"], [el_module: El.MockEl]) end)
 
@@ -210,25 +210,25 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :log with glob pattern calls El.log_pattern" do
-      expect(El.MockEl, :log_pattern, fn "dud*", 1 -> [] end)
+      expect(El.MockEl, :log_pattern, fn "dud*", 1, _opts -> [] end)
 
       capture_io(fn -> El.CLI.execute(:log, ["dud*", "log"], [el_module: El.MockEl]) end)
     end
 
     test "execute :log with session name calls El.log" do
-      expect(El.MockEl, :log, fn :session, 1 -> [] end)
+      expect(El.MockEl, :log, fn :session, 1, _opts -> [] end)
 
       capture_io(fn -> El.CLI.execute(:log, ["session", "log"], [el_module: El.MockEl]) end)
     end
 
     test "execute :log_n with glob pattern calls El.log_pattern" do
-      expect(El.MockEl, :log_pattern, fn "dud*", 5 -> [] end)
+      expect(El.MockEl, :log_pattern, fn "dud*", 5, _opts -> [] end)
 
       capture_io(fn -> El.CLI.execute(:log_n, ["dud*", "log", "5"], [el_module: El.MockEl]) end)
     end
 
     test "execute :log_n with session name calls El.log" do
-      expect(El.MockEl, :log, fn :session, 5 -> [] end)
+      expect(El.MockEl, :log, fn :session, 5, _opts -> [] end)
 
       capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "5"], [el_module: El.MockEl]) end)
     end

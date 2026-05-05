@@ -56,10 +56,10 @@ defmodule El.CLI do
     maybe_print_card(status, name, opts, deps)
   end
 
-  def execute(:log, [name, "log"], opts), do: Log.execute_log(name, 1, el(opts))
+  def execute(:log, [name, "log"], opts), do: Log.execute_log(name, 1, el(opts), opts)
 
   def execute(:log_n, [name, "log", n], opts) do
-    Log.execute_log(name, Log.parse_log_count(n), el(opts))
+    Log.execute_log(name, Log.parse_log_count(n), el(opts), opts)
   end
 
   def execute(:exit, [name, "exit"], opts) do
