@@ -36,6 +36,10 @@ defmodule El.CLI.Start.Options do
 
   def env_model_for(_, _, _), do: []
 
+  def env_model(opts, deps) do
+    env_model_for(Keyword.get(opts, :model), Keyword.get(opts, :agent), deps)
+  end
+
   defp env_adapter(deps) do
     Keyword.get(deps, :env, El.Env)
   end

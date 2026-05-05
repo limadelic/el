@@ -7,7 +7,7 @@ defmodule El.CLI.Start do
   def merge_session_opts(name, explicit_agent \\ nil, explicit_model \\ nil, deps \\ []) do
     agent = resolve_agent(explicit_agent, name, deps)
     base = build_base_opts(explicit_model, agent, deps)
-    base ++ env_model(base, deps)
+    base ++ Options.env_model(base, deps)
   end
 
   defp build_base_opts(explicit_model, agent, deps) do
@@ -21,11 +21,7 @@ defmodule El.CLI.Start do
 
   def detect_and_merge_agent(name, opts, deps \\ []) do
     merged = opts ++ Options.agent_opt(Options.agent_detector(deps).detect_agent(name))
-    merged ++ env_model(merged, deps)
-  end
-
-  defp env_model(opts, deps) do
-    Options.env_model_for(Keyword.get(opts, :model), Keyword.get(opts, :agent), deps)
+    merged ++ Options.env_model(merged, deps)
   end
 
   def handle_find_daemon_for_start(name, opts, el, deps \\ []) do
