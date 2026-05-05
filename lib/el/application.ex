@@ -25,10 +25,10 @@ defmodule El.Application do
     message_store.close()
   end
 
-  def restore_sessions do
-    el = Application.get_env(:el, :el_module, El)
-    message_store = Application.get_env(:el, :message_store, El.MessageStore)
-    session_meta = Application.get_env(:el, :session_meta, El.SessionMeta)
+  def restore_sessions(opts \\ []) do
+    el = opts[:el_module] || Application.get_env(:el, :el_module, El)
+    message_store = opts[:message_store] || Application.get_env(:el, :message_store, El.MessageStore)
+    session_meta = opts[:session_meta] || Application.get_env(:el, :session_meta, El.SessionMeta)
 
     message_store.session_names()
     |> Enum.each(&restore_session(&1, el, session_meta))
