@@ -47,12 +47,18 @@ defmodule El.ClaudePort do
 
   defp dispatch_ask({:ok, connected_state}, message, from, _state) do
     Logger.debug("ClaudePort connected, sending message")
-    session_id = connected_state.session_id
-    port = connected_state.port
-    ndjson = Input.user_message(message, session_id || "default")
-    connected_state.port_module.command(port, ndjson <> "\n")
+    send_message(connected_state, message)
     {:noreply, %{connected_state | current_request_id: from}}
   end
+
+  defp send_message(state, message) do
+    session_id = session_id_or_default(state.session_id)
+    ndjson = Input.user_message(message, session_id)
+    state.port_module.command(state.port, ndjson <> "\n")
+  end
+
+  defp session_id_or_default(nil), do: "default"
+  defp session_id_or_default(id), do: id
 
   defp dispatch_ask({:error, reason}, _message, _from, state) do
     Logger.error("ClaudePort ensure_connected failed: #{inspect(reason)}")
