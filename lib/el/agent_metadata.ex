@@ -18,8 +18,11 @@ defmodule El.AgentMetadata do
   end
 
   defp read_from_path_with_fallback(local, global) do
-    read_from_path(local) || read_from_path(global)
+    fallback_to_global(read_from_path(local), global)
   end
+
+  defp fallback_to_global(nil, global), do: read_from_path(global)
+  defp fallback_to_global(result, _global), do: result
 
   defp read_from_path(file_path) do
     read_result(File.read(file_path))

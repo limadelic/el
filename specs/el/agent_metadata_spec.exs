@@ -14,7 +14,7 @@ defmodule El.AgentMetadata.Spec do
     {:ok, fixture_dir: fixture_dir}
   end
 
-  describe "El.AgentMetadata.model_for/1" do
+  describe "El.AgentMetadata.model_for/2" do
     test "returns model from frontmatter with atom name", %{fixture_dir: fixture_dir} do
       agent_file = Path.join(fixture_dir, "kent.md")
       File.write!(agent_file, "---\nmodel: opus\n---\n# Kent\n")
@@ -66,6 +66,31 @@ defmodule El.AgentMetadata.Spec do
       File.write!(agent_file, "---\nmodel: sonnet\n---\n# Lisa\n")
 
       assert El.AgentMetadata.model_for("lisa", fixture_dir) == "sonnet"
+    end
+  end
+
+  describe "El.AgentMetadata.model_for/1" do
+    test "returns model from local path when present", %{fixture_dir: fixture_dir} do
+      local_dir = Path.join(fixture_dir, ".claude/agents")
+      File.mkdir_p!(local_dir)
+      local_file = Path.join(local_dir, "eric.md")
+      File.write!(local_file, "---\nmodel: sonnet\n---\n# Eric\n")
+
+      File.cd!(fixture_dir, fn ->
+        assert El.AgentMetadata.model_for("eric") == "sonnet"
+      end)
+    end
+
+    test "returns model from global path when local missing", %{fixture_dir: fixture_dir} do
+      home = System.get_env("HOME")
+      global_dir = Path.join(home, ".claude/agents")
+      File.mkdir_p!(global_dir)
+      global_file = Path.join(global_dir, "dude.md")
+      File.write!(global_file, "---\nmodel: opus\n---\n# Dude\n")
+
+      File.cd!(fixture_dir, fn ->
+        assert El.AgentMetadata.model_for("dude") == "opus"
+      end)
     end
   end
 end
