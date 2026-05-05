@@ -35,22 +35,23 @@ defmodule El.Application do
     el = Keyword.fetch!(opts, :el_module)
     message_store = Keyword.fetch!(opts, :message_store)
     session_meta = Keyword.fetch!(opts, :session_meta)
+    deps = El.Deps.production()
 
     message_store.session_names()
-    |> Enum.each(&restore_session(&1, el, session_meta))
+    |> Enum.each(&restore_session(&1, el, session_meta, deps))
   end
 
-  defp restore_session(name, el, _session_meta, {:ok, session_id, agent, model}) do
-    opts = [resume: session_id, agent: agent, model: model]
+  defp restore_session(name, el, _session_meta, deps, {:ok, session_id, agent, model}) do
+    opts = [resume: session_id, agent: agent, model: model] ++ deps
     el.start(name, opts)
   end
 
-  defp restore_session(name, el, _session_meta, {:error, :not_found}) do
-    el.start(name, [])
+  defp restore_session(name, el, _session_meta, deps, {:error, :not_found}) do
+    el.start(name, deps)
   end
 
-  defp restore_session(name, el, session_meta) do
-    restore_session(name, el, session_meta, session_meta.lookup(name))
+  defp restore_session(name, el, session_meta, deps) do
+    restore_session(name, el, session_meta, deps, session_meta.lookup(name))
   end
 
   def children do

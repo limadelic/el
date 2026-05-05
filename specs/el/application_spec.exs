@@ -167,10 +167,9 @@ defmodule El.Application.Spec do
       )
 
       calls = Agent.get(RestoreWithMetaStubEl, & &1)
-      assert Enum.reverse(calls) == [
-        {:dude, [resume: :session_id_1, agent: "agent_ref_1", model: nil]},
-        {:kent, [resume: :session_id_2, agent: "agent_ref_2", model: nil]}
-      ]
+      [{:dude, opts_1}, {:kent, opts_2}] = Enum.reverse(calls)
+      assert Keyword.take(opts_1, [:resume, :agent, :model]) == [resume: :session_id_1, agent: "agent_ref_1", model: nil]
+      assert Keyword.take(opts_2, [:resume, :agent, :model]) == [resume: :session_id_2, agent: "agent_ref_2", model: nil]
     end
 
     test "passes model from SessionMeta.lookup to el.start" do
@@ -187,10 +186,9 @@ defmodule El.Application.Spec do
       )
 
       calls = Agent.get(RestoreWithModelStubEl, & &1)
-      assert Enum.reverse(calls) == [
-        {:alice, [resume: :sid_alpha, agent: "opusA", model: "opus"]},
-        {:bob, [resume: :sid_beta, agent: "haikuB", model: "haiku"]}
-      ]
+      [{:alice, opts_1}, {:bob, opts_2}] = Enum.reverse(calls)
+      assert Keyword.take(opts_1, [:resume, :agent, :model]) == [resume: :sid_alpha, agent: "opusA", model: "opus"]
+      assert Keyword.take(opts_2, [:resume, :agent, :model]) == [resume: :sid_beta, agent: "haikuB", model: "haiku"]
     end
 
     test "falls back to start without resume on SessionMeta.lookup error" do
@@ -207,10 +205,9 @@ defmodule El.Application.Spec do
       )
 
       calls = Agent.get(RestoreFallbackStubEl, & &1)
-      assert Enum.reverse(calls) == [
-        {:dude, []},
-        {:kent, []}
-      ]
+      [{:dude, opts_1}, {:kent, opts_2}] = Enum.reverse(calls)
+      assert Keyword.take(opts_1, [:resume, :agent, :model]) == []
+      assert Keyword.take(opts_2, [:resume, :agent, :model]) == []
     end
 
     test "warm-restart uses resume option from SessionMeta" do
@@ -227,9 +224,8 @@ defmodule El.Application.Spec do
       )
 
       calls = Agent.get(WarmupStubEl, & &1)
-      assert Enum.reverse(calls) == [
-        {:start, [:dude, [resume: :sid_1, agent: "a1", model: nil]]}
-      ]
+      [{:start, [:dude, opts]}] = Enum.reverse(calls)
+      assert Keyword.take(opts, [:resume, :agent, :model]) == [resume: :sid_1, agent: "a1", model: nil]
     end
   end
 
