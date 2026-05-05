@@ -68,15 +68,28 @@ defmodule El.Application do
   def supervisor_opts, do: @supervisor_opts
 
   def init_message_store(opts \\ []) do
-    daemon = Keyword.fetch!(opts, :daemon)
-    dir = store_dir(daemon)
-    messages_path = Path.expand("#{dir}/messages.dets") |> String.to_charlist()
-    session_meta_path = Path.expand("#{dir}/session_meta.dets") |> String.to_charlist()
-    file_system = Keyword.fetch!(opts, :file_system)
-    file_system.mkdir_p!(Path.expand(dir))
-    dets_backend = Keyword.fetch!(opts, :dets_backend)
-    {:ok, _} = dets_backend.open_file(:message_store, file: messages_path, type: :bag)
-    {:ok, _} = dets_backend.open_file(:session_meta, file: session_meta_path, type: :bag)
+    dir = setup_dir(opts)
+    open_dets_files(dir, Keyword.fetch!(opts, :dets_backend))
+  end
+
+  defp setup_dir(opts) do
+    dir = store_dir(Keyword.fetch!(opts, :daemon))
+    expanded = Path.expand(dir)
+    Keyword.fetch!(opts, :file_system).mkdir_p!(expanded)
+    dir
+  end
+
+  defp open_dets_files(dir, dets_backend) do
+    open_dets(dets_backend, :message_store, dets_path(dir, "messages"))
+    open_dets(dets_backend, :session_meta, dets_path(dir, "session_meta"))
+  end
+
+  defp open_dets(backend, name, path) do
+    {:ok, _} = backend.open_file(name, file: path, type: :bag)
+  end
+
+  defp dets_path(dir, file) do
+    Path.expand("#{dir}/#{file}.dets") |> String.to_charlist()
   end
 
   defp store_dir(true), do: "~/.el/dev"
