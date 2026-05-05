@@ -27,17 +27,17 @@ defmodule El.CLI do
   end
 
   def execute(:start, [name], deps) do
-    opts = Start.merge_session_opts(name, nil, nil, deps)
+    opts = Start.Options.merge_session_opts(name, nil, nil, deps)
     Start.handle_find_daemon_for_start(name, opts, el(deps), deps)
   end
 
   def execute(:start, [name, "-m", model | rest], deps) do
-    opts = Start.merge_session_opts(name, nil, model, deps)
+    opts = Start.Options.merge_session_opts(name, nil, model, deps)
     Start.handle_find_daemon_with_rest(name, opts, rest, el(deps), deps)
   end
 
   def execute(:start, [name, "-a", agent | rest], deps) do
-    opts = Start.merge_session_opts(name, agent, nil, deps)
+    opts = Start.Options.merge_session_opts(name, agent, nil, deps)
     Start.handle_find_daemon_with_rest(name, opts, rest, el(deps), deps)
   end
 

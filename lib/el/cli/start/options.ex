@@ -57,4 +57,10 @@ defmodule El.CLI.Start.Options do
     merged = opts ++ agent_opt(agent_detector(deps).detect_agent(name))
     merged ++ env_model(merged, deps)
   end
+
+  def merge_session_opts(name, explicit_agent \\ nil, explicit_model \\ nil, deps \\ []) do
+    agent = resolve_agent(explicit_agent, name, deps)
+    base = build_base_opts(explicit_model, agent, deps)
+    base ++ env_model(base, deps)
+  end
 end

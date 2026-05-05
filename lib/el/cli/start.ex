@@ -4,12 +4,6 @@ defmodule El.CLI.Start do
   alias El.CLI.Start.Options
   alias El.CLI.Start.SessionCard
 
-  def merge_session_opts(name, explicit_agent \\ nil, explicit_model \\ nil, deps \\ []) do
-    agent = Options.resolve_agent(explicit_agent, name, deps)
-    base = Options.build_base_opts(explicit_model, agent, deps)
-    base ++ Options.env_model(base, deps)
-  end
-
   def handle_find_daemon_for_start(name, opts, el, deps \\ []) do
     name_atom = String.to_atom(name)
     el.start(name_atom, opts ++ deps)
