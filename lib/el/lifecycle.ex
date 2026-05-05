@@ -27,7 +27,7 @@ defmodule El.Lifecycle do
 
   defp terminate(pid, name, opts) do
     ref = Process.monitor(pid)
-    El.supervisor().terminate_child(El.SessionSupervisor, pid)
+    El.supervisor(opts).terminate_child(El.SessionSupervisor, pid)
     app = Keyword.get(opts, :app, El.app())
     El.monitor(opts).wait_for_down(ref, name, app: app)
   end
