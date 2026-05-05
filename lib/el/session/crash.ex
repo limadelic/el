@@ -19,7 +19,7 @@ defmodule El.Session.Crash do
   end
 
   defp store_crash(state, entry) do
-    state.store_module.store_message(state.name, entry)
+    state.store_module.store_message(state.name, entry, message_store: state.opts[:message_store])
   end
 
   defp crash_state(state, entry) do
