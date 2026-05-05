@@ -80,22 +80,22 @@ defmodule El.Application do
   defp store_dir(false), do: "~/.el"
 
   def delete_session_messages(name, opts \\ []) do
-    ms = Keyword.get(opts, :message_store, Application.get_env(:el, :message_store, El.MessageStore))
+    ms = Keyword.get(opts, :message_store) || Application.get_env(:el, :message_store, El.MessageStore)
     ms.delete(name)
   end
 
   def store_message(name, message_entry, opts \\ []) do
-    ms = Keyword.get(opts, :message_store, Application.get_env(:el, :message_store, El.MessageStore))
+    ms = Keyword.get(opts, :message_store) || Application.get_env(:el, :message_store, El.MessageStore)
     ms.insert(name, message_entry)
   end
 
   def load_messages(name, opts \\ []) do
-    ms = Keyword.get(opts, :message_store, Application.get_env(:el, :message_store, El.MessageStore))
+    ms = Keyword.get(opts, :message_store) || Application.get_env(:el, :message_store, El.MessageStore)
     ms.lookup(name)
   end
 
   def delete_message(name, entry, opts \\ []) do
-    ms = Keyword.get(opts, :message_store, Application.get_env(:el, :message_store, El.MessageStore))
+    ms = Keyword.get(opts, :message_store) || Application.get_env(:el, :message_store, El.MessageStore)
     ms.delete_entry(name, entry)
   end
 end
