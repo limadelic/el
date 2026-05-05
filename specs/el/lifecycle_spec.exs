@@ -11,7 +11,6 @@ defmodule El.Lifecycle.Spec do
 
   setup do
     Application.put_env(:el, :registry, El.MockRegistry)
-    Application.put_env(:el, :app, El.MockApp)
     :ok
   end
 
@@ -19,9 +18,10 @@ defmodule El.Lifecycle.Spec do
     expect(El.MockRegistry, :lookup, fn El.Registry, :test_session -> [] end)
     expect(El.MockApp, :delete_session_messages, fn :test_session -> :ok end)
     expect(El.MockSessionMeta, :delete, fn :test_session -> :ok end)
-    stub(El.MockMonitor, :wait_for_down, fn _, _ -> :ok end)
+    stub(El.MockMonitor, :wait_for_down, fn _, _, _ -> :ok end)
 
     El.Lifecycle.exit(:test_session, :normal, [
+      app: El.MockApp,
       session_meta: El.MockSessionMeta,
       monitor: El.MockMonitor
     ])
@@ -29,7 +29,7 @@ defmodule El.Lifecycle.Spec do
 
   test "session_meta survives crash" do
     expect(El.MockRegistry, :lookup, fn El.Registry, :crashed_session -> [] end)
-    stub(El.MockMonitor, :wait_for_down, fn _, _ -> :ok end)
+    stub(El.MockMonitor, :wait_for_down, fn _, _, _ -> :ok end)
 
     El.Lifecycle.exit(:crashed_session, :crash, [
       session_meta: El.MockSessionMeta,

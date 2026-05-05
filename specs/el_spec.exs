@@ -67,6 +67,11 @@ defmodule El.Spec do
   end
 
   describe "exit/1" do
+    setup do
+      stub(El.MockSessionMeta, :delete, fn _ -> :ok end)
+      :ok
+    end
+
     test "returns ok when session found and terminated" do
       expect(El.MockRegistry, :lookup, fn El.Registry, :kent ->
         [{:pid, :meta}]
@@ -74,7 +79,8 @@ defmodule El.Spec do
 
       terminate_stub = fn El.SessionSupervisor, :pid -> :ok end
       stub(El.MockSupervisor, :terminate_child, terminate_stub)
-      stub(El.MockMonitor, :wait_for_down, fn _ref, _name -> :ok end)
+      stub(El.MockMonitor, :wait_for_down, fn _ref, _name, _opts -> :ok end)
+      stub(El.MockApp, :delete_session_messages, fn :kent -> :ok end)
       result = El.exit(:kent)
       assert result == :ok
     end
@@ -100,13 +106,20 @@ defmodule El.Spec do
         raise "error"
       end)
 
-      stub(El.MockMonitor, :wait_for_down, fn _, _ -> :ok end)
+      stub(El.MockMonitor, :wait_for_down, fn _, _, _ -> :ok end)
+      stub(El.MockApp, :delete_session_messages, fn :kent -> :ok end)
       result = El.exit(:kent)
       assert result == :ok
     end
   end
 
   describe "exit/1 with :all" do
+    setup do
+      stub(El.MockSessionMeta, :delete, fn _ -> :ok end)
+      stub(El.MockApp, :delete_session_messages, fn _ -> :ok end)
+      :ok
+    end
+
     test "terminates all sessions" do
       expect(El.MockRegistry, :select, fn El.Registry, _pattern ->
         [:kent, :lisa]
@@ -122,12 +135,18 @@ defmodule El.Spec do
 
       terminate_stub = fn El.SessionSupervisor, _pid -> :ok end
       stub(El.MockSupervisor, :terminate_child, terminate_stub)
-      stub(El.MockMonitor, :wait_for_down, fn _ref, _name -> :ok end)
+      stub(El.MockMonitor, :wait_for_down, fn _ref, _name, _opts -> :ok end)
       El.exit(:all)
     end
   end
 
   describe "exit_pattern/1" do
+    setup do
+      stub(El.MockSessionMeta, :delete, fn _ -> :ok end)
+      stub(El.MockApp, :delete_session_messages, fn _ -> :ok end)
+      :ok
+    end
+
     test "exits sessions matching glob pattern" do
       expect(El.MockRegistry, :select, fn El.Registry, _pattern ->
         [:dude1, :dude2, :lisa]
@@ -143,7 +162,7 @@ defmodule El.Spec do
 
       terminate_stub = fn El.SessionSupervisor, _pid -> :ok end
       stub(El.MockSupervisor, :terminate_child, terminate_stub)
-      stub(El.MockMonitor, :wait_for_down, fn _ref, _name -> :ok end)
+      stub(El.MockMonitor, :wait_for_down, fn _ref, _name, _opts -> :ok end)
       El.exit_pattern("dude*")
     end
 

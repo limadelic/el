@@ -59,8 +59,8 @@ defmodule El do
   def agent(name, opts \\ []), do: session_api(opts).agent(name)
   defp session_api(opts), do: Keyword.get(opts, :session_api, Application.get_env(:el, :session_api, El.Session.Api))
 
-  def exit(name) do
-    El.Lifecycle.exit(name)
+  def exit(name, opts \\ []) do
+    El.Lifecycle.exit(name, :normal, opts)
   end
 
   def exit_pattern(pattern) do

@@ -67,7 +67,7 @@ defmodule El.Features.OnOffSpec do
       expect(El.MockRegistry, :lookup, lookup_fn)
       term_fn = fn El.SessionSupervisor, :mock_pid -> :ok end
       stub(El.MockSupervisor, :terminate_child, term_fn)
-      stub(El.MockMonitor, :wait_for_down, fn _, _ -> :ok end)
+      stub(El.MockMonitor, :wait_for_down, fn _, _, _ -> :ok end)
       stub(El.MockApp, :delete_session_messages, fn _ -> :ok end)
       El.Lifecycle.exit(:dude, :normal, [session_meta: El.MockSessionMeta])
     end
@@ -77,7 +77,7 @@ defmodule El.Features.OnOffSpec do
       expect(El.MockRegistry, :lookup, lookup_fn)
       stub_fn = fn El.SessionSupervisor, _pid -> :ok end
       stub(El.MockSupervisor, :terminate_child, stub_fn)
-      stub(El.MockMonitor, :wait_for_down, fn _ref, :dude -> :ok end)
+      stub(El.MockMonitor, :wait_for_down, fn _ref, :dude, _opts -> :ok end)
       stub(El.MockApp, :delete_session_messages, fn _ -> :ok end)
       El.Lifecycle.exit(:dude, :normal, [session_meta: El.MockSessionMeta])
     end
