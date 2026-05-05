@@ -143,4 +143,17 @@ defmodule El.CLI.Start.Options.Spec do
       assert El.CLI.Start.Options.env_model([], deps) == [model: "from-env"]
     end
   end
+
+  describe "Options.resolve_agent/3" do
+    test "returns explicit agent unchanged when not nil" do
+      deps = [agent_detector: El.MockAgentDetector]
+      assert El.CLI.Start.Options.resolve_agent(:explicit, "name", deps) == :explicit
+    end
+
+    test "delegates to agent_detector when explicit is nil" do
+      expect(El.MockAgentDetector, :detect_agent, fn "name" -> :detected end)
+      deps = [agent_detector: El.MockAgentDetector]
+      assert El.CLI.Start.Options.resolve_agent(nil, "name", deps) == :detected
+    end
+  end
 end

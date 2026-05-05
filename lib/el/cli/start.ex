@@ -5,7 +5,7 @@ defmodule El.CLI.Start do
   alias El.CLI.Start.SessionCard
 
   def merge_session_opts(name, explicit_agent \\ nil, explicit_model \\ nil, deps \\ []) do
-    agent = resolve_agent(explicit_agent, name, deps)
+    agent = Options.resolve_agent(explicit_agent, name, deps)
     base = build_base_opts(explicit_model, agent, deps)
     base ++ Options.env_model(base, deps)
   end
@@ -15,9 +15,6 @@ defmodule El.CLI.Start do
       Options.agent_opt(agent) ++
       Options.agent_model_opt(agent, explicit_model, deps)
   end
-
-  defp resolve_agent(nil, name, deps), do: Options.agent_detector(deps).detect_agent(name)
-  defp resolve_agent(agent, _name, _deps), do: agent
 
   def detect_and_merge_agent(name, opts, deps \\ []) do
     merged = opts ++ Options.agent_opt(Options.agent_detector(deps).detect_agent(name))

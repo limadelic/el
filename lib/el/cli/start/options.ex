@@ -15,6 +15,9 @@ defmodule El.CLI.Start.Options do
     Keyword.get(deps, :agent_detector, El.AgentDetector)
   end
 
+  def resolve_agent(nil, name, deps), do: agent_detector(deps).detect_agent(name)
+  def resolve_agent(agent, _name, _deps), do: agent
+
   def agent_metadata(deps) do
     Keyword.get(deps, :agent_metadata, El.AgentMetadata)
   end
