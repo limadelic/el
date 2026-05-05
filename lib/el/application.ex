@@ -79,23 +79,23 @@ defmodule El.Application do
   defp store_dir(true), do: "~/.el/dev"
   defp store_dir(false), do: "~/.el"
 
-  def delete_session_messages(name) do
-    message_store = Application.get_env(:el, :message_store, El.MessageStore)
-    message_store.delete(name)
+  def delete_session_messages(name, opts \\ []) do
+    ms = Keyword.get(opts, :message_store, Application.get_env(:el, :message_store, El.MessageStore))
+    ms.delete(name)
   end
 
-  def store_message(name, message_entry) do
-    message_store = Application.get_env(:el, :message_store, El.MessageStore)
-    message_store.insert(name, message_entry)
+  def store_message(name, message_entry, opts \\ []) do
+    ms = Keyword.get(opts, :message_store, Application.get_env(:el, :message_store, El.MessageStore))
+    ms.insert(name, message_entry)
   end
 
-  def load_messages(name) do
-    message_store = Application.get_env(:el, :message_store, El.MessageStore)
-    message_store.lookup(name)
+  def load_messages(name, opts \\ []) do
+    ms = Keyword.get(opts, :message_store, Application.get_env(:el, :message_store, El.MessageStore))
+    ms.lookup(name)
   end
 
-  def delete_message(name, entry) do
-    message_store = Application.get_env(:el, :message_store, El.MessageStore)
-    message_store.delete_entry(name, entry)
+  def delete_message(name, entry, opts \\ []) do
+    ms = Keyword.get(opts, :message_store, Application.get_env(:el, :message_store, El.MessageStore))
+    ms.delete_entry(name, entry)
   end
 end
