@@ -137,10 +137,10 @@ defmodule El.CLI.Start.Options.Spec do
   end
 
   describe "Options.env_model/2" do
-    test "delegates to env_model_for with extracted :model and :agent keys" do
+    test "returns model from env when opts has neither :model nor :agent" do
       stub(El.MockEnv, :get, fn _ -> "from-env" end)
       deps = [env: El.MockEnv]
-      assert El.CLI.Start.Options.env_model([model: "x", agent: :a], deps) == []
+      assert El.CLI.Start.Options.env_model([], deps) == [model: "from-env"]
     end
   end
 end
