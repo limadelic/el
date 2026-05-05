@@ -22,7 +22,8 @@ defmodule El.Session.CastHandler do
   end
 
   def handle({:complete_ask, from, message, response, ref, model, session_id}, state) do
-    updated_state = build_updated_state(state, from, message, response, ref, model, session_id)
+    ask = %{from: from, message: message, response: response, ref: ref, model: model}
+    updated_state = build_updated_state(state, ask, session_id)
     persist_session_meta(updated_state, session_id, model)
     {:noreply, updated_state}
   end
@@ -40,8 +41,8 @@ defmodule El.Session.CastHandler do
     {:noreply, %{state | messages: state.messages ++ [entry]}}
   end
 
-  defp build_updated_state(state, from, message, response, ref, model, session_id) do
-    new_state = state.ask_module.finalize_ask(state, from, ref, message, response, model)
+  defp build_updated_state(state, ask, session_id) do
+    new_state = state.ask_module.finalize_ask(state, ask.from, ask.ref, ask.message, ask.response, ask.model)
     %{new_state | session_id: session_id}
   end
 
