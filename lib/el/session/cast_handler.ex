@@ -35,13 +35,6 @@ defmodule El.Session.CastHandler do
     {:noreply, %{state | messages: state.messages ++ [entry]}}
   end
 
-  def handle({:tell_ask, target, message}, state) do
-    response = Router.process_tell_ask(state, target, message)
-    entry = {"relay", message, response, %{from: state.name}}
-    state.store_module.store_message(state.name, entry, message_store: state.opts[:message_store])
-    {:noreply, %{state | messages: state.messages ++ [entry]}}
-  end
-
   defp build_updated_state(state, ask, session_id) do
     new_state = state.ask_module.finalize_ask(state, ask)
     %{new_state | session_id: session_id}

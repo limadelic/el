@@ -45,13 +45,6 @@ defmodule El.Spec do
     end
   end
 
-  describe "tell_ask/3" do
-    test "delegates to El.Session.Api.tell_ask" do
-      expect(El.MockSessionApi, :tell_ask, fn :kent, :lisa, "message" -> :ok end)
-      assert El.tell_ask(:kent, :lisa, "message") == :ok
-    end
-  end
-
   describe "clear/1" do
     test "delegates to El.Session.Api.clear" do
       expect(El.MockSessionApi, :clear, fn :kent -> :ok end)

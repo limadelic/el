@@ -392,23 +392,6 @@ defmodule El.Session.Spec do
     end
   end
 
-  describe "handle_cast/2 :tell_ask" do
-    test "stores relay message", %{state: state} do
-      alive_fn = fn
-        :target -> false
-        _ -> false
-      end
-
-      {:noreply, returned_state} =
-        El.Session.handle_cast(
-          {:tell_ask, :target, "message"},
-          %{state | alive_fn: alive_fn}
-        )
-
-      assert length(returned_state.messages) == 1
-    end
-  end
-
   describe "handle_call/2 :ask" do
     test "returns noreply and spawns task", %{state: state} do
       from = {self(), make_ref()}
@@ -548,75 +531,6 @@ defmodule El.Session.Spec do
         El.Session.handle_call({:log, 1}, :from, state_with_messages)
 
       assert returned_state == state_with_messages
-    end
-  end
-
-  describe "handle_call/2 :ask_tell" do
-    setup %{state: state} do
-      alive_fn_target = fn
-        :target -> true
-        _ -> false
-      end
-
-      alive_fn_down = fn _target -> false end
-
-      {:ok,
-       state: state,
-       alive_fn_target: alive_fn_target,
-       alive_fn_down: alive_fn_down}
-    end
-
-    test "returns route message when target running",
-         %{state: state, alive_fn_target: alive_fn} do
-      Mox.stub(El.MockSessionApi, :tell, fn _, _ -> :ok end)
-      Mox.stub(El.MockEl, :tell, fn _, _ -> :ok end)
-
-      {:reply, response, _returned_state} =
-        El.Session.handle_call({:ask_tell, :target, "message"}, :from, %{
-          state
-          | alive_fn: alive_fn
-        })
-
-      assert response == "-> target"
-    end
-
-    test "stores message when target running",
-         %{state: state, alive_fn_target: alive_fn} do
-      Mox.stub(El.MockSessionApi, :tell, fn _, _ -> :ok end)
-      Mox.stub(El.MockEl, :tell, fn _, _ -> :ok end)
-
-      {:reply, _response, returned_state} =
-        El.Session.handle_call({:ask_tell, :target, "message"}, :from, %{
-          state
-          | alive_fn: alive_fn
-        })
-
-      assert length(returned_state.messages) == 1
-    end
-
-    test "returns not running message when target down",
-         %{state: state, alive_fn_down: alive_fn} do
-      {:reply, response, _returned_state} =
-        El.Session.handle_call({:ask_tell, :missing, "message"}, :from, %{
-          state
-          | alive_fn: alive_fn
-        })
-
-      assert response == "missing is not running"
-    end
-
-    test "stores relay message",
-         %{state: state, alive_fn_target: alive_fn} do
-      Mox.stub(El.MockSessionApi, :tell, fn _, _ -> :ok end)
-      Mox.stub(El.MockEl, :tell, fn _, _ -> :ok end)
-
-      {:reply, _response, returned_state} =
-        El.Session.handle_call({:ask_tell, :target, "message"}, :from, %{
-          state
-          | alive_fn: alive_fn
-        })
-
-      assert length(returned_state.messages) == 1
     end
   end
 

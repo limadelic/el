@@ -66,14 +66,6 @@ defmodule El.CLI.Spec do
       assert El.CLI.Router.parse_route(["session", "clear"]) == :clear
     end
 
-    test "returns tell_ask for name tell ask @target message" do
-      assert El.CLI.Router.parse_route(["session", "tell", "ask", "@other", "hello"]) == :tell_ask
-    end
-
-    test "returns ask_tell for name ask tell @target message" do
-      assert El.CLI.Router.parse_route(["session", "ask", "tell", "@other", "hello"]) == :ask_tell
-    end
-
     test "returns daemon for --daemon flag" do
       assert El.CLI.Router.parse_route(["--daemon", "my_session"]) == :daemon
     end

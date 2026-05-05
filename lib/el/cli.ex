@@ -1,5 +1,5 @@
 defmodule El.CLI do
-  alias El.CLI.{Router, Output, Log, Pattern, Messaging, Start}
+  alias El.CLI.{Router, Output, Log, Pattern, Start}
 
   defp version do
     Application.spec(:el, :vsn) |> Output.format_version()
@@ -41,20 +41,25 @@ defmodule El.CLI do
     Start.handle_find_daemon_with_rest(name, opts, rest, el(deps), deps)
   end
 
-  def execute(:tell_ask, [name, "tell", "ask", "@" <> target | words], opts) do
-    Messaging.execute_tell_ask(name, target, words, el(opts), opts)
-  end
-
-  def execute(:ask_tell, [name, "ask", "tell", "@" <> target | words], opts) do
-    Messaging.execute_ask_tell(name, target, words, el(opts), opts)
-  end
-
   def execute(:msg, [name, word | more_words], deps) do
     opts = Start.detect_and_merge_agent(name, Start.start_opts(nil), deps)
     status = el(deps).start(String.to_atom(name), opts ++ deps)
-    Messaging.execute_msg(name, [word | more_words], el(deps), deps)
+    name_atom = String.to_atom(name)
+    message = Enum.join([word | more_words], " ")
+    result = el(deps).ask(name_atom, message, deps)
+    agent_name = agent_safe(el(deps), name_atom, name, deps)
+    Output.handle_result(result, resolve_name(agent_name, name))
     maybe_print_card(status, name, opts, deps)
   end
+
+  defp agent_safe(el_module, name_atom, _fallback, opts) do
+    el_module.agent(name_atom, opts)
+  catch
+    _ -> nil
+  end
+
+  defp resolve_name(nil, fallback), do: fallback
+  defp resolve_name(agent, _fallback), do: agent
 
   def execute(:log, [name, "log"], opts), do: Log.execute_log(name, 1, el(opts), opts)
 

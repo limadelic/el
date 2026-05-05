@@ -126,7 +126,6 @@ Enum.each(
     El.CLI.Start,
     El.CLI.Log,
     El.CLI.Pattern,
-    El.CLI.Messaging,
     El.CLI.Output,
     El.CLI.Router,
     El.Deps,

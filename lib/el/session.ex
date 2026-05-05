@@ -118,11 +118,6 @@ defmodule El.Session do
   end
 
   @impl true
-  def handle_call({:ask_tell, _, _} = msg, from, state) do
-    CallHandler.handle(msg, from, state)
-  end
-
-  @impl true
   def handle_call(:clear, from, state) do
     CallHandler.handle(:clear, from, state)
   end

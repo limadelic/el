@@ -54,8 +54,6 @@ defmodule El do
     session_api(opts).clear(name)
   end
 
-  def tell_ask(name, target, message, opts \\ []), do: session_api(opts).tell_ask(name, target, message)
-  def ask_tell(name, target, message, opts \\ []), do: session_api(opts).ask_tell(name, target, message)
   def agent(name, opts \\ []), do: session_api(opts).agent(name)
   defp session_api(opts), do: Keyword.fetch!(opts, :session_api)
 
