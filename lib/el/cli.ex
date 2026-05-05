@@ -15,7 +15,7 @@ defmodule El.CLI do
 
   def execute(:usage, _args, _opts), do: IO.puts(Output.usage_message())
   def execute(:version, _args, _opts), do: IO.puts(version())
-  def execute(:ls, _args, opts), do: el(opts).ls() |> Output.show_sessions()
+  def execute(:ls, _args, opts), do: el(opts).ls(opts) |> Output.show_sessions()
   def execute(:daemon_hub, _args, _opts), do: Process.sleep(:infinity)
 
   def execute(:daemon, ["--daemon", name], opts) do
@@ -42,17 +42,17 @@ defmodule El.CLI do
   end
 
   def execute(:tell_ask, [name, "tell", "ask", "@" <> target | words], opts) do
-    Messaging.execute_tell_ask(name, target, words, el(opts))
+    Messaging.execute_tell_ask(name, target, words, el(opts), opts)
   end
 
   def execute(:ask_tell, [name, "ask", "tell", "@" <> target | words], opts) do
-    Messaging.execute_ask_tell(name, target, words, el(opts))
+    Messaging.execute_ask_tell(name, target, words, el(opts), opts)
   end
 
   def execute(:msg, [name, word | more_words], deps) do
     opts = Start.detect_and_merge_agent(name, Start.start_opts(nil), deps)
-    status = el(deps).start(String.to_atom(name), opts)
-    Messaging.execute_msg(name, [word | more_words], el(deps))
+    status = el(deps).start(String.to_atom(name), opts ++ deps)
+    Messaging.execute_msg(name, [word | more_words], el(deps), deps)
     maybe_print_card(status, name, opts, deps)
   end
 
