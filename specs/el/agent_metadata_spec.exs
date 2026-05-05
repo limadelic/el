@@ -14,7 +14,7 @@ defmodule El.AgentMetadata.Spec do
     {:ok, fixture_dir: fixture_dir}
   end
 
-  describe "El.AgentMetadata.model_for/1" do
+  describe "El.AgentMetadata.model_for/2" do
     test "returns model from frontmatter with atom name", %{fixture_dir: fixture_dir} do
       agent_file = Path.join(fixture_dir, "kent.md")
       File.write!(agent_file, "---\nmodel: opus\n---\n# Kent\n")
