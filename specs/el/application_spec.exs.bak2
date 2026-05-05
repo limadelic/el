@@ -130,7 +130,6 @@ defmodule El.Application.Spec do
     El.Application.init_message_store(
       file_system: El.MockFileSystem,
       dets_backend: El.DetsBackendStub,
-      daemon: El.DaemonStub
     )
     assert El.DetsBackendStub.insert(:session_meta, {:key, :value}) == :ok
   end

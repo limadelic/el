@@ -13,7 +13,8 @@ defmodule El.Application do
   def start(_type, _args) do
     file_system = Application.get_env(:el, :file_system, El.FileSystemImpl)
     dets_backend = Application.get_env(:el, :dets_backend, :dets)
-    init_message_store(file_system: file_system, dets_backend: dets_backend)
+    daemon = Application.get_env(:el, :daemon, El.CLI.Daemon)
+    init_message_store(file_system: file_system, dets_backend: dets_backend, daemon: daemon)
     {:ok, pid} = Supervisor.start_link(children(), supervisor_opts())
     el_module = Application.get_env(:el, :el_module, El)
     session_meta = Application.get_env(:el, :session_meta, El.SessionMeta)
@@ -66,7 +67,8 @@ defmodule El.Application do
   def supervisor_opts, do: @supervisor_opts
 
   def init_message_store(opts \\ []) do
-    dir = store_dir()
+    daemon = Keyword.fetch!(opts, :daemon)
+    dir = store_dir(daemon)
     messages_path = Path.expand("#{dir}/messages.dets") |> String.to_charlist()
     session_meta_path = Path.expand("#{dir}/session_meta.dets") |> String.to_charlist()
     file_system = Keyword.fetch!(opts, :file_system)
@@ -76,13 +78,9 @@ defmodule El.Application do
     {:ok, _} = dets_backend.open_file(:session_meta, file: session_meta_path, type: :bag)
   end
 
-  defp store_dir do
-    daemon = Application.get_env(:el, :daemon, El.CLI.Daemon)
-    store_dir(daemon.dev?())
-  end
-
   defp store_dir(true), do: "~/.el/dev"
   defp store_dir(false), do: "~/.el"
+  defp store_dir(daemon) when is_atom(daemon), do: store_dir(daemon.dev?())
 
   def delete_session_messages(name, opts \\ []) do
     ms = Keyword.fetch!(opts, :message_store)
