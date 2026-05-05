@@ -29,9 +29,9 @@ defmodule El.Application do
   end
 
   def restore_sessions(opts \\ []) do
-    el = opts[:el_module] || Application.get_env(:el, :el_module, El)
-    message_store = opts[:message_store] || Application.get_env(:el, :message_store, El.MessageStore)
-    session_meta = opts[:session_meta] || Application.get_env(:el, :session_meta, El.SessionMeta)
+    el = Keyword.fetch!(opts, :el_module)
+    message_store = Keyword.fetch!(opts, :message_store)
+    session_meta = Keyword.fetch!(opts, :session_meta)
 
     message_store.session_names()
     |> Enum.each(&restore_session(&1, el, session_meta))

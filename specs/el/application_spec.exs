@@ -139,7 +139,11 @@ defmodule El.Application.Spec do
       Application.put_env(:el, :el_module, RestoreSessionsStubEl)
       Application.put_env(:el, :session_meta, RestoreSessionsStubSessionMeta)
 
-      El.Application.restore_sessions()
+      El.Application.restore_sessions(
+        el_module: RestoreSessionsStubEl,
+        message_store: RestoreSessionsStubStore,
+        session_meta: RestoreSessionsStubSessionMeta
+      )
 
       calls = Agent.get(RestoreSessionsStubEl, & &1)
       assert Enum.reverse(calls) == [:dude, :kent]
@@ -152,7 +156,11 @@ defmodule El.Application.Spec do
       Application.put_env(:el, :el_module, RestoreWithMetaStubEl)
       Application.put_env(:el, :session_meta, RestoreWithMetaStubSessionMeta)
 
-      El.Application.restore_sessions()
+      El.Application.restore_sessions(
+        el_module: RestoreWithMetaStubEl,
+        message_store: RestoreWithMetaStubStore,
+        session_meta: RestoreWithMetaStubSessionMeta
+      )
 
       calls = Agent.get(RestoreWithMetaStubEl, & &1)
       assert Enum.reverse(calls) == [
@@ -168,7 +176,11 @@ defmodule El.Application.Spec do
       Application.put_env(:el, :el_module, RestoreWithModelStubEl)
       Application.put_env(:el, :session_meta, RestoreWithModelStubSessionMeta)
 
-      El.Application.restore_sessions()
+      El.Application.restore_sessions(
+        el_module: RestoreWithModelStubEl,
+        message_store: RestoreWithModelStubStore,
+        session_meta: RestoreWithModelStubSessionMeta
+      )
 
       calls = Agent.get(RestoreWithModelStubEl, & &1)
       assert Enum.reverse(calls) == [
@@ -184,7 +196,11 @@ defmodule El.Application.Spec do
       Application.put_env(:el, :el_module, RestoreFallbackStubEl)
       Application.put_env(:el, :session_meta, RestoreFallbackStubSessionMeta)
 
-      El.Application.restore_sessions()
+      El.Application.restore_sessions(
+        el_module: RestoreFallbackStubEl,
+        message_store: RestoreFallbackStubStore,
+        session_meta: RestoreFallbackStubSessionMeta
+      )
 
       calls = Agent.get(RestoreFallbackStubEl, & &1)
       assert Enum.reverse(calls) == [
@@ -200,7 +216,11 @@ defmodule El.Application.Spec do
       Application.put_env(:el, :el_module, WarmupStubEl)
       Application.put_env(:el, :session_meta, WarmupStubSessionMeta)
 
-      El.Application.restore_sessions()
+      El.Application.restore_sessions(
+        el_module: WarmupStubEl,
+        message_store: WarmupStubStore,
+        session_meta: WarmupStubSessionMeta
+      )
 
       calls = Agent.get(WarmupStubEl, & &1)
       assert Enum.reverse(calls) == [
