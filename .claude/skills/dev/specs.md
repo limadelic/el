@@ -1,19 +1,12 @@
 # Spec Rules
 
 ## Philosophy
-- ONLY unit tests, NEVER integration tests
-- NEVER start real processes (no start_link, no GenServer.start, no Application.ensure_all_started)
-- mock the next module: each spec tests ONE module
-- mock EVERYTHING that's not in this module
-- whatever is external gets mocked, whatever is internal gets tested
-- GenServer callbacks (init, handle_cast, handle_call, handle_info) are functions, test them directly
-- no end-to-end through the whole stack
-- no Process.sleep, ever
+- Growing Object Oriented Sytem Guided By Test
+- London School of TDD
 
-## What gets mocked (London school)
-- Every collaborator we own gets a behaviour and a Mox mock
-- BEAM stdlib calls (System, Node, File, Process, IO, :dets, :net_kernel, :timer, :erlang) are wrapped in our own behaviour + Mox mock when they touch FS, network, DB, clock, or processes outside the unit (Feathers' five rules)
-- BEAM stdlib calls that touch none of those may be called directly
+## What gets mocked 
+- Code we own: every collaborator gets a behaviour and a Mox mock
+- Code we don't own: wrap + mock only when it breaks Feathers' rules (FS, network, DB, clock, processes outside the unit). Otherwise call directly.
 
 ## Mock Style
 - use Mox with behaviours (lib/el/behaviours.ex)

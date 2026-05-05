@@ -118,6 +118,36 @@ end
 Application.put_env(:el, :session_meta, El.MockSessionMeta)
 Application.put_env(:el, :file_system, El.MockFileSystem)
 
+Enum.each(
+  [
+    El,
+    El.Application,
+    El.CLI,
+    El.CLI.Start,
+    El.CLI.Log,
+    El.CLI.Pattern,
+    El.CLI.Messaging,
+    El.CLI.Output,
+    El.CLI.Router,
+    El.Deps,
+    El.Session,
+    El.Session.Api,
+    El.Lifecycle,
+    El.ProcessMonitor,
+    El.AgentDetector,
+    El.AgentMetadata,
+    El.MessageStore,
+    El.SessionMeta,
+    El.GroupLeaderImpl,
+    El.DetsBackend,
+    El.SleeperImpl,
+    El.ClaudePort,
+    El.ClaudePort.Connection,
+    El.ClaudePort.Parser
+  ],
+  &Code.ensure_loaded!/1
+)
+
 ExUnit.start(timeout: 10)
 
 defmodule TestClaudeCode do
