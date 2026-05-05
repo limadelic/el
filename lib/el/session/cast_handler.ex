@@ -24,7 +24,7 @@ defmodule El.Session.CastHandler do
   def handle({:complete_ask, from, message, response, ref, model, session_id}, state) do
     new_state = state.ask_module.finalize_ask(state, from, ref, message, response, model)
     updated_state = %{new_state | session_id: session_id}
-    session_meta = Map.get(updated_state, :session_meta, Application.get_env(:el, :session_meta, El.SessionMeta))
+    session_meta = Map.get(updated_state, :session_meta, El.SessionMeta)
     agent = Keyword.get(updated_state.opts, :agent)
     persisted_model = Keyword.get(updated_state.opts, :model) || model
     session_meta.insert(updated_state.name, agent, session_id, persisted_model)

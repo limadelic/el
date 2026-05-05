@@ -52,17 +52,6 @@ defmodule El.Features.OnOffSpec do
 
   describe "El.exit/1" do
     setup do
-      original_session_meta = Application.get_env(:el, :session_meta)
-
-      on_exit(fn ->
-        if original_session_meta do
-          Application.put_env(:el, :session_meta, original_session_meta)
-        else
-          Application.delete_env(:el, :session_meta)
-        end
-      end)
-
-      Application.put_env(:el, :session_meta, El.MockSessionMeta)
       stub(El.MockSessionMeta, :delete, fn _ -> :ok end)
       :ok
     end
@@ -70,7 +59,7 @@ defmodule El.Features.OnOffSpec do
     test "looks up session in registry" do
       expect(El.MockRegistry, :lookup, fn El.Registry, :dude -> [] end)
       stub(El.MockApp, :delete_session_messages, fn _ -> :ok end)
-      El.exit(:dude)
+      El.Lifecycle.exit(:dude, :normal, [session_meta: El.MockSessionMeta])
     end
 
     test "terminates child when session found" do
@@ -80,7 +69,7 @@ defmodule El.Features.OnOffSpec do
       stub(El.MockSupervisor, :terminate_child, term_fn)
       stub(El.MockMonitor, :wait_for_down, fn _, _ -> :ok end)
       stub(El.MockApp, :delete_session_messages, fn _ -> :ok end)
-      El.exit(:dude)
+      El.Lifecycle.exit(:dude, :normal, [session_meta: El.MockSessionMeta])
     end
 
     test "monitors process and waits for DOWN" do
@@ -90,7 +79,7 @@ defmodule El.Features.OnOffSpec do
       stub(El.MockSupervisor, :terminate_child, stub_fn)
       stub(El.MockMonitor, :wait_for_down, fn _ref, :dude -> :ok end)
       stub(El.MockApp, :delete_session_messages, fn _ -> :ok end)
-      El.exit(:dude)
+      El.Lifecycle.exit(:dude, :normal, [session_meta: El.MockSessionMeta])
     end
   end
 
