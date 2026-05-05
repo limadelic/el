@@ -5,7 +5,7 @@ defmodule El.CLI do
     Application.spec(:el, :vsn) |> Output.format_version()
   end
 
-  defp el(opts), do: Keyword.get(opts, :el_module, Application.get_env(:el, :el_module, El))
+  defp el(opts), do: Keyword.fetch!(opts, :el_module)
 
   def dispatch(args), do: dispatch(args, El.Deps.production())
 
@@ -23,7 +23,7 @@ defmodule El.CLI do
   end
 
   def execute(:daemon, ["--daemon", name, "-m", model], opts) do
-    Start.start_daemon_node_for(name, model, el(opts))
+    Start.start_daemon_node_for(name, model, el(opts), El.SleeperImpl, opts)
   end
 
   def execute(:start, [name], deps) do

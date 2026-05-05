@@ -55,7 +55,7 @@ defmodule El.CLI.Start do
 
   def handle_find_daemon_for_start(name, opts, el, deps \\ []) do
     name_atom = String.to_atom(name)
-    el.start(name_atom, opts)
+    el.start(name_atom, opts ++ deps)
     ping_if_agent(name_atom, opts, deps)
     print_session_info(name, opts, deps)
   end
@@ -238,7 +238,7 @@ defmodule El.CLI.Start do
 
   def handle_find_daemon_with_rest(name, opts, rest, el, deps \\ []) do
     name_atom = String.to_atom(name)
-    el.start(name_atom, opts)
+    el.start(name_atom, opts ++ deps)
     print_session_info(name, opts, deps)
     dispatch_rest(rest, name)
   end
@@ -251,9 +251,9 @@ defmodule El.CLI.Start do
     El.CLI.dispatch([name | rest])
   end
 
-  def start_daemon_node_for(name, model, el, sleeper \\ El.SleeperImpl) do
+  def start_daemon_node_for(name, model, el, sleeper \\ El.SleeperImpl, deps \\ []) do
     name_atom = String.to_atom(name)
-    el.start(name_atom, start_opts(normalize_model(model)))
+    el.start(name_atom, start_opts(normalize_model(model)) ++ deps)
     report_daemon_up(name)
     hold_forever(sleeper)
   end
