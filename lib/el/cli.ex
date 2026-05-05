@@ -1,5 +1,5 @@
 defmodule El.CLI do
-  alias El.CLI.{Router, Output, Log, Pattern, Start}
+  alias El.CLI.{Router, Output, Log, Pattern, Start, Msg}
 
   defp version do
     Application.spec(:el, :vsn) |> Output.format_version()
@@ -44,11 +44,7 @@ defmodule El.CLI do
   def execute(:msg, [name, word | more_words], deps) do
     opts = Start.detect_and_merge_agent(name, Start.start_opts(nil), deps)
     status = el(deps).start(String.to_atom(name), opts ++ deps)
-    name_atom = String.to_atom(name)
-    message = Enum.join([word | more_words], " ")
-    result = el(deps).ask(name_atom, message, deps)
-    agent_name = agent_safe(el(deps), name_atom, name, deps)
-    Output.handle_result(result, resolve_name(agent_name, name))
+    Msg.dispatch(name, [word | more_words], el(deps), deps)
     maybe_print_card(status, name, opts, deps)
   end
 
@@ -73,13 +69,4 @@ defmodule El.CLI do
 
   defp maybe_print_card(:created, name, opts, deps), do: Start.print_session_info(name, opts, deps)
   defp maybe_print_card(:already_running, _name, _opts, _deps), do: :ok
-
-  defp agent_safe(el_module, name_atom, _fallback, opts) do
-    el_module.agent(name_atom, opts)
-  catch
-    _ -> nil
-  end
-
-  defp resolve_name(nil, fallback), do: fallback
-  defp resolve_name(agent, _fallback), do: agent
 end
