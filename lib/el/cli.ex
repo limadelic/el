@@ -7,69 +7,69 @@ defmodule El.CLI do
 
   defp el(opts \\ []), do: Keyword.get(opts, :el_module, Application.get_env(:el, :el_module, El))
 
-  def dispatch(args) do
-    args |> Router.parse_route() |> execute(args, [])
+  def dispatch(args, opts \\ []) do
+    args |> Router.parse_route() |> execute(args, opts)
   end
 
-  def execute(:usage, _args, _deps), do: IO.puts(Output.usage_message())
-  def execute(:version, _args, _deps), do: IO.puts(version())
-  def execute(:ls, _args, _deps), do: el().ls() |> Output.show_sessions()
-  def execute(:daemon_hub, _args, _deps), do: Process.sleep(:infinity)
+  def execute(:usage, _args, _opts), do: IO.puts(Output.usage_message())
+  def execute(:version, _args, _opts), do: IO.puts(version())
+  def execute(:ls, _args, opts), do: el(opts).ls() |> Output.show_sessions()
+  def execute(:daemon_hub, _args, _opts), do: Process.sleep(:infinity)
 
-  def execute(:daemon, ["--daemon", name], _deps) do
-    execute(:daemon, ["--daemon", name, "-m", ""], [])
+  def execute(:daemon, ["--daemon", name], opts) do
+    execute(:daemon, ["--daemon", name, "-m", ""], opts)
   end
 
-  def execute(:daemon, ["--daemon", name, "-m", model], _deps) do
-    Start.start_daemon_node_for(name, model, el())
+  def execute(:daemon, ["--daemon", name, "-m", model], opts) do
+    Start.start_daemon_node_for(name, model, el(opts))
   end
 
   def execute(:start, [name], deps) do
     opts = Start.merge_session_opts(name, nil, nil, deps)
-    Start.handle_find_daemon_for_start(name, opts, el(), deps)
+    Start.handle_find_daemon_for_start(name, opts, el(deps), deps)
   end
 
   def execute(:start, [name, "-m", model | rest], deps) do
     opts = Start.merge_session_opts(name, nil, model, deps)
-    Start.handle_find_daemon_with_rest(name, opts, rest, el(), deps)
+    Start.handle_find_daemon_with_rest(name, opts, rest, el(deps), deps)
   end
 
   def execute(:start, [name, "-a", agent | rest], deps) do
     opts = Start.merge_session_opts(name, agent, nil, deps)
-    Start.handle_find_daemon_with_rest(name, opts, rest, el(), deps)
+    Start.handle_find_daemon_with_rest(name, opts, rest, el(deps), deps)
   end
 
-  def execute(:tell_ask, [name, "tell", "ask", "@" <> target | words], _deps) do
-    Messaging.execute_tell_ask(name, target, words, el())
+  def execute(:tell_ask, [name, "tell", "ask", "@" <> target | words], opts) do
+    Messaging.execute_tell_ask(name, target, words, el(opts))
   end
 
-  def execute(:ask_tell, [name, "ask", "tell", "@" <> target | words], _deps) do
-    Messaging.execute_ask_tell(name, target, words, el())
+  def execute(:ask_tell, [name, "ask", "tell", "@" <> target | words], opts) do
+    Messaging.execute_ask_tell(name, target, words, el(opts))
   end
 
   def execute(:msg, [name, word | more_words], deps) do
     opts = Start.detect_and_merge_agent(name, Start.start_opts(nil), deps)
-    status = el().start(String.to_atom(name), opts)
-    Messaging.execute_msg(name, [word | more_words], el())
+    status = el(deps).start(String.to_atom(name), opts)
+    Messaging.execute_msg(name, [word | more_words], el(deps))
     maybe_print_card(status, name, opts, deps)
   end
 
-  def execute(:log, [name, "log"], _deps), do: Log.execute_log(name, 1, el())
+  def execute(:log, [name, "log"], opts), do: Log.execute_log(name, 1, el(opts))
 
-  def execute(:log_n, [name, "log", n], _deps) do
-    Log.execute_log(name, Log.parse_log_count(n), el())
+  def execute(:log_n, [name, "log", n], opts) do
+    Log.execute_log(name, Log.parse_log_count(n), el(opts))
   end
 
-  def execute(:exit, [name, "exit"], _deps) do
-    Pattern.exit_by_kind(el(), Pattern.pattern?(name), name)
+  def execute(:exit, [name, "exit"], opts) do
+    Pattern.exit_by_kind(el(opts), Pattern.pattern?(name), name)
   end
 
-  def execute(:clear, [name, "clear"], _deps) do
-    Pattern.clear_by_kind(el(), Pattern.pattern?(name), name)
+  def execute(:clear, [name, "clear"], opts) do
+    Pattern.clear_by_kind(el(opts), Pattern.pattern?(name), name)
   end
 
-  def execute(:exit_all, ["exit"], _deps) do
-    el().exit(:all)
+  def execute(:exit_all, ["exit"], opts) do
+    el(opts).exit(:all)
     IO.puts("exited all")
   end
 
