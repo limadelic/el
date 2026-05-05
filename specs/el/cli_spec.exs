@@ -1058,35 +1058,35 @@ defmodule El.CLI.Spec do
 
   describe "El.CLI.Start.format_response/1" do
     test "returns empty list when nil" do
-      assert El.CLI.Start.format_response(nil) == []
+      assert El.CLI.Start.TextFormatter.format_response(nil) == []
     end
 
     test "returns single-element list for short text" do
-      assert El.CLI.Start.format_response("kent") == ["kent"]
+      assert El.CLI.Start.TextFormatter.format_response("kent") == ["kent"]
     end
 
     test "wraps at 46 characters with word awareness" do
       text = "I'm Dude, man. The rug that ties this whole stack together."
-      result = El.CLI.Start.format_response(text)
+      result = El.CLI.Start.TextFormatter.format_response(text)
 
       assert result == ["I'm Dude, man. The rug that ties this whole", "stack together."]
     end
 
     test "caps at 2 lines maximum" do
       long_text = "This is a very long response that will definitely wrap across multiple lines when formatted with word awareness at 46 characters per line"
-      result = El.CLI.Start.format_response(long_text)
+      result = El.CLI.Start.TextFormatter.format_response(long_text)
 
       assert length(result) == 2
     end
 
     test "respects 46 character line width" do
       text = "I'm Dude, man. The rug that ties this whole stack together."
-      result = El.CLI.Start.format_response(text)
+      result = El.CLI.Start.TextFormatter.format_response(text)
       assert Enum.all?(result, fn line -> String.length(line) <= 46 end)
     end
 
     test "preserves short lines under 46 chars" do
-      assert El.CLI.Start.format_response("short") == ["short"]
+      assert El.CLI.Start.TextFormatter.format_response("short") == ["short"]
     end
   end
 
