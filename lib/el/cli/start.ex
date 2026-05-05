@@ -270,12 +270,12 @@ defmodule El.CLI.Start do
     do_add_word(String.length(new_line), word, wrap, new_line)
   end
 
-  defp do_add_word(len, _word, wrap, new_line) when len <= wrap.width do
-    build_lines(wrap.rest, wrap.width, new_line, wrap.acc)
+  defp do_add_word(len, _word, %{rest: rest, width: width, acc: acc}, new_line) when len <= width do
+    build_lines(rest, width, new_line, acc)
   end
 
-  defp do_add_word(_len, word, wrap, _new_line) do
-    build_lines(wrap.rest, wrap.width, word, [String.trim(wrap.current) | wrap.acc])
+  defp do_add_word(_len, word, %{rest: rest, width: width, current: current, acc: acc}, _new_line) do
+    build_lines(rest, width, word, [String.trim(current) | acc])
   end
 
   defp cap_lines(lines, max), do: Enum.take(lines, max)
