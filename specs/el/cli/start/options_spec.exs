@@ -155,6 +155,11 @@ defmodule El.CLI.Start.Options.Spec do
       deps = [agent_detector: El.MockAgentDetector]
       assert El.CLI.Start.Options.resolve_agent(nil, "name", deps) == :detected
     end
+
+    test "extracts agent from name when explicit nil and name contains @" do
+      deps = [agent_detector: El.MockAgentDetector]
+      assert El.CLI.Start.Options.resolve_agent(nil, "kent@el", deps) == "kent"
+    end
   end
 
   describe "El.CLI.Start.Options.build_base_opts/3" do

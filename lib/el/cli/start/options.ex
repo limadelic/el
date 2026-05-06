@@ -21,7 +21,14 @@ defmodule El.CLI.Start.Options do
     Keyword.get(deps, :agent_detector, El.Agent.Detector)
   end
 
-  def resolve_agent(nil, name, deps), do: agent_detector(deps).detect_agent(name)
+  def resolve_agent(nil, name, deps) do
+    if String.contains?(name, "@") do
+      El.CLI.NameParser.split(name) |> elem(1)
+    else
+      agent_detector(deps).detect_agent(name)
+    end
+  end
+
   def resolve_agent(agent, _name, _deps), do: agent
 
   def agent_metadata(deps) do
