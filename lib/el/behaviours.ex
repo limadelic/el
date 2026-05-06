@@ -48,10 +48,6 @@ defmodule El.Behaviours.FileSystem do
   @callback mkdir_p!(String.t()) :: :ok
 end
 
-defmodule El.Behaviours.NetKernel do
-  @callback start([atom()]) :: {:ok, pid()} | {:error, term()}
-end
-
 defmodule El.Behaviours.System do
   @callback cmd(binary(), [binary()]) :: {Collectable.t(), exit_status :: non_neg_integer()}
 end
