@@ -17,7 +17,8 @@ defmodule El.ClaudePort.Buffer do
   end
 
   defp apply_extract({:ok, result, remaining_buffer}, state) do
-    {:reply, state.current_request_id, result, %{state | buffer: remaining_buffer, current_request_id: nil}}
+    new_state = %{state | buffer: remaining_buffer, current_request_id: nil}
+    {:reply, state.current_request_id, result, new_state}
   end
 
   defp parser, do: Application.get_env(:el, :parser, El.ClaudePort.Parser)
