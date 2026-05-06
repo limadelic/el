@@ -64,4 +64,20 @@ defmodule El.Deps.Spec do
       assert error.key == :supervisor
     end
   end
+
+  describe "El.Deps.registry/1" do
+    test "returns registry value from opts" do
+      registry = Registry
+      opts = [registry: registry]
+
+      assert El.Deps.registry(opts) == registry
+    end
+
+    test "raises KeyError when registry key missing from opts" do
+      error = catch_error(El.Deps.registry([]))
+
+      assert is_struct(error, KeyError)
+      assert error.key == :registry
+    end
+  end
 end

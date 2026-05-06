@@ -5,6 +5,7 @@ defmodule El.Deps do
 
   def monitor(opts), do: Keyword.fetch!(opts, :monitor)
   def supervisor(opts), do: Keyword.fetch!(opts, :supervisor)
+  def registry(opts), do: Keyword.fetch!(opts, :registry)
 
   defp dep(key, default) do
     {key, Application.get_env(:el, key, default)}

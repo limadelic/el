@@ -1,8 +1,6 @@
 defmodule El do
-  def registry(opts \\ []), do: Keyword.fetch!(opts, :registry)
-
   def start(name, opts \\ []) when is_atom(name) do
-    start_if_needed(name, opts, registry(opts).lookup(El.Registry, name))
+    start_if_needed(name, opts, El.Deps.registry(opts).lookup(El.Registry, name))
   end
 
   defp start_if_needed(_name, _opts, [{_pid, _}]) do
@@ -85,7 +83,7 @@ defmodule El do
     do: pattern |> String.replace("*", ".*") |> String.replace("?", ".")
 
   def ls(opts \\ []) do
-    registry(opts).select(El.Registry, [{{:"$1", :_, :_}, [], [:"$1"]}])
+    El.Deps.registry(opts).select(El.Registry, [{{:"$1", :_, :_}, [], [:"$1"]}])
     |> Enum.sort()
   end
 end

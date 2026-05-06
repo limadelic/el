@@ -12,7 +12,7 @@ defmodule El.Lifecycle do
   end
 
   defp lookup(name, opts) do
-    El.registry(opts).lookup(El.Registry, name)
+    El.Deps.registry(opts).lookup(El.Registry, name)
   end
 
   defp exit_found([{pid, _}], name, opts) do
