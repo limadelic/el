@@ -1,5 +1,7 @@
 defmodule El.ClaudePort.Connection.CliResolverSpec do
-  use ExUnit.Case
+  use ExUnit.Case, async: false
+  import Mox
+  setup :verify_on_exit!
 
   setup do
     Mox.stub(ClaudeCode.Adapter.Port.Resolver, :find_binary, fn _opts ->
