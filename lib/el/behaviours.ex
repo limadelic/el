@@ -145,10 +145,6 @@ defmodule El.Behaviours.Env do
   @callback get(String.t()) :: String.t() | nil
 end
 
-defmodule El.Behaviours.CCParser do
-  @callback normalize_keys(map()) :: map()
-end
-
 defmodule El.Behaviours.JSONDecoder do
   @callback decode(String.t()) :: {:ok, term()} | {:error, term()}
 end
