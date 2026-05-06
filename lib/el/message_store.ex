@@ -1,5 +1,5 @@
 defmodule El.MessageStore do
-  @behaviour El.Behaviours.MessageStore
+  @behaviour El.MessageStore.Behaviours.MessageStore
 
   def delete(name, deps \\ []) do
     backend = dets_backend(deps)

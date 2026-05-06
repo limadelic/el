@@ -90,15 +90,6 @@ defmodule El.Behaviours.GroupLeader do
   @callback set(pid(), pid()) :: true
 end
 
-defmodule El.Behaviours.MessageStore do
-  @callback delete(atom()) :: :ok
-  @callback delete_entry(atom(), tuple()) :: :ok
-  @callback insert(atom(), tuple()) :: :ok
-  @callback lookup(atom()) :: list()
-  @callback session_names() :: [atom()]
-  @callback close() :: :ok
-end
-
 defmodule El.Behaviours.Env do
   @callback get(String.t()) :: String.t() | nil
 end
