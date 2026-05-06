@@ -1,5 +1,5 @@
 defmodule El.ClaudePort.Connection do
-  @behaviour El.Behaviours.ClaudePortConnection
+  @behaviour El.ClaudePort.Behaviours.Connection
 
   require Logger
 
