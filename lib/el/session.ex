@@ -8,7 +8,6 @@ defmodule El.Session do
   alias El.Session.InfoHandler
   alias El.Session.CastHandler
   alias El.Session.CallHandler
-  alias El.Session.Bootstrap
 
   @impl true
   def init({name, opts}) do
@@ -24,7 +23,7 @@ defmodule El.Session do
 
   @impl true
   def handle_continue(:start_claude, state) do
-    Bootstrap.handle_continue(state)
+    state.bootstrap_module.handle_continue(state)
   end
 
   @impl true
