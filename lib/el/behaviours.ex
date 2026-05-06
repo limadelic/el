@@ -1,8 +1,3 @@
-defmodule El.Behaviours.Supervisor do
-  @callback start_child(term(), term()) :: term()
-  @callback terminate_child(term(), term()) :: term()
-end
-
 defmodule El.Behaviours.App do
   @callback delete_session_messages(term()) :: term()
   @callback delete_session_messages(term(), keyword()) :: term()
