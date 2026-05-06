@@ -33,15 +33,6 @@ defmodule El.ClaudePort do
     apply_buffer(Buffer.process(data, state))
   end
 
-  defp apply_buffer({:noreply, new_state}) do
-    {:noreply, new_state}
-  end
-
-  defp apply_buffer({:reply, from, result, new_state}) do
-    GenServer.reply(from, result)
-    {:noreply, new_state}
-  end
-
   def handle_info({port, {:exit_status, status}}, %{port: port} = state) do
     Logger.debug("Claude port exited with status: #{status}")
     {:noreply, %{state | port: nil, buffer: ""}}
@@ -58,6 +49,15 @@ defmodule El.ClaudePort do
 
   def handle_info(_msg, state) do
     {:noreply, state}
+  end
+
+  defp apply_buffer({:noreply, new_state}) do
+    {:noreply, new_state}
+  end
+
+  defp apply_buffer({:reply, from, result, new_state}) do
+    GenServer.reply(from, result)
+    {:noreply, new_state}
   end
 
   @impl GenServer
