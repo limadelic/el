@@ -3,7 +3,7 @@ defmodule El.Infra.Monitor do
 
   def wait_for_down(ref, name, opts \\ []) do
     timeout = Keyword.get(opts, :timeout, 5000)
-    app = Keyword.get(opts, :app, El.Application)
+    app = Keyword.fetch!(opts, :app)
     do_wait(ref, name, timeout, app, opts)
   end
 
