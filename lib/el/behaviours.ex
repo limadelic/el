@@ -50,11 +50,6 @@ defmodule El.Behaviours.JSONDecoder do
   @callback decode(String.t()) :: {:ok, term()} | {:error, term()}
 end
 
-defmodule El.Behaviours.CardBox do
-  @callback box_frame(list()) :: list()
-  @callback frame_pair_row(String.t(), String.t()) :: String.t()
-end
-
 defmodule El.Behaviours.TextFormatter do
   @callback format_response(term()) :: list()
 end
