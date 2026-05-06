@@ -10,6 +10,7 @@ defmodule El.Session do
   alias El.Session.InfoHandler
   alias El.Session.CastHandler
   alias El.Session.CallHandler
+  alias El.Session.Bootstrap
 
   @defaults %{
     claude_module: El.ClaudePort,
@@ -61,9 +62,7 @@ defmodule El.Session do
 
   @impl true
   def handle_continue(:start_claude, state) do
-    messages = state.store_module.load_messages(state.name, message_store: state.opts[:message_store])
-    claude_pid = Claude.start(state.claude_module, state.claude_opts)
-    {:noreply, %{state | claude_pid: claude_pid, messages: messages}}
+    Bootstrap.handle_continue(state)
   end
 
   @impl true
