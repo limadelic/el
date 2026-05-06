@@ -1,4 +1,6 @@
 defmodule El.ClaudePort.Connection.Closer do
+  @behaviour El.Behaviours.ClaudePortCloser
+
   def safe_close_port(nil, _port_module), do: :ok
   def safe_close_port(port, port_module), do: try_close(port_module.info(port), port, port_module)
 
