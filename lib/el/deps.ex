@@ -7,7 +7,8 @@ defmodule El.Deps do
     [
       el_module: Application.get_env(:el, :el_module, El),
       app: Application.get_env(:el, :app, El.MessageStore.Facade),
-      session: Application.get_env(:el, :session, El.Session)
+      session: Application.get_env(:el, :session, El.Session),
+      init_module: Application.get_env(:el, :init_module, El.MessageStore.Init)
     ]
   end
 
