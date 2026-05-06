@@ -4,7 +4,6 @@ defmodule El.Session do
   require Logger
 
   alias El.Session.Registry
-  alias El.Session.Claude
   alias El.Session.Terminator
   alias El.Session.LogHandler
   alias El.Session.InfoHandler
