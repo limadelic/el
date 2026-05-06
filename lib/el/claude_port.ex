@@ -52,23 +52,12 @@ defmodule El.ClaudePort do
 
   @impl GenServer
   def handle_continue(:connect, state) do
-    apply_continue_result(Connection.open_port(state), state)
+    Connection.handle_connect(state)
   end
 
   @impl GenServer
   def handle_call({:ask, message}, from, state) do
-    dispatch_ask(ensure_connected(state), message, from, state)
-  end
-
-  defp dispatch_ask({:ok, connected_state}, message, from, _state) do
-    Logger.debug("ClaudePort connected, sending message")
-    Connection.send_message(connected_state, message)
-    {:noreply, %{connected_state | current_request_id: from}}
-  end
-
-  defp dispatch_ask({:error, reason}, _message, _from, state) do
-    Logger.error("ClaudePort ensure_connected failed: #{inspect(reason)}")
-    {:reply, {"(unavailable)", nil, nil}, state}
+    Connection.handle_ask(state, message, from)
   end
 
   @impl GenServer
@@ -106,29 +95,6 @@ defmodule El.ClaudePort do
   def terminate(_reason, %{port: port, port_module: port_module}) do
     Connection.safe_close_port(port, port_module)
     :ok
-  end
-
-  defp ensure_connected(%{port: nil} = state) do
-    apply_ensure_result(Connection.open_port(state), state)
-  end
-
-  defp ensure_connected(state), do: {:ok, state}
-
-  defp apply_continue_result({:ok, port}, state) do
-    {:noreply, %{state | port: port, buffer: ""}}
-  end
-
-  defp apply_continue_result({:error, reason}, state) do
-    Logger.error("Failed to open Claude port: #{inspect(reason)}")
-    {:noreply, %{state | port: nil}}
-  end
-
-  defp apply_ensure_result({:ok, port}, state) do
-    {:ok, %{state | port: port, buffer: ""}}
-  end
-
-  defp apply_ensure_result({:error, reason}, _state) do
-    {:error, reason}
   end
 
 end

@@ -1,4 +1,6 @@
 defmodule El.ClaudePort.Connection do
+  require Logger
+
   alias ClaudeCode.CLI.Command
   alias ClaudeCode.CLI.Input
   alias ClaudeCode.Adapter.Port.Resolver
@@ -19,6 +21,23 @@ defmodule El.ClaudePort.Connection do
 
   def session_id_or_default(nil), do: "default"
   def session_id_or_default(id), do: id
+
+  def handle_ask(state, message, from) do
+    case ensure_connected(state) do
+      {:ok, connected_state} ->
+        Logger.debug("ClaudePort connected, sending message")
+        send_message(connected_state, message)
+        {:noreply, %{connected_state | current_request_id: from}}
+
+      {:error, reason} ->
+        Logger.error("ClaudePort ensure_connected failed: #{inspect(reason)}")
+        {:reply, {"(unavailable)", nil, nil}, state}
+    end
+  end
+
+  def handle_connect(state) do
+    apply_continue_result(open_port(state), state)
+  end
 
   defp try_close(nil, _port, _port_module), do: :ok
   defp try_close(_info, port, port_module), do: close_with_rescue(port, port_module)
@@ -83,5 +102,28 @@ defmodule El.ClaudePort.Connection do
 
   defp apply_find_binary({:error, reason}, _streaming_opts, _resume_id) do
     {:error, {:cli_resolution_failed, reason}}
+  end
+
+  defp ensure_connected(%{port: nil} = state) do
+    apply_ensure_result(open_port(state), state)
+  end
+
+  defp ensure_connected(state), do: {:ok, state}
+
+  defp apply_continue_result({:ok, port}, state) do
+    {:noreply, %{state | port: port, buffer: ""}}
+  end
+
+  defp apply_continue_result({:error, reason}, state) do
+    Logger.error("Failed to open Claude port: #{inspect(reason)}")
+    {:noreply, %{state | port: nil}}
+  end
+
+  defp apply_ensure_result({:ok, port}, state) do
+    {:ok, %{state | port: port, buffer: ""}}
+  end
+
+  defp apply_ensure_result({:error, reason}, _state) do
+    {:error, reason}
   end
 end
