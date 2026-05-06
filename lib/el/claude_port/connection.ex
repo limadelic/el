@@ -1,4 +1,6 @@
 defmodule El.ClaudePort.Connection do
+  @behaviour El.Behaviours.ClaudePortConnection
+
   require Logger
 
   alias ClaudeCode.CLI.Command
