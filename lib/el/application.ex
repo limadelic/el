@@ -116,10 +116,7 @@ defmodule El.Application do
 
   defdelegate delete_session_messages(name, opts \\ []), to: El.MessageStore.Facade
 
-  def store_message(name, message_entry, opts \\ []) do
-    ms = Keyword.fetch!(opts, :message_store)
-    ms.insert(name, message_entry)
-  end
+  defdelegate store_message(name, message_entry, opts \\ []), to: El.MessageStore.Facade
 
   def load_messages(name, opts \\ []) do
     ms = Keyword.fetch!(opts, :message_store)

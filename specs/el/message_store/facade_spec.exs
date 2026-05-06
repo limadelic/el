@@ -32,4 +32,15 @@ defmodule El.MessageStore.Facade.Spec do
       assert result == {:deleted, "my-session"}
     end
   end
+
+  describe "El.MessageStore.Facade.store_message/3" do
+    test "store_message returns result from insert" do
+      stub(El.MockMessageStore, :insert, fn "test-session", %{} -> :ok end)
+      opts = [message_store: El.MockMessageStore]
+
+      result = El.MessageStore.Facade.store_message("test-session", %{}, opts)
+
+      assert result == :ok
+    end
+  end
 end
