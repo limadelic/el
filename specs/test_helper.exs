@@ -125,7 +125,7 @@ Mox.defmock(El.MockClaudePortConnection, for: El.Behaviours.ClaudePortConnection
 Mox.defmock(El.MockSessionBootstrap, for: El.Behaviours.SessionBootstrap)
 Mox.defmock(El.MockClaudePortCliResolver, for: El.ClaudePort.Behaviours.CliResolver)
 Mox.defmock(El.MockClaudePortPortSpawn, for: El.Behaviours.ClaudePortPortSpawn)
-Mox.defmock(El.MockClaudePortCloser, for: El.Behaviours.ClaudePortCloser)
+Mox.defmock(El.MockClaudePortCloser, for: El.ClaudePort.Behaviours.Closer)
 
 Mox.stub(El.MockNodeConnector, :connect, fn _ -> false end)
 Mox.stub(El.MockNodeConnector, :set_cookie, fn _ -> true end)
