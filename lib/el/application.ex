@@ -43,13 +43,7 @@ defmodule El.Application do
     Map.merge(opts_modules(opts), %{deps: El.Deps.production()})
   end
 
-  defp opts_modules(opts) do
-    %{
-      el: Keyword.fetch!(opts, :el_module),
-      message_store: Keyword.fetch!(opts, :message_store),
-      session_meta: Keyword.fetch!(opts, :session_meta)
-    }
-  end
+  defdelegate opts_modules(opts), to: El.SessionRestorer
 
   defp restore_session(name, el, _session_meta, deps, {:ok, session_id, agent, model}) do
     opts = [resume: session_id, agent: agent, model: model] ++ deps
