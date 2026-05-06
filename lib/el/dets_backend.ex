@@ -1,5 +1,5 @@
 defmodule El.DetsBackend do
-  @behaviour El.Behaviours.Dets
+  @behaviour El.MessageStore.Behaviours.Dets
 
   def open_file(table, opts) do
     :dets.open_file(table, opts)
