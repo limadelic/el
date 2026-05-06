@@ -1,5 +1,5 @@
 defmodule El.ClaudePort.Connection.PortSpawn do
-  @behaviour El.Behaviours.ClaudePortPortSpawn
+  @behaviour El.ClaudePort.Behaviours.PortSpawn
 
   def spawn({:error, reason}, _state), do: {:error, reason}
   def spawn({:ok, {executable, args}}, state) do
