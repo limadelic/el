@@ -118,10 +118,7 @@ defmodule El.Application do
 
   defdelegate store_message(name, message_entry, opts \\ []), to: El.MessageStore.Facade
 
-  def load_messages(name, opts \\ []) do
-    ms = Keyword.fetch!(opts, :message_store)
-    ms.lookup(name)
-  end
+  defdelegate load_messages(name, opts \\ []), to: El.MessageStore.Facade
 
   def delete_message(name, entry, opts \\ []) do
     ms = Keyword.fetch!(opts, :message_store)

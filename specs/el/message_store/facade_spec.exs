@@ -43,4 +43,15 @@ defmodule El.MessageStore.Facade.Spec do
       assert result == :ok
     end
   end
+
+  describe "El.MessageStore.Facade.load_messages/2" do
+    test "load_messages returns result from lookup" do
+      stub(El.MockMessageStore, :lookup, fn "test-session" -> [%{data: "msg"}] end)
+      opts = [message_store: El.MockMessageStore]
+
+      result = El.MessageStore.Facade.load_messages("test-session", opts)
+
+      assert result == [%{data: "msg"}]
+    end
+  end
 end
