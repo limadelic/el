@@ -69,7 +69,7 @@ defmodule El.CLI.Start.SessionCard do
   defp add_prompt_separator(rows, _prompt), do: rows ++ [String.duplicate("─", 46)]
 
   defp add_prompt(rows, nil), do: rows
-  defp add_prompt(rows, prompt), do: rows ++ ["> #{prompt}"]
+  defp add_prompt(rows, prompt), do: rows ++ text_formatter().format_prompt(prompt)
 
   defp add_response_separator(rows, nil), do: rows
   defp add_response_separator(rows, _response), do: rows ++ [String.duplicate("─", 46)]
