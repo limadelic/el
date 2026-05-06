@@ -119,6 +119,7 @@ Mox.defmock(El.MockJSONDecoder, for: El.Behaviours.JSONDecoder)
 Mox.defmock(El.MockCardBox, for: El.Behaviours.CardBox)
 Mox.defmock(El.MockTextFormatter, for: El.Behaviours.TextFormatter)
 Mox.defmock(El.MockParser, for: El.Behaviours.Parser)
+Mox.defmock(El.MockClaudePortConnection, for: El.Behaviours.ClaudePortConnection)
 
 Mox.stub(El.MockNodeConnector, :connect, fn _ -> false end)
 Mox.stub(El.MockNodeConnector, :set_cookie, fn _ -> true end)
