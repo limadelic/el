@@ -50,7 +50,7 @@ defmodule El.CLI.Start.Options do
   end
 
   defp env_adapter(deps) do
-    Keyword.get(deps, :env, El.Env)
+    Keyword.get(deps, :env, El.Infra.Env)
   end
 
   def detect_and_merge_agent(name, opts, deps \\ []) do

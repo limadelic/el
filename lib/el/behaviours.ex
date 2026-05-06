@@ -42,6 +42,3 @@ defmodule El.Behaviours.El do
   @callback agent(term(), term()) :: term()
 end
 
-defmodule El.Behaviours.Env do
-  @callback get(String.t()) :: String.t() | nil
-end
