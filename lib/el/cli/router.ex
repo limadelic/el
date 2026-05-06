@@ -11,14 +11,6 @@ defmodule El.CLI.Router do
   def parse_route([_name, "exit"]), do: :exit
   def parse_route([_name, "clear"]), do: :clear
 
-  def parse_route([_name, "tell", "ask", "@" <> _target | _words]) do
-    :tell_ask
-  end
-
-  def parse_route([_name, "ask", "tell", "@" <> _target | _words]) do
-    :ask_tell
-  end
-
   def parse_route([<<c, _::binary>>]) when c != ?- do
     :start
   end

@@ -32,14 +32,6 @@ defmodule El.Session.Api do
     GenServer.call(Registry.via_tuple(name), :clear)
   end
 
-  def tell_ask(name, target, message) do
-    GenServer.cast(Registry.via_tuple(name), {:tell_ask, target, message})
-  end
-
-  def ask_tell(name, target, message) do
-    GenServer.call(Registry.via_tuple(name), {:ask_tell, target, message}, :infinity)
-  end
-
   def detect_routes(text) do
     El.Session.Router.detect_routes(text)
   end

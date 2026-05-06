@@ -27,7 +27,7 @@ defmodule El.Session.Ask.Spec do
     end
   end
 
-  describe "finalize_ask/6" do
+  describe "finalize_ask/2" do
     setup do
       Application.put_env(:el, :store_module, El.MockStoreModule)
       on_exit(fn -> Application.delete_env(:el, :store_module) end)
@@ -48,7 +48,7 @@ defmodule El.Session.Ask.Spec do
       from = {self(), make_ref()}
       ref = make_ref()
 
-      El.Session.Ask.finalize_ask(state, from, ref, "question", "answer", "claude-3")
+      El.Session.Ask.finalize_ask(state, %{from: from, ref: ref, message: "question", response: "answer", model: "claude-3"})
     end
 
     test "calls store with nil when model is nil" do
@@ -63,7 +63,7 @@ defmodule El.Session.Ask.Spec do
       from = {self(), make_ref()}
       ref = make_ref()
 
-      El.Session.Ask.finalize_ask(state, from, ref, "question", "answer", nil)
+      El.Session.Ask.finalize_ask(state, %{from: from, ref: ref, message: "question", response: "answer", model: nil})
     end
 
     test "replies to caller with response" do
@@ -78,7 +78,7 @@ defmodule El.Session.Ask.Spec do
       caller_ref = make_ref()
       from = {self(), caller_ref}
 
-      El.Session.Ask.finalize_ask(state, from, make_ref(), "test", "the answer", "claude-3")
+      El.Session.Ask.finalize_ask(state, %{from: from, ref: make_ref(), message: "test", response: "the answer", model: "claude-3"})
 
       assert_receive {^caller_ref, "the answer"}
     end
@@ -95,7 +95,7 @@ defmodule El.Session.Ask.Spec do
 
       from = {self(), make_ref()}
 
-      returned_state = El.Session.Ask.finalize_ask(state, from, pending_ref, "question", "answer", "claude-3")
+      returned_state = El.Session.Ask.finalize_ask(state, %{from: from, ref: pending_ref, message: "question", response: "answer", model: "claude-3"})
 
       assert returned_state.messages == [{"ask", "question", "answer", %{model: "claude-3"}}]
     end

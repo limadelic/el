@@ -66,14 +66,6 @@ defmodule El.CLI.Spec do
       assert El.CLI.Router.parse_route(["session", "clear"]) == :clear
     end
 
-    test "returns tell_ask for name tell ask @target message" do
-      assert El.CLI.Router.parse_route(["session", "tell", "ask", "@other", "hello"]) == :tell_ask
-    end
-
-    test "returns ask_tell for name ask tell @target message" do
-      assert El.CLI.Router.parse_route(["session", "ask", "tell", "@other", "hello"]) == :ask_tell
-    end
-
     test "returns daemon for --daemon flag" do
       assert El.CLI.Router.parse_route(["--daemon", "my_session"]) == :daemon
     end
@@ -290,6 +282,24 @@ defmodule El.CLI.Spec do
       assert output =~ "name:  session"
     end
 
+    test "execute :msg uses agent metadata model when agent detected" do
+      test_pid = self()
+      expect(El.MockEl, :start, fn :kent, opts ->
+        send(test_pid, {:start_opts, opts})
+        :created
+      end)
+      expect(El.MockEl, :ask, fn :kent, "hello", _opts -> "reply" end)
+      expect(El.MockEl, :agent, fn :kent, _opts -> nil end)
+
+      capture_io(fn ->
+        El.CLI.execute(:msg, ["kent", "hello"],
+          [agent_detector: AgentDetectorStub, agent_metadata: AgentMetadataStub, el_module: El.MockEl])
+      end)
+
+      assert_received {:start_opts, opts}
+      assert opts[:model] == "opus"
+    end
+
     test "execute :start uses merge_session_opts to combine agent and model" do
       expect(El.MockEl, :start, fn :my_session, opts when is_list(opts) -> :ok end)
       expect(El.MockSessionApi, :ask, fn :my_session, "who are you?" -> "response" end)
@@ -306,53 +316,59 @@ defmodule El.CLI.Spec do
 
     test "execute :start with -m model calls merge_session_opts with explicit model" do
       expect(El.MockEl, :start, fn :my_session, opts when is_list(opts) -> :ok end)
+      expect(El.MockSessionApi, :info, fn :my_session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
 
       capture_io(fn ->
-        El.CLI.execute(:start, ["my_session", "-m", "haiku"], [agent_detector: IdentityAgentDetectorStub, el_module: El.MockEl])
+        El.CLI.execute(:start, ["my_session", "-m", "haiku"], [agent_detector: IdentityAgentDetectorStub, session_api: El.MockSessionApi, el_module: El.MockEl])
       end)
     end
 
     test "execute :start with -a agent skips detection and uses explicit agent" do
       expect(El.MockEl, :start, fn :my_session, opts when is_list(opts) -> :ok end)
+      expect(El.MockSessionApi, :info, fn :my_session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
 
       capture_io(fn ->
-        El.CLI.execute(:start, ["my_session", "-a", "explicit"], [agent_detector: NilAgentDetectorStub, el_module: El.MockEl])
+        El.CLI.execute(:start, ["my_session", "-a", "explicit"], [agent_detector: NilAgentDetectorStub, session_api: El.MockSessionApi, el_module: El.MockEl])
       end)
     end
 
     test "execute :start when no agent detected does not merge agent into opts" do
       expect(El.MockEl, :start, fn :my_session, opts when is_list(opts) -> :ok end)
+      expect(El.MockSessionApi, :info, 2, fn :my_session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
 
       capture_io(fn ->
-        El.CLI.execute(:start, ["my_session"], [agent_detector: NilAgentDetectorStub, el_module: El.MockEl])
+        El.CLI.execute(:start, ["my_session"], [agent_detector: NilAgentDetectorStub, session_api: El.MockSessionApi, el_module: El.MockEl])
       end)
     end
 
     test "execute :start with -m model when no agent detected does not merge agent" do
       expect(El.MockEl, :start, fn :my_session, opts when is_list(opts) -> :ok end)
+      expect(El.MockSessionApi, :info, fn :my_session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
 
       capture_io(fn ->
-        El.CLI.execute(:start, ["my_session", "-m", "haiku"], [agent_detector: NilAgentDetectorStub, el_module: El.MockEl])
+        El.CLI.execute(:start, ["my_session", "-m", "haiku"], [agent_detector: NilAgentDetectorStub, session_api: El.MockSessionApi, el_module: El.MockEl])
       end)
     end
 
     test "execute :start uses env model when no model or agent" do
       expect(El.MockEl, :start, fn :my_session, opts when is_list(opts) -> :ok end)
+      expect(El.MockSessionApi, :info, 2, fn :my_session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
 
       System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
 
       capture_io(fn ->
-        El.CLI.execute(:start, ["my_session"], [agent_detector: NilAgentDetectorStub, el_module: El.MockEl])
+        El.CLI.execute(:start, ["my_session"], [agent_detector: NilAgentDetectorStub, session_api: El.MockSessionApi, el_module: El.MockEl])
       end)
     end
 
     test "execute :start ignores env model when model provided" do
       expect(El.MockEl, :start, fn :my_session, opts when is_list(opts) -> :ok end)
+      expect(El.MockSessionApi, :info, fn :my_session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
 
       System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
 
       capture_io(fn ->
-        El.CLI.execute(:start, ["my_session", "-m", "opus"], [agent_detector: NilAgentDetectorStub, el_module: El.MockEl])
+        El.CLI.execute(:start, ["my_session", "-m", "opus"], [agent_detector: NilAgentDetectorStub, session_api: El.MockSessionApi, el_module: El.MockEl])
       end)
     end
 
@@ -437,7 +453,7 @@ defmodule El.CLI.Spec do
     end
   end
 
-  describe "El.CLI.Start.merge_session_opts/4" do
+  describe "El.CLI.Start.Options.merge_session_opts/4" do
     setup do
       System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
       :ok
@@ -448,25 +464,25 @@ defmodule El.CLI.Spec do
     end
 
     test "with explicit_model prepends [model: explicit_model]" do
-      result = El.CLI.Start.merge_session_opts("session", nil, "opus", [agent_detector: NilAgentDetectorStub])
+      result = El.CLI.Start.Options.merge_session_opts("session", nil, "opus", [agent_detector: NilAgentDetectorStub])
 
       assert Keyword.get(result, :model) == "opus"
     end
 
     test "with explicit_agent uses explicit_agent for agent:" do
-      result = El.CLI.Start.merge_session_opts("session", "explicit", nil, [agent_detector: NilAgentDetectorStub])
+      result = El.CLI.Start.Options.merge_session_opts("session", "explicit", nil, [agent_detector: NilAgentDetectorStub])
 
       assert Keyword.get(result, :agent) == "explicit"
     end
 
     test "with no explicit_agent detects agent if exists" do
-      result = El.CLI.Start.merge_session_opts("session", nil, nil, [agent_detector: IdentityAgentDetectorStub])
+      result = El.CLI.Start.Options.merge_session_opts("session", nil, nil, [agent_detector: IdentityAgentDetectorStub])
 
       assert Keyword.get(result, :agent) == "session"
     end
 
     test "with no explicit_agent and no detected agent omits agent" do
-      result = El.CLI.Start.merge_session_opts("session", nil, nil, [agent_detector: NilAgentDetectorStub])
+      result = El.CLI.Start.Options.merge_session_opts("session", nil, nil, [agent_detector: NilAgentDetectorStub])
 
       refute Keyword.has_key?(result, :agent)
     end
@@ -474,7 +490,7 @@ defmodule El.CLI.Spec do
     test "appends env_model when no model or agent" do
       System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
 
-      result = El.CLI.Start.merge_session_opts("session", nil, nil, [agent_detector: NilAgentDetectorStub])
+      result = El.CLI.Start.Options.merge_session_opts("session", nil, nil, [agent_detector: NilAgentDetectorStub])
 
       assert Keyword.get(result, :model) == "sonnet"
     end
@@ -482,7 +498,7 @@ defmodule El.CLI.Spec do
     test "ignores env_model when explicit_model provided" do
       System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
 
-      result = El.CLI.Start.merge_session_opts("session", nil, "opus", [agent_detector: NilAgentDetectorStub])
+      result = El.CLI.Start.Options.merge_session_opts("session", nil, "opus", [agent_detector: NilAgentDetectorStub])
 
       assert Keyword.get(result, :model) == "opus"
     end
@@ -490,7 +506,7 @@ defmodule El.CLI.Spec do
     test "includes detected agent in opts" do
       setup_agent_detected()
 
-      result = El.CLI.Start.merge_session_opts("session", nil, nil, [agent_detector: IdentityAgentDetectorStub])
+      result = El.CLI.Start.Options.merge_session_opts("session", nil, nil, [agent_detector: IdentityAgentDetectorStub])
 
       assert Keyword.get(result, :agent) == "session"
     end
@@ -498,13 +514,13 @@ defmodule El.CLI.Spec do
     test "omits model when agent detected" do
       setup_agent_detected()
 
-      result = El.CLI.Start.merge_session_opts("session", nil, nil, [agent_detector: IdentityAgentDetectorStub])
+      result = El.CLI.Start.Options.merge_session_opts("session", nil, nil, [agent_detector: IdentityAgentDetectorStub])
 
       refute Keyword.has_key?(result, :model)
     end
 
     test "combines explicit_model and explicit_agent" do
-      result = El.CLI.Start.merge_session_opts("session", "kent", "haiku", [agent_detector: NilAgentDetectorStub])
+      result = El.CLI.Start.Options.merge_session_opts("session", "kent", "haiku", [agent_detector: NilAgentDetectorStub])
 
       assert Keyword.get(result, :model) == "haiku"
       assert Keyword.get(result, :agent) == "kent"
@@ -513,13 +529,13 @@ defmodule El.CLI.Spec do
     test "ignores env_model when explicit_agent provided" do
       System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
 
-      result = El.CLI.Start.merge_session_opts("session", "explicit", nil, [agent_detector: NilAgentDetectorStub])
+      result = El.CLI.Start.Options.merge_session_opts("session", "explicit", nil, [agent_detector: NilAgentDetectorStub])
 
       assert Keyword.get(result, :agent) == "explicit"
     end
 
     test "omits model when explicit_agent provided" do
-      result = El.CLI.Start.merge_session_opts("session", "explicit", nil, [agent_detector: NilAgentDetectorStub])
+      result = El.CLI.Start.Options.merge_session_opts("session", "explicit", nil, [agent_detector: NilAgentDetectorStub])
 
       refute Keyword.has_key?(result, :model)
     end
@@ -527,7 +543,7 @@ defmodule El.CLI.Spec do
     test "merges model from agent metadata when agent detected and explicit_model is nil" do
       System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
 
-      result = El.CLI.Start.merge_session_opts("kent", nil, nil, [agent_detector: AgentDetectorStub, agent_metadata: AgentMetadataStub])
+      result = El.CLI.Start.Options.merge_session_opts("kent", nil, nil, [agent_detector: AgentDetectorStub, agent_metadata: AgentMetadataStub])
 
       assert Keyword.get(result, :model) == "opus"
     end
@@ -535,34 +551,9 @@ defmodule El.CLI.Spec do
     test "omits model from agent metadata if model_for returns nil" do
       System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
 
-      result = El.CLI.Start.merge_session_opts("agent", nil, nil, [agent_detector: NilAgentDetectorStub, agent_metadata: NilAgentMetadataStub])
+      result = El.CLI.Start.Options.merge_session_opts("agent", nil, nil, [agent_detector: NilAgentDetectorStub, agent_metadata: NilAgentMetadataStub])
 
       refute Keyword.has_key?(result, :model)
-    end
-  end
-
-  describe "El.CLI.Start.detect_and_merge_agent/3" do
-    setup do
-      System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
-      :ok
-    end
-
-    test "detects agent through injected detector" do
-      result = El.CLI.Start.detect_and_merge_agent("kent", [], [agent_detector: AgentDetectorStub])
-
-      assert Keyword.get(result, :agent) == "kent"
-    end
-
-    test "includes opts in result" do
-      result = El.CLI.Start.detect_and_merge_agent("session", [model: "haiku"], [agent_detector: NilAgentDetectorStub])
-
-      assert Keyword.get(result, :model) == "haiku"
-    end
-
-    test "handles nil agent from detector" do
-      result = El.CLI.Start.detect_and_merge_agent("session", [], [agent_detector: NilAgentDetectorStub])
-
-      refute Keyword.has_key?(result, :agent)
     end
   end
 
@@ -1066,35 +1057,35 @@ defmodule El.CLI.Spec do
 
   describe "El.CLI.Start.format_response/1" do
     test "returns empty list when nil" do
-      assert El.CLI.Start.format_response(nil) == []
+      assert El.CLI.Start.TextFormatter.format_response(nil) == []
     end
 
     test "returns single-element list for short text" do
-      assert El.CLI.Start.format_response("kent") == ["kent"]
+      assert El.CLI.Start.TextFormatter.format_response("kent") == ["kent"]
     end
 
     test "wraps at 46 characters with word awareness" do
       text = "I'm Dude, man. The rug that ties this whole stack together."
-      result = El.CLI.Start.format_response(text)
+      result = El.CLI.Start.TextFormatter.format_response(text)
 
       assert result == ["I'm Dude, man. The rug that ties this whole", "stack together."]
     end
 
     test "caps at 2 lines maximum" do
       long_text = "This is a very long response that will definitely wrap across multiple lines when formatted with word awareness at 46 characters per line"
-      result = El.CLI.Start.format_response(long_text)
+      result = El.CLI.Start.TextFormatter.format_response(long_text)
 
       assert length(result) == 2
     end
 
     test "respects 46 character line width" do
       text = "I'm Dude, man. The rug that ties this whole stack together."
-      result = El.CLI.Start.format_response(text)
+      result = El.CLI.Start.TextFormatter.format_response(text)
       assert Enum.all?(result, fn line -> String.length(line) <= 46 end)
     end
 
     test "preserves short lines under 46 chars" do
-      assert El.CLI.Start.format_response("short") == ["short"]
+      assert El.CLI.Start.TextFormatter.format_response("short") == ["short"]
     end
   end
 

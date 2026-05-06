@@ -1,18 +1,53 @@
 defmodule El.Deps do
   def production do
+    core_modules() ++ supervision() ++ session_meta() ++ io_storage()
+  end
+
+  defp dep(key, default) do
+    {key, Application.get_env(:el, key, default)}
+  end
+
+  defp core_modules do
+    core_basics() ++ core_init_restorer() ++ core_bootstrap() ++ core_ports()
+  end
+
+  defp core_basics do
+    [dep(:el_module, El), dep(:app, El.MessageStore.Facade), dep(:session, El.Session)]
+  end
+
+  defp core_init_restorer do
+    [dep(:init_module, El.MessageStore.Init), dep(:restorer_module, El.SessionRestorer)]
+  end
+
+  defp core_bootstrap do
+    [dep(:bootstrap_module, El.Session.Bootstrap), dep(:connection_module, El.ClaudePort.Connection)]
+  end
+
+  defp core_ports do
+    [dep(:cli_resolver_module, El.ClaudePort.Connection.CliResolver), dep(:port_spawn_module, El.ClaudePort.Connection.PortSpawn), dep(:closer_module, El.ClaudePort.Connection.Closer)]
+  end
+
+  defp supervision do
     [
-      el_module: Application.get_env(:el, :el_module, El),
-      app: Application.get_env(:el, :app, El.Application),
-      session: Application.get_env(:el, :session, El.Session),
-      registry: Application.get_env(:el, :registry, Registry),
-      supervisor: Application.get_env(:el, :supervisor, DynamicSupervisor),
-      monitor: Application.get_env(:el, :monitor, El.ProcessMonitor),
-      session_api: Application.get_env(:el, :session_api, El.Session.Api),
-      agent_detector: Application.get_env(:el, :agent_detector, El.AgentDetector),
-      agent_metadata: Application.get_env(:el, :agent_metadata, El.AgentMetadata),
-      group_leader: Application.get_env(:el, :group_leader, El.GroupLeaderImpl),
-      dets_backend: Application.get_env(:el, :dets_backend, El.DetsBackend),
-      message_store: Application.get_env(:el, :message_store, El.MessageStore)
+      dep(:registry, Registry),
+      dep(:supervisor, DynamicSupervisor),
+      dep(:monitor, El.ProcessMonitor)
+    ]
+  end
+
+  defp session_meta do
+    [
+      dep(:session_api, El.Session.Api),
+      dep(:agent_detector, El.AgentDetector),
+      dep(:agent_metadata, El.AgentMetadata)
+    ]
+  end
+
+  defp io_storage do
+    [
+      dep(:group_leader, El.GroupLeaderImpl),
+      dep(:dets_backend, El.DetsBackend),
+      dep(:message_store, El.MessageStore)
     ]
   end
 end

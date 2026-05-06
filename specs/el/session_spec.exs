@@ -10,7 +10,7 @@ defmodule El.Session.Spec do
       {make_ref(), state}
     end)
     Mox.stub(El.MockSessionAsk, :spawn_ask, fn _state, _ask_info, _routes, _server -> :ok end)
-    Mox.stub(El.MockSessionAsk, :finalize_ask, fn state, _from, _ref, _msg, _resp, _model -> state end)
+    Mox.stub(El.MockSessionAsk, :finalize_ask, fn state, _ask -> state end)
     Mox.stub(El.MockSessionAsk, :reset_session, fn state -> state end)
     Mox.stub(El.MockSessionApi, :cast_store_relay, fn _, _, _ -> :ok end)
 
@@ -216,6 +216,44 @@ defmodule El.Session.Spec do
 
       assert Keyword.get(state.claude_opts, :resume) == "my-resume-id"
     end
+
+    test "preserves :setting_sources when already in opts" do
+      opts = [
+        claude_module: MockSessionModule,
+        session_meta: El.MockSessionMeta,
+        setting_sources: ["custom"]
+      ]
+
+      {:ok, state, {:continue, :start_claude}} =
+        El.Session.init({:test_session, opts})
+
+      assert Keyword.get(state.claude_opts, :setting_sources) == ["custom"]
+    end
+
+    test "adds default :setting_sources when not in opts" do
+      opts = [
+        claude_module: MockSessionModule,
+        session_meta: El.MockSessionMeta
+      ]
+
+      {:ok, state, {:continue, :start_claude}} =
+        El.Session.init({:test_session, opts})
+
+      assert Keyword.get(state.claude_opts, :setting_sources) == ["user", "project", "local"]
+    end
+
+    test "init/1 uses state_module from opts when provided" do
+      opts = [
+        claude_module: MockSessionModule,
+        session_meta: El.MockSessionMeta,
+        state_module: TestStateModule
+      ]
+
+      {:ok, state, {:continue, :start_claude}} =
+        El.Session.init({:test_session, opts})
+
+      assert state.name == :test_session
+    end
   end
 
   describe "handle_continue/2 :start_claude" do
@@ -392,23 +430,6 @@ defmodule El.Session.Spec do
     end
   end
 
-  describe "handle_cast/2 :tell_ask" do
-    test "stores relay message", %{state: state} do
-      alive_fn = fn
-        :target -> false
-        _ -> false
-      end
-
-      {:noreply, returned_state} =
-        El.Session.handle_cast(
-          {:tell_ask, :target, "message"},
-          %{state | alive_fn: alive_fn}
-        )
-
-      assert length(returned_state.messages) == 1
-    end
-  end
-
   describe "handle_call/2 :ask" do
     test "returns noreply and spawns task", %{state: state} do
       from = {self(), make_ref()}
@@ -548,75 +569,6 @@ defmodule El.Session.Spec do
         El.Session.handle_call({:log, 1}, :from, state_with_messages)
 
       assert returned_state == state_with_messages
-    end
-  end
-
-  describe "handle_call/2 :ask_tell" do
-    setup %{state: state} do
-      alive_fn_target = fn
-        :target -> true
-        _ -> false
-      end
-
-      alive_fn_down = fn _target -> false end
-
-      {:ok,
-       state: state,
-       alive_fn_target: alive_fn_target,
-       alive_fn_down: alive_fn_down}
-    end
-
-    test "returns route message when target running",
-         %{state: state, alive_fn_target: alive_fn} do
-      Mox.stub(El.MockSessionApi, :tell, fn _, _ -> :ok end)
-      Mox.stub(El.MockEl, :tell, fn _, _ -> :ok end)
-
-      {:reply, response, _returned_state} =
-        El.Session.handle_call({:ask_tell, :target, "message"}, :from, %{
-          state
-          | alive_fn: alive_fn
-        })
-
-      assert response == "-> target"
-    end
-
-    test "stores message when target running",
-         %{state: state, alive_fn_target: alive_fn} do
-      Mox.stub(El.MockSessionApi, :tell, fn _, _ -> :ok end)
-      Mox.stub(El.MockEl, :tell, fn _, _ -> :ok end)
-
-      {:reply, _response, returned_state} =
-        El.Session.handle_call({:ask_tell, :target, "message"}, :from, %{
-          state
-          | alive_fn: alive_fn
-        })
-
-      assert length(returned_state.messages) == 1
-    end
-
-    test "returns not running message when target down",
-         %{state: state, alive_fn_down: alive_fn} do
-      {:reply, response, _returned_state} =
-        El.Session.handle_call({:ask_tell, :missing, "message"}, :from, %{
-          state
-          | alive_fn: alive_fn
-        })
-
-      assert response == "missing is not running"
-    end
-
-    test "stores relay message",
-         %{state: state, alive_fn_target: alive_fn} do
-      Mox.stub(El.MockSessionApi, :tell, fn _, _ -> :ok end)
-      Mox.stub(El.MockEl, :tell, fn _, _ -> :ok end)
-
-      {:reply, _response, returned_state} =
-        El.Session.handle_call({:ask_tell, :target, "message"}, :from, %{
-          state
-          | alive_fn: alive_fn
-        })
-
-      assert length(returned_state.messages) == 1
     end
   end
 
@@ -944,5 +896,11 @@ defmodule MockVerifyingStore do
   def delete_session_messages(name) do
     send(self(), {:delete_session_messages, name})
     :ok
+  end
+end
+
+defmodule TestStateModule do
+  def build(name, _opts, _rest, _session_id, _cwd) do
+    %{name: name, messages: []}
   end
 end

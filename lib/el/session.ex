@@ -3,98 +3,31 @@ defmodule El.Session do
 
   require Logger
 
-  alias El.Session.Registry
-  alias El.Session.Claude
   alias El.Session.Terminator
   alias El.Session.LogHandler
   alias El.Session.InfoHandler
   alias El.Session.CastHandler
   alias El.Session.CallHandler
 
-  @defaults %{
-    claude_module: El.ClaudePort,
-    claude_session: El.Session.Claude,
-    task_module: Task,
-    ask_module: El.Session.Ask,
-    alive_fn: &El.Session.Api.alive?/1,
-    registry_module: Registry,
-    store_module: El.Application,
-    session_meta: El.SessionMeta,
-    session_api: El.Session.Api,
-    el_module: El
-  }
-  @base_state_defaults %{
-    name: nil,
-    claude_pid: nil,
-    session_id: nil,
-    cwd: nil,
-    messages: [],
-    pending_calls: [],
-    opts: []
-  }
-
   @impl true
   def init({name, opts}) do
     Process.flag(:trap_exit, true)
     {session_id, rest} = El.Session.Id.extract_resume_or_id(opts)
     cwd = file_system(opts).cwd()
-    state = build_state(name, opts, rest, session_id, cwd)
-    {:ok, state, {:continue, :start_claude}}
+    {:ok, state_module(opts).build(name, opts, rest, session_id, cwd), {:continue, :start_claude}}
   end
-
-  defp build_state(name, opts, rest, session_id, cwd) do
-    base_state(name, session_id, cwd, opts)
-    |> Map.merge(modules_and_callbacks(opts))
-    |> Map.put(:claude_opts, build_claude_opts(rest, opts, session_id))
-  end
-
-  defp build_claude_opts(rest, opts, _session_id) do
-    rest
-    |> add_resume(Keyword.has_key?(opts, :resume), opts)
-    |> add_continue(Keyword.has_key?(opts, :continue), opts)
-    |> ensure_setting_sources()
-  end
-
-  defp ensure_setting_sources(opts) do
-    if Keyword.has_key?(opts, :setting_sources) do
-      opts
-    else
-      Keyword.put(opts, :setting_sources, ["user", "project", "local"])
-    end
-  end
-
-  defp add_resume(claude_opts, true, opts) do
-    Keyword.put(claude_opts, :resume, Keyword.get(opts, :resume))
-  end
-
-  defp add_resume(claude_opts, false, _opts) do
-    claude_opts
-  end
-
-  defp add_continue(claude_opts, true, opts) do
-    Keyword.put(claude_opts, :continue, Keyword.get(opts, :continue))
-  end
-
-  defp add_continue(claude_opts, false, _opts) do
-    claude_opts
-  end
-
-  defp base_state(n, s, c, o),
-    do: @base_state_defaults |> Map.merge(%{name: n, session_id: s, cwd: c, opts: o})
-
-  defp modules_and_callbacks(o), do: get_opts(o)
-
-  defp get_opts(o), do: @defaults |> Map.merge(Map.new(o))
 
   defp file_system(opts) do
     Keyword.get(opts, :file_system, El.FileSystemImpl)
   end
 
+  defp state_module(opts) do
+    Keyword.get(opts, :state_module, El.Session.State)
+  end
+
   @impl true
   def handle_continue(:start_claude, state) do
-    messages = state.store_module.load_messages(state.name, message_store: state.opts[:message_store])
-    claude_pid = Claude.start(state.claude_module, state.claude_opts)
-    {:noreply, %{state | claude_pid: claude_pid, messages: messages}}
+    state.bootstrap_module.handle_continue(state)
   end
 
   @impl true
@@ -115,11 +48,6 @@ defmodule El.Session do
   @impl true
   def handle_call({:log, _} = msg, _from, state) do
     LogHandler.handle_log(msg, state)
-  end
-
-  @impl true
-  def handle_call({:ask_tell, _, _} = msg, from, state) do
-    CallHandler.handle(msg, from, state)
   end
 
   @impl true

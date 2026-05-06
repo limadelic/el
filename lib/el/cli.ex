@@ -1,5 +1,5 @@
 defmodule El.CLI do
-  alias El.CLI.{Router, Output, Log, Pattern, Messaging, Start}
+  alias El.CLI.{Router, Output, Log, Pattern, Start, Msg}
 
   defp version do
     Application.spec(:el, :vsn) |> Output.format_version()
@@ -27,32 +27,24 @@ defmodule El.CLI do
   end
 
   def execute(:start, [name], deps) do
-    opts = Start.merge_session_opts(name, nil, nil, deps)
+    opts = Start.Options.merge_session_opts(name, nil, nil, deps)
     Start.handle_find_daemon_for_start(name, opts, el(deps), deps)
   end
 
   def execute(:start, [name, "-m", model | rest], deps) do
-    opts = Start.merge_session_opts(name, nil, model, deps)
+    opts = Start.Options.merge_session_opts(name, nil, model, deps)
     Start.handle_find_daemon_with_rest(name, opts, rest, el(deps), deps)
   end
 
   def execute(:start, [name, "-a", agent | rest], deps) do
-    opts = Start.merge_session_opts(name, agent, nil, deps)
+    opts = Start.Options.merge_session_opts(name, agent, nil, deps)
     Start.handle_find_daemon_with_rest(name, opts, rest, el(deps), deps)
   end
 
-  def execute(:tell_ask, [name, "tell", "ask", "@" <> target | words], opts) do
-    Messaging.execute_tell_ask(name, target, words, el(opts), opts)
-  end
-
-  def execute(:ask_tell, [name, "ask", "tell", "@" <> target | words], opts) do
-    Messaging.execute_ask_tell(name, target, words, el(opts), opts)
-  end
-
   def execute(:msg, [name, word | more_words], deps) do
-    opts = Start.detect_and_merge_agent(name, Start.start_opts(nil), deps)
+    opts = Start.Options.merge_session_opts(name, nil, nil, deps)
     status = el(deps).start(String.to_atom(name), opts ++ deps)
-    Messaging.execute_msg(name, [word | more_words], el(deps), deps)
+    Msg.dispatch(name, [word | more_words], el(deps), deps)
     maybe_print_card(status, name, opts, deps)
   end
 

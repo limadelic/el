@@ -1,4 +1,5 @@
 defmodule El.AgentDetector do
+  @behaviour El.Behaviours.AgentDetector
   @behaviour El.Behaviours.FileSystem
 
   def exists?(name, fs \\ El.FileSystemImpl) do

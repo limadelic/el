@@ -64,20 +64,6 @@ defmodule El.Session.Router do
     end)
   end
 
-  def process_tell_ask(state, target, message) do
-    route_if_alive(state, target, fn ->
-      state.task_module.start(fn ->
-        state.el_module.ask(target, envelope(state.name, message))
-      end)
-    end)
-  end
-
-  def process_ask_tell(state, target, message) do
-    route_if_alive(state, target, fn ->
-      state.el_module.tell(target, envelope(state.name, message))
-    end)
-  end
-
   def filter_self_routes(routes, state) do
     Enum.filter(routes, fn {target, _} -> target != state.name end)
   end

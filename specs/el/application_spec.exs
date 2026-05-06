@@ -9,12 +9,16 @@ defmodule El.Application.Spec do
     original_daemon = Application.get_env(:el, :daemon)
     original_dets_backend = Application.get_env(:el, :dets_backend)
     original_file_system = Application.get_env(:el, :file_system)
+    original_init_module = Application.get_env(:el, :init_module)
+    original_restorer_module = Application.get_env(:el, :restorer_module)
 
     on_exit(fn ->
       Application.delete_env(:el, :message_store)
       Application.delete_env(:el, :session_meta)
       Application.delete_env(:el, :daemon)
       Application.delete_env(:el, :dets_backend)
+      Application.delete_env(:el, :init_module)
+      Application.delete_env(:el, :restorer_module)
 
       if original_el_module do
         Application.put_env(:el, :el_module, original_el_module)
@@ -43,11 +47,20 @@ defmodule El.Application.Spec do
       else
         Application.delete_env(:el, :file_system)
       end
+
+      if original_init_module do
+        Application.put_env(:el, :init_module, original_init_module)
+      end
+
+      if original_restorer_module do
+        Application.put_env(:el, :restorer_module, original_restorer_module)
+      end
     end)
 
     Application.put_env(:el, :message_store, El.MessageStoreStub)
     Application.put_env(:el, :daemon, El.DaemonStub)
     Application.put_env(:el, :file_system, El.MockFileSystem)
+    Application.put_env(:el, :restorer_module, El.MockSessionRestorer)
 
     [
       children: El.Application.children(),
@@ -84,33 +97,6 @@ defmodule El.Application.Spec do
     assert opts[:max_seconds] == 60
   end
 
-  test "store_message delegates to message store" do
-    name = :test_session
-    entry = {"tell", "hello", "response", %{}}
-
-    assert El.Application.store_message(name, entry, message_store: El.MessageStoreStub) == :ok
-  end
-
-  test "load_messages returns empty list when store returns empty" do
-    messages = El.Application.load_messages(:new_session, message_store: El.MessageStoreStub)
-    assert messages == []
-  end
-
-  test "load_messages returns entries from store" do
-    name = :test_session
-    _entry1 = {"tell", "msg1", "resp1", %{}}
-    _entry2 = {"tell", "msg2", "resp2", %{}}
-
-    messages = El.Application.load_messages(name, message_store: El.MessageStoreStub)
-    assert messages == []
-  end
-
-  test "delete_session_messages delegates to message store" do
-    name = :delete_test
-
-    assert El.Application.delete_session_messages(name, message_store: El.MessageStoreStub) == :ok
-  end
-
   test "uses dev DETS path when DEV is set" do
     System.put_env("DEV", "1")
     dir = if El.CLI.Daemon.dev?(), do: "~/.el/dev", else: "~/.el"
@@ -127,7 +113,7 @@ defmodule El.Application.Spec do
   test "init_message_store opens session_meta table alongside message_store" do
     Application.put_env(:el, :dets_backend, El.DetsBackendStub)
     stub(El.MockFileSystem, :mkdir_p!, fn _path -> :ok end)
-    El.Application.init_message_store(
+    El.MessageStore.Init.init_message_store(
       file_system: El.MockFileSystem,
       dets_backend: El.DetsBackendStub,
       daemon: El.DaemonStub
@@ -143,7 +129,7 @@ defmodule El.Application.Spec do
       Application.put_env(:el, :el_module, RestoreSessionsStubEl)
       Application.put_env(:el, :session_meta, RestoreSessionsStubSessionMeta)
 
-      El.Application.restore_sessions(
+      El.SessionRestorer.restore_sessions(
         el_module: RestoreSessionsStubEl,
         message_store: RestoreSessionsStubStore,
         session_meta: RestoreSessionsStubSessionMeta
@@ -160,7 +146,7 @@ defmodule El.Application.Spec do
       Application.put_env(:el, :el_module, RestoreWithMetaStubEl)
       Application.put_env(:el, :session_meta, RestoreWithMetaStubSessionMeta)
 
-      El.Application.restore_sessions(
+      El.SessionRestorer.restore_sessions(
         el_module: RestoreWithMetaStubEl,
         message_store: RestoreWithMetaStubStore,
         session_meta: RestoreWithMetaStubSessionMeta
@@ -179,7 +165,7 @@ defmodule El.Application.Spec do
       Application.put_env(:el, :el_module, RestoreWithModelStubEl)
       Application.put_env(:el, :session_meta, RestoreWithModelStubSessionMeta)
 
-      El.Application.restore_sessions(
+      El.SessionRestorer.restore_sessions(
         el_module: RestoreWithModelStubEl,
         message_store: RestoreWithModelStubStore,
         session_meta: RestoreWithModelStubSessionMeta
@@ -198,7 +184,7 @@ defmodule El.Application.Spec do
       Application.put_env(:el, :el_module, RestoreFallbackStubEl)
       Application.put_env(:el, :session_meta, RestoreFallbackStubSessionMeta)
 
-      El.Application.restore_sessions(
+      El.SessionRestorer.restore_sessions(
         el_module: RestoreFallbackStubEl,
         message_store: RestoreFallbackStubStore,
         session_meta: RestoreFallbackStubSessionMeta
@@ -217,7 +203,7 @@ defmodule El.Application.Spec do
       Application.put_env(:el, :el_module, WarmupStubEl)
       Application.put_env(:el, :session_meta, WarmupStubSessionMeta)
 
-      El.Application.restore_sessions(
+      El.SessionRestorer.restore_sessions(
         el_module: WarmupStubEl,
         message_store: WarmupStubStore,
         session_meta: WarmupStubSessionMeta

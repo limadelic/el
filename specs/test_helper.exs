@@ -7,6 +7,38 @@ defmodule SyncTask do
   def start(fun), do: fun.()
 end
 
+:application.load(:el)
+
+el_ebin_dir = "#{File.cwd!()}/_build/test/lib/el/ebin"
+el_modules = case File.ls(el_ebin_dir) do
+  {:ok, files} -> files
+  :error -> []
+end
+|> Enum.filter(&String.ends_with?(&1, ".beam"))
+|> Enum.map(&String.replace(&1, ".beam", ""))
+|> Enum.map(&String.to_atom/1)
+
+extra_dirs = [
+  "#{File.cwd!()}/_build/test/lib/claude_code/ebin",
+  "#{File.cwd!()}/_build/test/lib/mox/ebin",
+  "#{File.cwd!()}/_build/test/lib/jason/ebin"
+]
+
+extra_modules = extra_dirs
+  |> Enum.flat_map(fn dir ->
+    case File.ls(dir) do
+      {:ok, files} -> files
+      :error -> []
+    end
+  end)
+  |> Enum.filter(&String.ends_with?(&1, ".beam"))
+  |> Enum.map(&String.replace(&1, ".beam", ""))
+  |> Enum.map(&String.to_atom/1)
+
+(el_modules ++ extra_modules)
+|> Enum.uniq()
+|> Enum.each(&Code.ensure_loaded!/1)
+
 Mox.defmock(El.MockRegistry, for: El.Behaviours.Registry)
 Mox.defmock(El.MockSupervisor, for: El.Behaviours.Supervisor)
 Mox.defmock(El.MockSession, for: El.Behaviours.Session)
@@ -77,6 +109,23 @@ Mox.defmock(El.MockSessionClaude, for: El.Behaviours.SessionClaude)
 Mox.defmock(El.MockSystem, for: El.Behaviours.System)
 Mox.defmock(El.MockGroupLeader, for: El.Behaviours.GroupLeader)
 Mox.defmock(El.MockMessageStore, for: El.Behaviours.MessageStore)
+Mox.defmock(El.MockMessageStoreInit, for: El.Behaviours.MessageStoreInit)
+Mox.defmock(El.MockSessionRestorer, for: El.Behaviours.SessionRestorer)
+Mox.defmock(El.MockAgentDetector, for: El.Behaviours.AgentDetector)
+Mox.defmock(El.MockAgentMetadata, for: El.Behaviours.AgentMetadata)
+Mox.defmock(El.MockEnv, for: El.Behaviours.Env)
+Mox.defmock(El.MockCCParser, for: El.Behaviours.CCParser)
+Mox.defmock(El.MockJSONDecoder, for: El.Behaviours.JSONDecoder)
+Mox.defmock(El.MockCardBox, for: El.Behaviours.CardBox)
+Mox.defmock(El.MockTextFormatter, for: El.Behaviours.TextFormatter)
+Mox.defmock(El.MockParser, for: El.Behaviours.Parser)
+Mox.defmock(El.MockParserEventSchema, for: El.Behaviours.ParserEventSchema)
+Mox.defmock(El.MockParserResult, for: El.Behaviours.ParserResult)
+Mox.defmock(El.MockClaudePortConnection, for: El.Behaviours.ClaudePortConnection)
+Mox.defmock(El.MockSessionBootstrap, for: El.Behaviours.SessionBootstrap)
+Mox.defmock(El.MockClaudePortCliResolver, for: El.Behaviours.ClaudePortCliResolver)
+Mox.defmock(El.MockClaudePortPortSpawn, for: El.Behaviours.ClaudePortPortSpawn)
+Mox.defmock(El.MockClaudePortCloser, for: El.Behaviours.ClaudePortCloser)
 
 Mox.stub(El.MockNodeConnector, :connect, fn _ -> false end)
 Mox.stub(El.MockNodeConnector, :set_cookie, fn _ -> true end)
@@ -117,38 +166,9 @@ end
 
 Application.put_env(:el, :session_meta, El.MockSessionMeta)
 Application.put_env(:el, :file_system, El.MockFileSystem)
+Application.put_env(:el, :parser, El.MockParser)
 
-Enum.each(
-  [
-    El,
-    El.Application,
-    El.CLI,
-    El.CLI.Start,
-    El.CLI.Log,
-    El.CLI.Pattern,
-    El.CLI.Messaging,
-    El.CLI.Output,
-    El.CLI.Router,
-    El.Deps,
-    El.Session,
-    El.Session.Api,
-    El.Lifecycle,
-    El.ProcessMonitor,
-    El.AgentDetector,
-    El.AgentMetadata,
-    El.MessageStore,
-    El.SessionMeta,
-    El.GroupLeaderImpl,
-    El.DetsBackend,
-    El.SleeperImpl,
-    El.ClaudePort,
-    El.ClaudePort.Connection,
-    El.ClaudePort.Parser
-  ],
-  &Code.ensure_loaded!/1
-)
-
-ExUnit.start(timeout: 10)
+ExUnit.start(timeout: 20)
 
 defmodule TestClaudeCode do
   def start_link(_opts) do
