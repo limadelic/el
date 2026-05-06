@@ -9,13 +9,15 @@ defmodule El.ClaudePort.Buffer do
   end
 
   defp extract(state) do
-    case parser().try_extract_result(state.buffer, state.session_id) do
-      :incomplete ->
-        {:noreply, state}
+    apply_extract(parser().try_extract_result(state.buffer, state.session_id), state)
+  end
 
-      {:ok, result, remaining_buffer} ->
-        {:reply, state.current_request_id, result, %{state | buffer: remaining_buffer, current_request_id: nil}}
-    end
+  defp apply_extract(:incomplete, state) do
+    {:noreply, state}
+  end
+
+  defp apply_extract({:ok, result, remaining_buffer}, state) do
+    {:reply, state.current_request_id, result, %{state | buffer: remaining_buffer, current_request_id: nil}}
   end
 
   defp parser, do: Application.get_env(:el, :parser, El.ClaudePort.Parser)
