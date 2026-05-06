@@ -23,7 +23,8 @@ defmodule El.ClaudePort.State do
     %{
       cwd: cwd(Keyword.get(opts, :cwd)),
       cli_path: Keyword.get(opts, :cli_path, :global),
-      port_module: Keyword.get(opts, :port_module, El.PortImpl)
+      port_module: Keyword.get(opts, :port_module, El.PortImpl),
+      connection_module: Keyword.get(opts, :connection_module, El.ClaudePort.Connection)
     }
   end
 

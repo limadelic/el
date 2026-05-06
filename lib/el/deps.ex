@@ -9,7 +9,8 @@ defmodule El.Deps do
       app: Application.get_env(:el, :app, El.MessageStore.Facade),
       session: Application.get_env(:el, :session, El.Session),
       init_module: Application.get_env(:el, :init_module, El.MessageStore.Init),
-      restorer_module: Application.get_env(:el, :restorer_module, El.SessionRestorer)
+      restorer_module: Application.get_env(:el, :restorer_module, El.SessionRestorer),
+      connection_module: Application.get_env(:el, :connection_module, El.ClaudePort.Connection)
     ]
   end
 

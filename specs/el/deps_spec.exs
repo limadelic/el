@@ -13,5 +13,11 @@ defmodule El.Deps.Spec do
 
       assert Keyword.get(result, :restorer_module) == El.SessionRestorer
     end
+
+    test "returns map with connection_module key defaulting to El.ClaudePort.Connection" do
+      result = El.Deps.production()
+
+      assert Keyword.get(result, :connection_module) == El.ClaudePort.Connection
+    end
   end
 end
