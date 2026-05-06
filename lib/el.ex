@@ -1,4 +1,7 @@
 defmodule El do
+  @behaviour El.Behaviours.El
+
+  @impl true
   def start(name, opts \\ []) when is_atom(name) do
     start_if_needed(name, opts, El.Deps.registry(opts).lookup(El.Registry, name))
   end
@@ -29,39 +32,48 @@ defmodule El do
     Keyword.drop(opts, [:registry, :supervisor, :monitor, :app])
   end
 
+  @impl true
   def tell(name, message, opts \\ []) do
     session_api(opts).tell(name, message)
   end
 
+  @impl true
   def ask(name, message, opts \\ []) do
     session_api(opts).ask(name, message)
   end
 
+  @impl true
   def log(name, count \\ nil, opts \\ [])
   def log(name, nil, opts), do: session_api(opts).log(name)
   def log(name, count, opts), do: session_api(opts).log(name, count)
 
+  @impl true
   def clear(name, opts \\ []) do
     session_api(opts).clear(name)
   end
 
+  @impl true
   def agent(name, opts \\ []), do: session_api(opts).agent(name)
   defp session_api(opts), do: Keyword.fetch!(opts, :session_api)
 
+  @impl true
   def exit(name, opts \\ []) do
     El.Lifecycle.exit(name, :normal, opts)
   end
 
+  @impl true
   def exit_pattern(pattern, opts \\ []) do
     ls(opts)
     |> Enum.filter(&match_pattern?(&1, pattern))
     |> Enum.each(&El.exit(&1, opts))
   end
 
+  @impl true
   def clear_pattern(pattern, opts \\ []) do
     ls(opts) |> Enum.filter(&match_pattern?(&1, pattern)) |> Enum.each(&El.clear(&1, opts))
   end
 
+  @impl true
   def log_pattern(pattern, count, opts \\ []),
     do:
       ls(opts) |> Enum.filter(&match_pattern?(&1, pattern)) |> Enum.flat_map(&log_entries(&1, count, opts))
@@ -82,6 +94,7 @@ defmodule El do
   defp pattern_to_regex(pattern),
     do: pattern |> String.replace("*", ".*") |> String.replace("?", ".")
 
+  @impl true
   def ls(opts \\ []) do
     El.Deps.registry(opts).select(El.Registry, [{{:"$1", :_, :_}, [], [:"$1"]}])
     |> Enum.sort()
