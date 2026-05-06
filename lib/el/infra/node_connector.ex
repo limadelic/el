@@ -1,4 +1,4 @@
-defmodule El.NodeConnectorImpl do
+defmodule El.Infra.NodeConnector do
   @behaviour El.Behaviours.NodeConnector
 
   @impl true

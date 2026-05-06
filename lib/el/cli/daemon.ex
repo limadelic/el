@@ -7,7 +7,7 @@ defmodule El.CLI.Daemon do
     dev?() |> daemon_node_for()
   end
 
-  def connect_to_daemon(system \\ El.SystemImpl, node_connector \\ El.NodeConnectorImpl, net_kernel \\ El.Infra.NetKernel) do
+  def connect_to_daemon(system \\ El.SystemImpl, node_connector \\ El.Infra.NodeConnector, net_kernel \\ El.Infra.NetKernel) do
     start_epmd(system)
     start_client_node(net_kernel, node_connector) |> handle_client_started(system, node_connector)
   end
@@ -21,7 +21,7 @@ defmodule El.CLI.Daemon do
   defp handle_daemon_ready(:ok), do: {:ok, daemon_node()}
   defp handle_daemon_ready(_), do: :local
 
-  def start_daemon_node(system \\ El.SystemImpl, node_connector \\ El.NodeConnectorImpl, net_kernel \\ El.Infra.NetKernel) do
+  def start_daemon_node(system \\ El.SystemImpl, node_connector \\ El.Infra.NodeConnector, net_kernel \\ El.Infra.NetKernel) do
     start_epmd(system)
     net_kernel.start([daemon_node(), :longnames])
     node_connector.set_cookie(daemon_cookie())
@@ -31,7 +31,7 @@ defmodule El.CLI.Daemon do
     dev_check(System.get_env("DEV"))
   end
 
-  def ensure_daemon(system \\ El.SystemImpl, node_connector \\ El.NodeConnectorImpl) do
+  def ensure_daemon(system \\ El.SystemImpl, node_connector \\ El.Infra.NodeConnector) do
     ensure_daemon_connected(node_connector.connect(daemon_node()), system, node_connector)
   end
 
