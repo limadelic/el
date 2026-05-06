@@ -118,6 +118,7 @@ Mox.defmock(El.MockCCParser, for: El.Behaviours.CCParser)
 Mox.defmock(El.MockJSONDecoder, for: El.Behaviours.JSONDecoder)
 Mox.defmock(El.MockCardBox, for: El.Behaviours.CardBox)
 Mox.defmock(El.MockTextFormatter, for: El.Behaviours.TextFormatter)
+Mox.defmock(El.MockParser, for: El.Behaviours.Parser)
 
 Mox.stub(El.MockNodeConnector, :connect, fn _ -> false end)
 Mox.stub(El.MockNodeConnector, :set_cookie, fn _ -> true end)
@@ -158,6 +159,7 @@ end
 
 Application.put_env(:el, :session_meta, El.MockSessionMeta)
 Application.put_env(:el, :file_system, El.MockFileSystem)
+Application.put_env(:el, :parser, El.MockParser)
 
 ExUnit.start(timeout: 20)
 

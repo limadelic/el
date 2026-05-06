@@ -4,7 +4,6 @@ defmodule El.ClaudePort do
   require Logger
 
   alias ClaudeCode.CLI.Input
-  alias El.ClaudePort.Parser
   alias El.ClaudePort.Connection
   alias El.ClaudePort.Buffer
 

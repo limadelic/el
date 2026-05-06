@@ -1,5 +1,8 @@
 defmodule El.ClaudePort.Spec do
   use ExUnit.Case
+  import Mox
+
+  setup :verify_on_exit!
 
   setup_all do
     Code.ensure_loaded!(El.ClaudePort)
@@ -8,6 +11,11 @@ defmodule El.ClaudePort.Spec do
     El.ClaudePort.Parser.try_extract_result(~s({"type":"result","result":"warmup"}\n), "warmup-sid")
     El.ClaudePort.Parser.try_extract_result(~s({"type":"system","subtype":"init","model":"m","session_id":"s"}\n), "warmup-sid")
     El.ClaudePort.Parser.try_extract_result("not json\n", "warmup-sid")
+    :ok
+  end
+
+  setup do
+    stub(El.MockParser, :try_extract_result, fn _buffer, _session_id -> :incomplete end)
     :ok
   end
 
@@ -26,6 +34,9 @@ defmodule El.ClaudePort.Spec do
     end
 
     test "replies to caller and clears request when result line completes" do
+      expect(El.MockParser, :try_extract_result, fn _buffer, "s1" ->
+        {:ok, {"answer", "model", "s1"}, ""}
+      end)
       ref = make_ref()
       from = {self(), ref}
       state = %{
@@ -40,6 +51,9 @@ defmodule El.ClaudePort.Spec do
     end
 
     test "does not reply when system-init line arrives" do
+      expect(El.MockParser, :try_extract_result, fn _buffer, "s1" ->
+        :incomplete
+      end)
       ref = make_ref()
       from = {self(), ref}
       state = %{
@@ -54,6 +68,9 @@ defmodule El.ClaudePort.Spec do
     end
 
     test "skips malformed JSON line and processes valid result line" do
+      expect(El.MockParser, :try_extract_result, fn _buffer, "s1" ->
+        {:ok, {"ok", "model", "s1"}, ""}
+      end)
       ref = make_ref()
       from = {self(), ref}
       state = %{
