@@ -1,4 +1,4 @@
-defmodule El.PortImpl do
+defmodule El.Infra.Port do
   @behaviour El.Behaviours.Port
 
   @impl true
