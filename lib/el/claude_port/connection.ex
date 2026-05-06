@@ -3,13 +3,11 @@ defmodule El.ClaudePort.Connection do
 
   require Logger
 
-  alias ClaudeCode.CLI.Command
   alias ClaudeCode.CLI.Input
-  alias ClaudeCode.Adapter.Port.Resolver
-  alias ClaudeCode.Adapter.Port.Installer
+  alias El.ClaudePort.Connection.CliResolver
 
   def open_port(state) do
-    apply_resolved(resolve_cli_and_args(state.cli_path, state.opts, state.resume_id), state)
+    apply_resolved(CliResolver.resolve(state.cli_path, state.opts, state.resume_id), state)
   end
 
   def safe_close_port(nil, _port_module), do: :ok
@@ -86,24 +84,6 @@ defmodule El.ClaudePort.Connection do
 
   defp charlist_pair({k, v}) do
     {String.to_charlist(k), String.to_charlist(v)}
-  end
-
-  defp resolve_cli_and_args(_cli_path, opts, resume_id) do
-    streaming_opts = Keyword.put(opts, :input_format, :stream_json)
-    apply_find_binary(Resolver.find_binary(streaming_opts), streaming_opts, resume_id)
-  end
-
-  defp apply_find_binary({:ok, executable}, streaming_opts, resume_id) do
-    args = Command.build_args("", streaming_opts, resume_id)
-    {:ok, {executable, List.delete_at(args, -1)}}
-  end
-
-  defp apply_find_binary({:error, :not_found}, _streaming_opts, _resume_id) do
-    {:error, {:cli_not_found, Installer.cli_not_found_message()}}
-  end
-
-  defp apply_find_binary({:error, reason}, _streaming_opts, _resume_id) do
-    {:error, {:cli_resolution_failed, reason}}
   end
 
   defp ensure_connected(%{port: nil} = state) do
