@@ -176,5 +176,11 @@ defmodule El.CLI.Start.SessionCard.Spec do
       model_lines = Enum.filter(result, &String.contains?(&1, "model:"))
       assert length(model_lines) == 0
     end
+
+    test "agent identity persists in card with explicit agent", %{info: info} do
+      opts = [agent: "kent"]
+      result = El.CLI.Start.SessionCard.build_card_rows("kento", opts, info)
+      assert Enum.any?(result, &String.contains?(&1, "agent: kent"))
+    end
   end
 end

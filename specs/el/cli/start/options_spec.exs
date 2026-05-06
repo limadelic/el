@@ -193,4 +193,20 @@ defmodule El.CLI.Start.Options.Spec do
       refute Keyword.has_key?(result, :agent)
     end
   end
+
+  describe "El.CLI.Start.Options.merge_session_opts/4" do
+    setup do
+      stub(El.MockAgentMetadata, :model_for, fn
+        "kent" -> "opus"
+        _ -> nil
+      end)
+      stub(El.MockEnv, :get, fn _ -> nil end)
+      {:ok, deps: [agent_metadata: El.MockAgentMetadata, env: El.MockEnv]}
+    end
+
+    test "preserves explicit agent when provided", %{deps: deps} do
+      result = El.CLI.Start.Options.merge_session_opts("kento", "kent", nil, deps)
+      assert Keyword.get(result, :agent) == "kent"
+    end
+  end
 end
