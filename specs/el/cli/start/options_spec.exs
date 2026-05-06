@@ -59,7 +59,7 @@ defmodule El.CLI.Start.Options.Spec do
   describe "El.CLI.Start.Options.agent_metadata/1" do
     test "returns default metadata when not in deps" do
       metadata = El.CLI.Start.Options.agent_metadata([])
-      assert metadata == El.AgentMetadata
+      assert metadata == El.Agent.Metadata
     end
 
     test "returns custom metadata from deps" do

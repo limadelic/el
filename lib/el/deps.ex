@@ -39,7 +39,7 @@ defmodule El.Deps do
     [
       dep(:session_api, El.Session.Api),
       dep(:agent_detector, El.Agent.Detector),
-      dep(:agent_metadata, El.AgentMetadata)
+      dep(:agent_metadata, El.Agent.Metadata)
     ]
   end
 

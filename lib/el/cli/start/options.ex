@@ -25,7 +25,7 @@ defmodule El.CLI.Start.Options do
   def resolve_agent(agent, _name, _deps), do: agent
 
   def agent_metadata(deps) do
-    Keyword.get(deps, :agent_metadata, El.AgentMetadata)
+    Keyword.get(deps, :agent_metadata, El.Agent.Metadata)
   end
 
   def subagent_model(nil), do: []

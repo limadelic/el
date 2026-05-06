@@ -1,4 +1,4 @@
-defmodule El.AgentMetadata do
+defmodule El.Agent.Metadata do
   @behaviour El.Agent.Behaviours.Metadata
 
   def model_for(agent_name, search_dir \\ nil)
