@@ -161,7 +161,3 @@ end
 defmodule El.Behaviours.TextFormatter do
   @callback format_response(term()) :: list()
 end
-
-defmodule El.Behaviours.Parser do
-  @callback try_extract_result(String.t(), String.t()) :: :incomplete | {:ok, term(), String.t()}
-end

@@ -1,19 +1,28 @@
 ---
 name: el
-description: CLI to control teams of agents. Used when asked to delegate to "el <agent>"
+description: Use when delegating to another dude via "el <agent>"
 ---
 
-## Commands
+# El
 
-- Run `el` for help 
+## What
 
-## Usage
+- CLI for talking to other dudes
+- The `el` subagent owns the CLI, you don't
 
-- Always Bash via HAIKU and sent to background
+## How
 
-## Dos and Don'ts
+- Delegate via the `el` subagent (Agent tool, `subagent_type: el`)
+- Background the call
+- One message per invocation, spawn fresh each time
+- Tell it WHO and WHAT, never HOW
+- Ask one question at a time
 
-- Do ask 1 question at a time
-- Do background all interactions
-- Dont block
-- Dont 1 shot complex issues
+## NEVER
+
+- Never call `el` via Bash
+- Never wrap `el` in any other agent
+- Never SendMessage the `el` subagent
+- Never kill it, it is one-shot, let it finish
+- Never block
+- Never one-shot complex issues
