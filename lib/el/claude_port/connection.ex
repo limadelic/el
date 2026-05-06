@@ -1,5 +1,6 @@
 defmodule El.ClaudePort.Connection do
   alias ClaudeCode.CLI.Command
+  alias ClaudeCode.CLI.Input
   alias ClaudeCode.Adapter.Port.Resolver
   alias ClaudeCode.Adapter.Port.Installer
 
@@ -9,6 +10,15 @@ defmodule El.ClaudePort.Connection do
 
   def safe_close_port(nil, _port_module), do: :ok
   def safe_close_port(port, port_module), do: try_close(port_module.info(port), port, port_module)
+
+  def send_message(state, message) do
+    session_id = session_id_or_default(state.session_id)
+    ndjson = Input.user_message(message, session_id)
+    state.port_module.command(state.port, ndjson <> "\n")
+  end
+
+  def session_id_or_default(nil), do: "default"
+  def session_id_or_default(id), do: id
 
   defp try_close(nil, _port, _port_module), do: :ok
   defp try_close(_info, port, port_module), do: close_with_rescue(port, port_module)

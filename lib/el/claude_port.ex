@@ -3,7 +3,6 @@ defmodule El.ClaudePort do
 
   require Logger
 
-  alias ClaudeCode.CLI.Input
   alias El.ClaudePort.Connection
   alias El.ClaudePort.Buffer
 
@@ -63,7 +62,7 @@ defmodule El.ClaudePort do
 
   defp dispatch_ask({:ok, connected_state}, message, from, _state) do
     Logger.debug("ClaudePort connected, sending message")
-    send_message(connected_state, message)
+    Connection.send_message(connected_state, message)
     {:noreply, %{connected_state | current_request_id: from}}
   end
 
@@ -71,15 +70,6 @@ defmodule El.ClaudePort do
     Logger.error("ClaudePort ensure_connected failed: #{inspect(reason)}")
     {:reply, {"(unavailable)", nil, nil}, state}
   end
-
-  defp send_message(state, message) do
-    session_id = session_id_or_default(state.session_id)
-    ndjson = Input.user_message(message, session_id)
-    state.port_module.command(state.port, ndjson <> "\n")
-  end
-
-  defp session_id_or_default(nil), do: "default"
-  defp session_id_or_default(id), do: id
 
   @impl GenServer
   def handle_info({port, {:data, data}}, %{port: port} = state) do
