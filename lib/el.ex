@@ -1,6 +1,4 @@
 defmodule El do
-  def app(opts \\ []), do: Keyword.fetch!(opts, :app)
-  def session(opts \\ []), do: Keyword.fetch!(opts, :session)
   def registry(opts \\ []), do: Keyword.fetch!(opts, :registry)
   def supervisor(opts \\ []), do: Keyword.fetch!(opts, :supervisor)
   def monitor(opts \\ []), do: Keyword.fetch!(opts, :monitor)
