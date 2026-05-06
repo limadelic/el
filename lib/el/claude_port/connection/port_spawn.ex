@@ -1,4 +1,6 @@
 defmodule El.ClaudePort.Connection.PortSpawn do
+  @behaviour El.Behaviours.ClaudePortPortSpawn
+
   def spawn({:error, reason}, _state), do: {:error, reason}
   def spawn({:ok, {executable, args}}, state) do
     find_and_spawn(:os.find_executable(String.to_charlist(executable)), executable, args, state)
