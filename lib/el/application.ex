@@ -91,7 +91,7 @@ defmodule El.Application do
   end
 
   defp setup_dir(opts) do
-    dir = store_dir(Keyword.fetch!(opts, :daemon))
+    dir = El.MessageStore.Init.store_dir(Keyword.fetch!(opts, :daemon))
     expanded = Path.expand(dir)
     Keyword.fetch!(opts, :file_system).mkdir_p!(expanded)
     dir
@@ -106,7 +106,4 @@ defmodule El.Application do
     {:ok, _} = backend.open_file(name, file: path, type: :bag)
   end
 
-  defp store_dir(true), do: "~/.el/dev"
-  defp store_dir(false), do: "~/.el"
-  defp store_dir(daemon) when is_atom(daemon), do: store_dir(daemon.dev?())
 end
