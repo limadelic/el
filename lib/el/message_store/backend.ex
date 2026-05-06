@@ -1,4 +1,4 @@
-defmodule El.DetsBackend do
+defmodule El.MessageStore.Backend do
   @behaviour El.MessageStore.Behaviours.Dets
 
   def open_file(table, opts) do
