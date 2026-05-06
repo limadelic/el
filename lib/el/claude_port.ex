@@ -6,6 +6,7 @@ defmodule El.ClaudePort do
   alias ClaudeCode.CLI.Input
   alias El.ClaudePort.Parser
   alias El.ClaudePort.Connection
+  alias El.ClaudePort.Buffer
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts)
@@ -83,7 +84,14 @@ defmodule El.ClaudePort do
 
   @impl GenServer
   def handle_info({port, {:data, data}}, %{port: port} = state) do
-    {:noreply, process_chunk(data, state)}
+    case Buffer.process(data, state) do
+      {:noreply, new_state} ->
+        {:noreply, new_state}
+
+      {:reply, from, result, new_state} ->
+        GenServer.reply(from, result)
+        {:noreply, new_state}
+    end
   end
 
   def handle_info({port, {:exit_status, status}}, %{port: port} = state) do
@@ -109,20 +117,6 @@ defmodule El.ClaudePort do
   def terminate(_reason, %{port: port, port_module: port_module}) do
     Connection.safe_close_port(port, port_module)
     :ok
-  end
-
-  defp process_chunk(data, state) do
-    new_state = %{state | buffer: state.buffer <> data}
-    maybe_extract(new_state)
-  end
-
-  defp maybe_extract(%{current_request_id: nil} = state), do: state
-  defp maybe_extract(state), do: dispatch_extraction(Parser.try_extract_result(state.buffer, state.session_id), state)
-
-  defp dispatch_extraction(:incomplete, state), do: state
-  defp dispatch_extraction({:ok, result, remaining_buffer}, state) do
-    GenServer.reply(state.current_request_id, result)
-    %{state | buffer: remaining_buffer, current_request_id: nil}
   end
 
   defp ensure_connected(%{port: nil} = state) do
