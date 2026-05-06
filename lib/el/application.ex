@@ -11,18 +11,10 @@ defmodule El.Application do
 
   @impl true
   def start(_type, _args) do
-    init_module().init_message_store(message_store_opts())
+    init_module().init_message_store(init_module().message_store_opts())
     {:ok, pid} = Supervisor.start_link(children(), supervisor_opts())
     restore_sessions(restore_opts())
     {:ok, pid}
-  end
-
-  defp message_store_opts do
-    [
-      file_system: Application.get_env(:el, :file_system, El.FileSystemImpl),
-      dets_backend: Application.get_env(:el, :dets_backend, :dets),
-      daemon: Application.get_env(:el, :daemon, El.CLI.Daemon)
-    ]
   end
 
   defp restore_opts do
