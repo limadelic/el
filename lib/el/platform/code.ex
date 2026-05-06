@@ -1,4 +1,4 @@
-defmodule El.ClaudeCode do
+defmodule El.Platform.Code do
   @default_session_module ClaudeCode.Session
   @default_setting_sources ["user", "project", "local"]
 

@@ -1,4 +1,4 @@
-defmodule El.ClaudeCode.Spec do
+defmodule El.Platform.Code.Spec do
   use ExUnit.Case
   import Mox
 
@@ -16,7 +16,7 @@ defmodule El.ClaudeCode.Spec do
         {:ok, self()}
       end)
 
-      El.ClaudeCode.start_link(session_id: "test-session-id", session_module: El.MockClaudeCodeSession)
+      El.Platform.Code.start_link(session_id: "test-session-id", session_module: El.MockClaudeCodeSession)
     end
 
     test "passes adapter configuration tuple" do
@@ -25,7 +25,7 @@ defmodule El.ClaudeCode.Spec do
         {:ok, self()}
       end)
 
-      El.ClaudeCode.start_link(session_module: El.MockClaudeCodeSession)
+      El.Platform.Code.start_link(session_module: El.MockClaudeCodeSession)
     end
 
     test "passes dangerously_skip_permissions flag as true" do
@@ -34,7 +34,7 @@ defmodule El.ClaudeCode.Spec do
         {:ok, self()}
       end)
 
-      El.ClaudeCode.start_link(session_module: El.MockClaudeCodeSession)
+      El.Platform.Code.start_link(session_module: El.MockClaudeCodeSession)
     end
 
     test "includes model when provided" do
@@ -43,7 +43,7 @@ defmodule El.ClaudeCode.Spec do
         {:ok, self()}
       end)
 
-      El.ClaudeCode.start_link(
+      El.Platform.Code.start_link(
         model: "claude-3-5-haiku",
         session_module: El.MockClaudeCodeSession
       )
@@ -55,7 +55,7 @@ defmodule El.ClaudeCode.Spec do
         {:ok, self()}
       end)
 
-      El.ClaudeCode.start_link(session_module: El.MockClaudeCodeSession)
+      El.Platform.Code.start_link(session_module: El.MockClaudeCodeSession)
     end
 
     test "passes configured cli_path from options" do
@@ -65,7 +65,7 @@ defmodule El.ClaudeCode.Spec do
         {:ok, self()}
       end)
 
-      El.ClaudeCode.start_link(cli_path: "/custom/path", session_module: El.MockClaudeCodeSession)
+      El.Platform.Code.start_link(cli_path: "/custom/path", session_module: El.MockClaudeCodeSession)
     end
 
     test "defaults cli_path to :global when not configured" do
@@ -77,7 +77,7 @@ defmodule El.ClaudeCode.Spec do
         {:ok, self()}
       end)
 
-      El.ClaudeCode.start_link(session_module: El.MockClaudeCodeSession)
+      El.Platform.Code.start_link(session_module: El.MockClaudeCodeSession)
     end
 
     test "passes resume option when provided" do
@@ -86,7 +86,7 @@ defmodule El.ClaudeCode.Spec do
         {:ok, self()}
       end)
 
-      El.ClaudeCode.start_link(
+      El.Platform.Code.start_link(
         resume: "abc-123-def",
         session_module: El.MockClaudeCodeSession
       )
@@ -98,7 +98,7 @@ defmodule El.ClaudeCode.Spec do
         {:ok, self()}
       end)
 
-      El.ClaudeCode.start_link(session_module: El.MockClaudeCodeSession)
+      El.Platform.Code.start_link(session_module: El.MockClaudeCodeSession)
     end
 
     test "start_link/1 passes :resume to session_module when given in opts" do
@@ -107,7 +107,7 @@ defmodule El.ClaudeCode.Spec do
         {:ok, self()}
       end)
 
-      El.ClaudeCode.start_link(session_id: "abc", session_module: El.MockClaudeCodeSession, resume: "abc")
+      El.Platform.Code.start_link(session_id: "abc", session_module: El.MockClaudeCodeSession, resume: "abc")
     end
 
     test "includes setting_sources in session options" do
@@ -116,7 +116,7 @@ defmodule El.ClaudeCode.Spec do
         {:ok, self()}
       end)
 
-      El.ClaudeCode.start_link(session_module: El.MockClaudeCodeSession)
+      El.Platform.Code.start_link(session_module: El.MockClaudeCodeSession)
     end
 
     test "passes :resume to session module from env hook" do
@@ -125,7 +125,7 @@ defmodule El.ClaudeCode.Spec do
         {:ok, self()}
       end)
 
-      El.ClaudeCode.start_link(session_id: "session-abc", resume: "session-abc", session_module: El.MockClaudeCodeSession)
+      El.Platform.Code.start_link(session_id: "session-abc", resume: "session-abc", session_module: El.MockClaudeCodeSession)
     end
 
     test "omits session_id when not provided" do
@@ -134,7 +134,7 @@ defmodule El.ClaudeCode.Spec do
         {:ok, self()}
       end)
 
-      El.ClaudeCode.start_link(session_module: El.MockClaudeCodeSession)
+      El.Platform.Code.start_link(session_module: El.MockClaudeCodeSession)
     end
   end
 
@@ -146,7 +146,7 @@ defmodule El.ClaudeCode.Spec do
         {:ok, "streamed"}
       end)
 
-      result = El.ClaudeCode.stream(:test_pid, "test prompt", session_module: El.MockClaudeCodeSession)
+      result = El.Platform.Code.stream(:test_pid, "test prompt", session_module: El.MockClaudeCodeSession)
       assert result == {:ok, "streamed"}
     end
   end
