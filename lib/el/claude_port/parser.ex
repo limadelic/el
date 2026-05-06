@@ -30,7 +30,7 @@ defmodule El.ClaudePort.Parser do
 
   defp process_decoded(json, rest, acc, session_id) do
     normalized = cc_parser().normalize_keys(json)
-    {new_acc, complete?} = merge_line(normalized, acc)
+    {new_acc, complete?} = El.ClaudePort.Parser.Result.merge(normalized, acc)
     emit_or_continue(complete?, new_acc, rest, session_id)
   end
 
@@ -42,32 +42,10 @@ defmodule El.ClaudePort.Parser do
     process_lines(rest, new_acc, session_id)
   end
 
-  defp merge_line(normalized, acc) do
-    {build_acc(normalized, acc), event_schema().is_result_message(normalized)}
-  end
-
-  defp build_acc(normalized, {result, model, sid}) do
-    {
-      pick_result(event_schema().is_result_message(normalized), normalized, result),
-      pick_model(event_schema().has_model(normalized), normalized, model),
-      pick_sid(event_schema().has_session_id(normalized), normalized, sid)
-    }
-  end
-
-  defp pick_result(true, normalized, _result), do: event_schema().get_result(normalized)
-  defp pick_result(false, _normalized, result), do: result
-
-  defp pick_model(true, normalized, _model), do: event_schema().get_model(normalized)
-  defp pick_model(false, _normalized, model), do: model
-
-  defp pick_sid(true, normalized, _sid), do: event_schema().get_session_id(normalized)
-  defp pick_sid(false, _normalized, sid), do: sid
-
   defp nil_to_empty(nil), do: ""
   defp nil_to_empty(result), do: result
 
   defp cc_parser, do: Application.get_env(:el, :cc_parser, El.CCParser)
   defp json_decoder, do: Application.get_env(:el, :json_decoder, El.JSONDecoder)
   defp line_extractor, do: Application.get_env(:el, :line_extractor, El.ClaudePort.Parser.LineExtractor)
-  defp event_schema, do: Application.get_env(:el, :event_schema, El.ClaudePort.Parser.EventSchema)
 end
