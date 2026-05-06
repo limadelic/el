@@ -1,4 +1,4 @@
-defmodule El.FileAdapter do
+defmodule El.Adapters.File do
   @callback open(path :: charlist(), options :: list()) ::
               {:ok, term()} | {:error, term()}
   @callback write(io_device :: term(), data :: binary()) ::
