@@ -6,7 +6,7 @@ defmodule El.Deps do
   defp core_modules do
     [
       el_module: Application.get_env(:el, :el_module, El),
-      app: Application.get_env(:el, :app, El.Application),
+      app: Application.get_env(:el, :app, El.MessageStore.Facade),
       session: Application.get_env(:el, :session, El.Session)
     ]
   end

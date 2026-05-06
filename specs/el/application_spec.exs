@@ -84,33 +84,6 @@ defmodule El.Application.Spec do
     assert opts[:max_seconds] == 60
   end
 
-  test "store_message delegates to message store" do
-    name = :test_session
-    entry = {"tell", "hello", "response", %{}}
-
-    assert El.Application.store_message(name, entry, message_store: El.MessageStoreStub) == :ok
-  end
-
-  test "load_messages returns empty list when store returns empty" do
-    messages = El.Application.load_messages(:new_session, message_store: El.MessageStoreStub)
-    assert messages == []
-  end
-
-  test "load_messages returns entries from store" do
-    name = :test_session
-    _entry1 = {"tell", "msg1", "resp1", %{}}
-    _entry2 = {"tell", "msg2", "resp2", %{}}
-
-    messages = El.Application.load_messages(name, message_store: El.MessageStoreStub)
-    assert messages == []
-  end
-
-  test "delete_session_messages delegates to message store" do
-    name = :delete_test
-
-    assert El.Application.delete_session_messages(name, message_store: El.MessageStoreStub) == :ok
-  end
-
   test "uses dev DETS path when DEV is set" do
     System.put_env("DEV", "1")
     dir = if El.CLI.Daemon.dev?(), do: "~/.el/dev", else: "~/.el"

@@ -113,12 +113,4 @@ defmodule El.Application do
   defp store_dir(true), do: "~/.el/dev"
   defp store_dir(false), do: "~/.el"
   defp store_dir(daemon) when is_atom(daemon), do: store_dir(daemon.dev?())
-
-  defdelegate delete_session_messages(name, opts \\ []), to: El.MessageStore.Facade
-
-  defdelegate store_message(name, message_entry, opts \\ []), to: El.MessageStore.Facade
-
-  defdelegate load_messages(name, opts \\ []), to: El.MessageStore.Facade
-
-  defdelegate delete_message(name, entry, opts \\ []), to: El.MessageStore.Facade
 end

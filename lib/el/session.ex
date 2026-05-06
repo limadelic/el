@@ -18,7 +18,7 @@ defmodule El.Session do
     ask_module: El.Session.Ask,
     alive_fn: &El.Session.Api.alive?/1,
     registry_module: Registry,
-    store_module: El.Application,
+    store_module: El.MessageStore.Facade,
     session_meta: El.SessionMeta,
     session_api: El.Session.Api,
     el_module: El
