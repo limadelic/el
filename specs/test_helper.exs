@@ -42,7 +42,7 @@ extra_modules = extra_dirs
 Mox.defmock(El.MockRegistry, for: El.Infra.Behaviours.Registry)
 Mox.defmock(El.MockSupervisor, for: El.Infra.Behaviours.Supervisor)
 Mox.defmock(El.MockSession, for: El.Session.Behaviours.Session)
-Mox.defmock(El.MockApp, for: El.Behaviours.App)
+Mox.defmock(El.MockSessionDeletion, for: El.MessageStore.Behaviours.SessionDeletion)
 Mox.defmock(El.MockMonitor, for: El.Infra.Behaviours.Monitor)
 Mox.defmock(El.MockEl, for: El.Behaviours.El)
 Mox.defmock(El.MockFileSystem, for: El.Infra.Behaviours.FileSystem)

@@ -7,5 +7,5 @@ config :el,
   registry: El.MockRegistry,
   supervisor: El.MockSupervisor,
   session: El.MockSession,
-  app: El.MockApp,
+  app: El.MockSessionDeletion,
   monitor: El.MockMonitor

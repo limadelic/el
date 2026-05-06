@@ -1,8 +1,3 @@
-defmodule El.Behaviours.App do
-  @callback delete_session_messages(term()) :: term()
-  @callback delete_session_messages(term(), keyword()) :: term()
-end
-
 defmodule El.Behaviours.El do
   @callback start(term(), term()) :: term()
   @callback tell(term(), term()) :: term()
