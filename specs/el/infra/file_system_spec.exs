@@ -3,13 +3,13 @@ defmodule El.Infra.FileSystem.Spec do
 
   setup_all do
     Code.ensure_loaded!(El.Infra.FileSystem)
-    Code.ensure_loaded!(El.Behaviours.FileSystem)
+    Code.ensure_loaded!(El.Infra.Behaviours.FileSystem)
     :ok
   end
 
   describe "El.Infra.FileSystem" do
-    test "declares @behaviour El.Behaviours.FileSystem" do
-      assert El.Behaviours.FileSystem in El.Infra.FileSystem.module_info(:attributes)[:behaviour] ||
+    test "declares @behaviour El.Infra.Behaviours.FileSystem" do
+      assert El.Infra.Behaviours.FileSystem in El.Infra.FileSystem.module_info(:attributes)[:behaviour] ||
              []
     end
 

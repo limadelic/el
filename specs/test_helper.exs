@@ -45,7 +45,7 @@ Mox.defmock(El.MockSession, for: El.Session.Behaviours.Session)
 Mox.defmock(El.MockApp, for: El.Behaviours.App)
 Mox.defmock(El.MockMonitor, for: El.Behaviours.Monitor)
 Mox.defmock(El.MockEl, for: El.Behaviours.El)
-Mox.defmock(El.MockFileSystem, for: El.Behaviours.FileSystem)
+Mox.defmock(El.MockFileSystem, for: El.Infra.Behaviours.FileSystem)
 Mox.stub(El.MockFileSystem, :cwd, fn -> "/tmp/test" end)
 Mox.stub(El.MockFileSystem, :mkdir_p!, fn _path -> :ok end)
 

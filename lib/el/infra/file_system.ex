@@ -1,5 +1,5 @@
 defmodule El.Infra.FileSystem do
-  @behaviour El.Behaviours.FileSystem
+  @behaviour El.Infra.Behaviours.FileSystem
 
   def exists?(path) do
     File.exists?(path)

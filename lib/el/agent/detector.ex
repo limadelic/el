@@ -1,6 +1,6 @@
 defmodule El.Agent.Detector do
   @behaviour El.Agent.Behaviours.Detector
-  @behaviour El.Behaviours.FileSystem
+  @behaviour El.Infra.Behaviours.FileSystem
 
   def exists?(name, fs \\ El.Infra.FileSystem) do
     check_paths(fs, paths(name))
