@@ -114,10 +114,7 @@ defmodule El.Application do
   defp store_dir(false), do: "~/.el"
   defp store_dir(daemon) when is_atom(daemon), do: store_dir(daemon.dev?())
 
-  def delete_session_messages(name, opts \\ []) do
-    ms = Keyword.fetch!(opts, :message_store)
-    ms.delete(name)
-  end
+  defdelegate delete_session_messages(name, opts \\ []), to: El.MessageStore.Facade
 
   def store_message(name, message_entry, opts \\ []) do
     ms = Keyword.fetch!(opts, :message_store)
