@@ -1,5 +1,5 @@
 defmodule El.Infra.Sleeper do
-  @behaviour El.Behaviours.Sleeper
+  @behaviour El.Infra.Behaviours.Sleeper
 
   @impl true
   def sleep(ms) do

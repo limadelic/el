@@ -48,10 +48,6 @@ defmodule El.Behaviours.FileSystem do
   @callback mkdir_p!(String.t()) :: :ok
 end
 
-defmodule El.Behaviours.Sleeper do
-  @callback sleep(integer()) :: :ok
-end
-
 defmodule El.Behaviours.NodeConnector do
   @callback connect(node()) :: boolean() | :ignored
   @callback set_cookie(atom()) :: true
