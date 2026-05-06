@@ -1,5 +1,5 @@
 defmodule El.CLI.DaemonConnector do
-  def wait_for_daemon(n, sleeper \\ El.SleeperImpl, connector \\ El.NodeConnectorImpl)
+  def wait_for_daemon(n, sleeper \\ El.Infra.Sleeper, connector \\ El.NodeConnectorImpl)
 
   def wait_for_daemon(0, _sleeper, _connector), do: {:error, :timeout}
 

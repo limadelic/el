@@ -1,4 +1,4 @@
-defmodule El.SleeperImpl do
+defmodule El.Infra.Sleeper do
   @behaviour El.Behaviours.Sleeper
 
   @impl true

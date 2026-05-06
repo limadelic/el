@@ -23,7 +23,7 @@ defmodule El.CLI do
   end
 
   def execute(:daemon, ["--daemon", name, "-m", model], opts) do
-    Start.start_daemon_node_for(name, model, el(opts), El.SleeperImpl, opts)
+    Start.start_daemon_node_for(name, model, el(opts), El.Infra.Sleeper, opts)
   end
 
   def execute(:start, [name], deps) do

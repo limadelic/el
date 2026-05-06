@@ -36,7 +36,7 @@ defmodule El.CLI.Start do
     El.CLI.dispatch([name | rest], opts)
   end
 
-  def start_daemon_node_for(name, model, el, sleeper \\ El.SleeperImpl, deps \\ []) do
+  def start_daemon_node_for(name, model, el, sleeper \\ El.Infra.Sleeper, deps \\ []) do
     name_atom = String.to_atom(name)
     el.start(name_atom, Options.start_opts(Options.normalize_model(model)) ++ deps)
     report_daemon_up(name)
