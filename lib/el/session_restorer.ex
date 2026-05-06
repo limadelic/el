@@ -1,6 +1,14 @@
 defmodule El.SessionRestorer do
   @behaviour El.Behaviours.SessionRestorer
 
+  def restore_opts do
+    [
+      el_module: Application.get_env(:el, :el_module, El),
+      session_meta: Application.get_env(:el, :session_meta, El.SessionMeta),
+      message_store: Application.get_env(:el, :message_store, El.MessageStore)
+    ]
+  end
+
   def restore_sessions(opts \\ []) do
     ctx = restore_context(opts)
     ctx.message_store.session_names()

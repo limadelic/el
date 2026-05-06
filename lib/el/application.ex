@@ -13,16 +13,8 @@ defmodule El.Application do
   def start(_type, _args) do
     init_module().init_message_store(init_module().message_store_opts())
     {:ok, pid} = Supervisor.start_link(children(), supervisor_opts())
-    restorer_module().restore_sessions(restore_opts())
+    restorer_module().restore_sessions(restorer_module().restore_opts())
     {:ok, pid}
-  end
-
-  defp restore_opts do
-    [
-      el_module: Application.get_env(:el, :el_module, El),
-      session_meta: Application.get_env(:el, :session_meta, El.SessionMeta),
-      message_store: Application.get_env(:el, :message_store, El.MessageStore)
-    ]
   end
 
   @impl true
