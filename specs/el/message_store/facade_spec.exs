@@ -15,7 +15,7 @@ defmodule El.MessageStore.Facade.Spec do
     end
 
     test "handles delete returning error" do
-      expect(El.MockMessageStore, :delete, fn "session" -> {:error, :not_found} end)
+      stub(El.MockMessageStore, :delete, fn "session" -> {:error, :not_found} end)
       opts = [message_store: El.MockMessageStore]
 
       result = El.MessageStore.Facade.delete_session_messages("session", opts)
