@@ -123,7 +123,7 @@ Mox.defmock(El.MockParserEventSchema, for: El.Behaviours.ParserEventSchema)
 Mox.defmock(El.MockParserResult, for: El.Behaviours.ParserResult)
 Mox.defmock(El.MockClaudePortConnection, for: El.Behaviours.ClaudePortConnection)
 Mox.defmock(El.MockSessionBootstrap, for: El.Behaviours.SessionBootstrap)
-Mox.defmock(El.MockClaudePortCliResolver, for: El.Behaviours.ClaudePortCliResolver)
+Mox.defmock(El.MockClaudePortCliResolver, for: El.ClaudePort.Behaviours.CliResolver)
 Mox.defmock(El.MockClaudePortPortSpawn, for: El.Behaviours.ClaudePortPortSpawn)
 Mox.defmock(El.MockClaudePortCloser, for: El.Behaviours.ClaudePortCloser)
 
