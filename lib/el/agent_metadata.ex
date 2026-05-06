@@ -1,5 +1,5 @@
 defmodule El.AgentMetadata do
-  @behaviour El.Behaviours.AgentMetadata
+  @behaviour El.Agent.Behaviours.Metadata
 
   def model_for(agent_name, search_dir \\ nil)
   def model_for(agent_name, nil), do: try_local_then_global(normalize_name(agent_name))
