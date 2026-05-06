@@ -123,10 +123,6 @@ defmodule El.Behaviours.MessageStore do
   @callback close() :: :ok
 end
 
-defmodule El.Behaviours.AgentDetector do
-  @callback detect_agent(term()) :: term()
-end
-
 defmodule El.Behaviours.AgentMetadata do
   @callback model_for(term()) :: term()
 end
