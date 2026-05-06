@@ -18,7 +18,7 @@ defmodule El.Session do
   end
 
   defp file_system(opts) do
-    Keyword.get(opts, :file_system, El.FileSystemImpl)
+    Keyword.get(opts, :file_system, El.Infra.FileSystem)
   end
 
   defp state_module(opts) do

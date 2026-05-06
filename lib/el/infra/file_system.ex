@@ -1,4 +1,4 @@
-defmodule El.FileSystemImpl do
+defmodule El.Infra.FileSystem do
   @behaviour El.Behaviours.FileSystem
 
   def exists?(path) do
