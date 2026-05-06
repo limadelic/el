@@ -1,5 +1,5 @@
-defmodule El.ProcessMonitor do
-  @behaviour El.Behaviours.Monitor
+defmodule El.Infra.Monitor do
+  @behaviour El.Infra.Behaviours.Monitor
 
   def wait_for_down(ref, name, opts \\ []) do
     timeout = Keyword.get(opts, :timeout, 5000)

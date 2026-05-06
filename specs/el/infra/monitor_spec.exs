@@ -1,4 +1,4 @@
-defmodule El.ProcessMonitorSpec do
+defmodule El.Infra.MonitorSpec do
   use ExUnit.Case
 
   import Mox
@@ -12,7 +12,7 @@ defmodule El.ProcessMonitorSpec do
       ref = Process.monitor(self())
       send(self(), {:DOWN, ref, :process, self(), :normal})
 
-      result = El.ProcessMonitor.wait_for_down(ref, :test_session, app: El.MockApp)
+      result = El.Infra.Monitor.wait_for_down(ref, :test_session, app: El.MockApp)
 
       assert result == :ok
     end
@@ -22,7 +22,7 @@ defmodule El.ProcessMonitorSpec do
 
       ref = Process.monitor(self())
 
-      result = El.ProcessMonitor.wait_for_down(ref, :test_session, app: El.MockApp, timeout: 0)
+      result = El.Infra.Monitor.wait_for_down(ref, :test_session, app: El.MockApp, timeout: 0)
 
       assert result == :ok
     end

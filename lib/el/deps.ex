@@ -31,7 +31,7 @@ defmodule El.Deps do
     [
       dep(:registry, Registry),
       dep(:supervisor, DynamicSupervisor),
-      dep(:monitor, El.ProcessMonitor)
+      dep(:monitor, El.Infra.Monitor)
     ]
   end
 
