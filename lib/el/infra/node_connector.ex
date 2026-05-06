@@ -1,5 +1,5 @@
 defmodule El.Infra.NodeConnector do
-  @behaviour El.Behaviours.NodeConnector
+  @behaviour El.Infra.Behaviours.NodeConnector
 
   @impl true
   def connect(node) do

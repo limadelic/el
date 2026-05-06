@@ -5,7 +5,7 @@ defmodule El.CLI.Daemon.Spec do
   setup_all do
     Code.ensure_loaded!(El.CLI.Daemon)
     Code.ensure_loaded!(El.Behaviours.System)
-    Code.ensure_loaded!(El.Behaviours.NodeConnector)
+    Code.ensure_loaded!(El.Infra.Behaviours.NodeConnector)
     Code.ensure_loaded!(El.Behaviours.NetKernel)
     Code.ensure_loaded!(El.Infra.System)
     Code.ensure_loaded!(El.Infra.NodeConnector)
@@ -22,8 +22,8 @@ defmodule El.CLI.Daemon.Spec do
   end
 
   describe "El.Infra.NodeConnector" do
-    test "declares @behaviour El.Behaviours.NodeConnector" do
-      assert El.Behaviours.NodeConnector in El.Infra.NodeConnector.module_info(:attributes)[:behaviour] || []
+    test "declares @behaviour El.Infra.Behaviours.NodeConnector" do
+      assert El.Infra.Behaviours.NodeConnector in El.Infra.NodeConnector.module_info(:attributes)[:behaviour] || []
     end
   end
 
