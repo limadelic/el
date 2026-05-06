@@ -32,4 +32,20 @@ defmodule El.Deps.Spec do
       assert Keyword.get(result, :cli_resolver_module) == El.ClaudePort.Connection.CliResolver
     end
   end
+
+  describe "El.Deps.monitor/1" do
+    test "returns monitor value from opts" do
+      monitor = El.Infra.Monitor
+      opts = [monitor: monitor]
+
+      assert El.Deps.monitor(opts) == monitor
+    end
+
+    test "raises KeyError when monitor key missing from opts" do
+      error = catch_error(El.Deps.monitor([]))
+
+      assert is_struct(error, KeyError)
+      assert error.key == :monitor
+    end
+  end
 end

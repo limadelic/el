@@ -1,7 +1,6 @@
 defmodule El do
   def registry(opts \\ []), do: Keyword.fetch!(opts, :registry)
   def supervisor(opts \\ []), do: Keyword.fetch!(opts, :supervisor)
-  def monitor(opts \\ []), do: Keyword.fetch!(opts, :monitor)
 
   def start(name, opts \\ []) when is_atom(name) do
     start_if_needed(name, opts, registry(opts).lookup(El.Registry, name))

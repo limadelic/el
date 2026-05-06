@@ -29,7 +29,7 @@ defmodule El.Lifecycle do
     ref = Process.monitor(pid)
     El.supervisor(opts).terminate_child(El.SessionSupervisor, pid)
     app = Keyword.fetch!(opts, :app)
-    El.monitor(opts).wait_for_down(ref, name, Keyword.put(opts, :app, app))
+    El.Deps.monitor(opts).wait_for_down(ref, name, Keyword.put(opts, :app, app))
   end
 
   defp delete_stores(name, reason, opts) when reason in [:normal, :shutdown] do

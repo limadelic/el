@@ -3,6 +3,8 @@ defmodule El.Deps do
     core_modules() ++ supervision() ++ session_meta() ++ io_storage()
   end
 
+  def monitor(opts), do: Keyword.fetch!(opts, :monitor)
+
   defp dep(key, default) do
     {key, Application.get_env(:el, key, default)}
   end
