@@ -87,7 +87,7 @@ defmodule El.Application do
 
   def init_message_store(opts \\ []) do
     dir = setup_dir(opts)
-    open_dets_files(dir, Keyword.fetch!(opts, :dets_backend))
+    El.MessageStore.Init.open_dets_files(dir, Keyword.fetch!(opts, :dets_backend))
   end
 
   defp setup_dir(opts) do
@@ -95,11 +95,6 @@ defmodule El.Application do
     expanded = Path.expand(dir)
     Keyword.fetch!(opts, :file_system).mkdir_p!(expanded)
     dir
-  end
-
-  defp open_dets_files(dir, dets_backend) do
-    El.MessageStore.Init.open_dets(dets_backend, :message_store, El.MessageStore.Init.dets_path(dir, "messages"))
-    El.MessageStore.Init.open_dets(dets_backend, :session_meta, El.MessageStore.Init.dets_path(dir, "session_meta"))
   end
 
 end

@@ -10,4 +10,9 @@ defmodule El.MessageStore.Init do
   def open_dets(backend, name, path) do
     {:ok, _} = backend.open_file(name, file: path, type: :bag)
   end
+
+  def open_dets_files(dir, dets_backend) do
+    open_dets(dets_backend, :message_store, dets_path(dir, "messages"))
+    open_dets(dets_backend, :session_meta, dets_path(dir, "session_meta"))
+  end
 end
