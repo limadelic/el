@@ -4,13 +4,10 @@ defmodule El.ClaudePort.Connection do
   require Logger
 
   alias ClaudeCode.CLI.Input
-  alias El.ClaudePort.Connection.Closer
 
   def open_port(state) do
     state.port_spawn_module.spawn(state.cli_resolver_module.resolve(state.cli_path, state.opts, state.resume_id), state)
   end
-
-  def safe_close_port(port, port_module), do: Closer.safe_close_port(port, port_module)
 
   def send_message(state, message) do
     session_id = session_id_or_default(state.session_id)

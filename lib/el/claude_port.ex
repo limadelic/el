@@ -60,8 +60,8 @@ defmodule El.ClaudePort do
 
   @impl GenServer
   def terminate(_reason, %{port: nil}), do: :ok
-  def terminate(_reason, %{port: port, port_module: port_module, connection_module: connection_module}) do
-    connection_module.safe_close_port(port, port_module)
+  def terminate(_reason, %{port: port, port_module: port_module, closer_module: closer_module}) do
+    closer_module.safe_close_port(port, port_module)
     :ok
   end
 
