@@ -19,16 +19,18 @@ defmodule El.ClaudePort.Connection do
   def session_id_or_default(id), do: id
 
   def handle_ask(state, message, from) do
-    case ensure_connected(state) do
-      {:ok, connected_state} ->
-        Logger.debug("ClaudePort connected, sending message")
-        send_message(connected_state, message)
-        {:noreply, %{connected_state | current_request_id: from}}
+    apply_ensure(ensure_connected(state), state, message, from)
+  end
 
-      {:error, reason} ->
-        Logger.error("ClaudePort ensure_connected failed: #{inspect(reason)}")
-        {:reply, {"(unavailable)", nil, nil}, state}
-    end
+  defp apply_ensure({:ok, connected_state}, _state, message, from) do
+    Logger.debug("ClaudePort connected, sending message")
+    send_message(connected_state, message)
+    {:noreply, %{connected_state | current_request_id: from}}
+  end
+
+  defp apply_ensure({:error, reason}, state, _message, _from) do
+    Logger.error("ClaudePort ensure_connected failed: #{inspect(reason)}")
+    {:reply, {"(unavailable)", nil, nil}, state}
   end
 
   def handle_connect(state) do
