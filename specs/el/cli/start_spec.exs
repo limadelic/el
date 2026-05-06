@@ -64,4 +64,49 @@ defmodule El.CLI.Start.Spec do
       end) =~ "my-id"
     end
   end
+
+  describe "handle_find_daemon_with_rest/5" do
+    setup do
+      stub(El.MockSessionApi, :info, fn _name_atom ->
+        %{
+          id: "session-id",
+          model: "test-model",
+          cwd: "/path/to/working/dir",
+          messages: 0,
+          last_prompt: nil,
+          last_response: nil
+        }
+      end)
+      stub(El.MockGroupLeader, :open_null_device, fn -> :null_device end)
+      stub(El.MockGroupLeader, :get, fn -> :original_leader end)
+      stub(El.MockGroupLeader, :set, fn _, _ -> true end)
+      stub(El.MockGroupLeader, :close, fn _ -> :ok end)
+
+      %{
+        base_deps: [
+          session_api: El.MockSessionApi,
+          group_leader: El.MockGroupLeader
+        ]
+      }
+    end
+
+    test "invokes ping_if_agent when agent in opts", %{base_deps: deps} do
+      expect(El.MockSessionApi, :ask, fn _, _ -> "test response" end)
+      opts = [agent: :some_agent]
+      expect(El.MockSessionApi, :info, 2, fn _name_atom ->
+        %{
+          id: "session-id",
+          model: "test-model",
+          cwd: "/path/to/working/dir",
+          messages: 0,
+          last_prompt: nil,
+          last_response: nil
+        }
+      end)
+
+      capture_io(fn ->
+        El.CLI.Start.handle_find_daemon_with_rest("test", opts, [], MockElModule, deps)
+      end)
+    end
+  end
 end

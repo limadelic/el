@@ -316,19 +316,29 @@ defmodule El.CLI.Spec do
 
     test "execute :start with -m model calls merge_session_opts with explicit model" do
       expect(El.MockEl, :start, fn :my_session, opts when is_list(opts) -> :ok end)
-      expect(El.MockSessionApi, :info, fn :my_session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
+      expect(El.MockSessionApi, :info, 2, fn :my_session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
+      expect(El.MockSessionApi, :ask, fn :my_session, "who are you?" -> "response" end)
+      expect(El.MockGroupLeader, :open_null_device, fn -> :null_device end)
+      expect(El.MockGroupLeader, :get, fn -> :original_leader end)
+      expect(El.MockGroupLeader, :set, 2, fn _, _ -> true end)
+      expect(El.MockGroupLeader, :close, fn _ -> :ok end)
 
       capture_io(fn ->
-        El.CLI.execute(:start, ["my_session", "-m", "haiku"], [agent_detector: IdentityAgentDetectorStub, session_api: El.MockSessionApi, el_module: El.MockEl])
+        El.CLI.execute(:start, ["my_session", "-m", "haiku"], [agent_detector: IdentityAgentDetectorStub, session_api: El.MockSessionApi, group_leader: El.MockGroupLeader, el_module: El.MockEl])
       end)
     end
 
     test "execute :start with -a agent skips detection and uses explicit agent" do
       expect(El.MockEl, :start, fn :my_session, opts when is_list(opts) -> :ok end)
-      expect(El.MockSessionApi, :info, fn :my_session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
+      expect(El.MockSessionApi, :info, 2, fn :my_session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
+      expect(El.MockSessionApi, :ask, fn :my_session, "who are you?" -> "response" end)
+      expect(El.MockGroupLeader, :open_null_device, fn -> :null_device end)
+      expect(El.MockGroupLeader, :get, fn -> :original_leader end)
+      expect(El.MockGroupLeader, :set, 2, fn _, _ -> true end)
+      expect(El.MockGroupLeader, :close, fn _ -> :ok end)
 
       capture_io(fn ->
-        El.CLI.execute(:start, ["my_session", "-a", "explicit"], [agent_detector: NilAgentDetectorStub, session_api: El.MockSessionApi, el_module: El.MockEl])
+        El.CLI.execute(:start, ["my_session", "-a", "explicit"], [agent_detector: NilAgentDetectorStub, session_api: El.MockSessionApi, group_leader: El.MockGroupLeader, el_module: El.MockEl])
       end)
     end
 
@@ -343,7 +353,7 @@ defmodule El.CLI.Spec do
 
     test "execute :start with -m model when no agent detected does not merge agent" do
       expect(El.MockEl, :start, fn :my_session, opts when is_list(opts) -> :ok end)
-      expect(El.MockSessionApi, :info, fn :my_session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
+      expect(El.MockSessionApi, :info, 2, fn :my_session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
 
       capture_io(fn ->
         El.CLI.execute(:start, ["my_session", "-m", "haiku"], [agent_detector: NilAgentDetectorStub, session_api: El.MockSessionApi, el_module: El.MockEl])
@@ -363,7 +373,7 @@ defmodule El.CLI.Spec do
 
     test "execute :start ignores env model when model provided" do
       expect(El.MockEl, :start, fn :my_session, opts when is_list(opts) -> :ok end)
-      expect(El.MockSessionApi, :info, fn :my_session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
+      expect(El.MockSessionApi, :info, 2, fn :my_session -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
 
       System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
 
@@ -1022,6 +1032,11 @@ defmodule El.CLI.Spec do
   describe "El.CLI.Start.handle_find_daemon_with_rest/5" do
     setup do
       stub(El.MockSessionApi, :info, fn :kenny -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
+      stub(El.MockSessionApi, :ask, fn _, _ -> "test response" end)
+      stub(El.MockGroupLeader, :open_null_device, fn -> :null_device end)
+      stub(El.MockGroupLeader, :get, fn -> :original_leader end)
+      stub(El.MockGroupLeader, :set, fn _, _ -> true end)
+      stub(El.MockGroupLeader, :close, fn _ -> :ok end)
       :ok
     end
 
@@ -1030,7 +1045,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_with_rest("kenny", [agent: "kent"], [], El.MockEl, [session_api: El.MockSessionApi])
+          El.CLI.Start.handle_find_daemon_with_rest("kenny", [agent: "kent"], [], El.MockEl, [session_api: El.MockSessionApi, group_leader: El.MockGroupLeader])
         end)
 
       assert output =~ "agent: kent"
@@ -1047,7 +1062,7 @@ defmodule El.CLI.Spec do
 
       output =
         capture_io(fn ->
-          El.CLI.Start.handle_find_daemon_with_rest("kenny", [agent: "kent", model: "opus"], [], El.MockEl, [session_api: El.MockSessionApi])
+          El.CLI.Start.handle_find_daemon_with_rest("kenny", [agent: "kent", model: "opus"], [], El.MockEl, [session_api: El.MockSessionApi, group_leader: El.MockGroupLeader])
         end)
 
       assert output =~ "model: opus"
