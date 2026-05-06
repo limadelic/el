@@ -98,16 +98,12 @@ defmodule El.Application do
   end
 
   defp open_dets_files(dir, dets_backend) do
-    open_dets(dets_backend, :message_store, dets_path(dir, "messages"))
-    open_dets(dets_backend, :session_meta, dets_path(dir, "session_meta"))
+    open_dets(dets_backend, :message_store, El.MessageStore.Init.dets_path(dir, "messages"))
+    open_dets(dets_backend, :session_meta, El.MessageStore.Init.dets_path(dir, "session_meta"))
   end
 
   defp open_dets(backend, name, path) do
     {:ok, _} = backend.open_file(name, file: path, type: :bag)
-  end
-
-  defp dets_path(dir, file) do
-    Path.expand("#{dir}/#{file}.dets") |> String.to_charlist()
   end
 
   defp store_dir(true), do: "~/.el/dev"
