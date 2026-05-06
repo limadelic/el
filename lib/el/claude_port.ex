@@ -3,7 +3,6 @@ defmodule El.ClaudePort do
 
   require Logger
 
-  alias El.ClaudePort.Connection
   alias El.ClaudePort.Buffer
 
   def start_link(opts) do
@@ -21,12 +20,12 @@ defmodule El.ClaudePort do
 
   @impl GenServer
   def handle_continue(:connect, state) do
-    Connection.handle_connect(state)
+    state.connection_module.handle_connect(state)
   end
 
   @impl GenServer
   def handle_call({:ask, message}, from, state) do
-    Connection.handle_ask(state, message, from)
+    state.connection_module.handle_ask(state, message, from)
   end
 
   @impl GenServer
@@ -61,8 +60,8 @@ defmodule El.ClaudePort do
 
   @impl GenServer
   def terminate(_reason, %{port: nil}), do: :ok
-  def terminate(_reason, %{port: port, port_module: port_module}) do
-    Connection.safe_close_port(port, port_module)
+  def terminate(_reason, %{port: port, port_module: port_module, connection_module: connection_module}) do
+    connection_module.safe_close_port(port, port_module)
     :ok
   end
 
