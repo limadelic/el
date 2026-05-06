@@ -6,4 +6,8 @@ defmodule El.SessionRestorer do
       session_meta: Keyword.fetch!(opts, :session_meta)
     }
   end
+
+  def restore_context(opts) do
+    Map.merge(opts_modules(opts), %{deps: El.Deps.production()})
+  end
 end

@@ -39,11 +39,8 @@ defmodule El.Application do
     |> Enum.each(&restore_session(&1, ctx.el, ctx.session_meta, ctx.deps))
   end
 
-  defp restore_context(opts) do
-    Map.merge(opts_modules(opts), %{deps: El.Deps.production()})
-  end
-
   defdelegate opts_modules(opts), to: El.SessionRestorer
+  defdelegate restore_context(opts), to: El.SessionRestorer
 
   defp restore_session(name, el, _session_meta, deps, {:ok, session_id, agent, model}) do
     opts = [resume: session_id, agent: agent, model: model] ++ deps
