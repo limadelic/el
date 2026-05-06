@@ -241,6 +241,19 @@ defmodule El.Session.Spec do
 
       assert Keyword.get(state.claude_opts, :setting_sources) == ["user", "project", "local"]
     end
+
+    test "init/1 uses state_module from opts when provided" do
+      opts = [
+        claude_module: MockSessionModule,
+        session_meta: El.MockSessionMeta,
+        state_module: TestStateModule
+      ]
+
+      {:ok, state, {:continue, :start_claude}} =
+        El.Session.init({:test_session, opts})
+
+      assert state.name == :test_session
+    end
   end
 
   describe "handle_continue/2 :start_claude" do
@@ -883,5 +896,11 @@ defmodule MockVerifyingStore do
   def delete_session_messages(name) do
     send(self(), {:delete_session_messages, name})
     :ok
+  end
+end
+
+defmodule TestStateModule do
+  def build(name, _opts, _rest, _session_id, _cwd) do
+    %{name: name, messages: []}
   end
 end

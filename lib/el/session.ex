@@ -14,11 +14,15 @@ defmodule El.Session do
     Process.flag(:trap_exit, true)
     {session_id, rest} = El.Session.Id.extract_resume_or_id(opts)
     cwd = file_system(opts).cwd()
-    {:ok, El.Session.State.build(name, opts, rest, session_id, cwd), {:continue, :start_claude}}
+    {:ok, state_module(opts).build(name, opts, rest, session_id, cwd), {:continue, :start_claude}}
   end
 
   defp file_system(opts) do
     Keyword.get(opts, :file_system, El.FileSystemImpl)
+  end
+
+  defp state_module(opts) do
+    Keyword.get(opts, :state_module, El.Session.State)
   end
 
   @impl true
