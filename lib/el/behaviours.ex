@@ -8,17 +8,6 @@ defmodule El.Behaviours.Supervisor do
   @callback terminate_child(term(), term()) :: term()
 end
 
-defmodule El.Behaviours.Session do
-  @callback tell(term(), term()) :: term()
-  @callback ask(term(), term()) :: term()
-  @callback log(term()) :: term()
-  @callback log(term(), term()) :: term()
-  @callback clear(term()) :: term()
-  @callback agent(term()) :: term()
-  @callback info(term()) :: term()
-  @callback cast_store_relay(term(), term(), term()) :: term()
-end
-
 defmodule El.Behaviours.App do
   @callback delete_session_messages(term()) :: term()
   @callback delete_session_messages(term(), keyword()) :: term()

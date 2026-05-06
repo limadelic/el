@@ -1,5 +1,5 @@
 defmodule El.Session.Api do
-  @behaviour El.Behaviours.Session
+  @behaviour El.Session.Behaviours.Session
 
   alias El.Session.Registry
 

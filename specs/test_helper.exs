@@ -41,7 +41,7 @@ extra_modules = extra_dirs
 
 Mox.defmock(El.MockRegistry, for: El.Behaviours.Registry)
 Mox.defmock(El.MockSupervisor, for: El.Behaviours.Supervisor)
-Mox.defmock(El.MockSession, for: El.Behaviours.Session)
+Mox.defmock(El.MockSession, for: El.Session.Behaviours.Session)
 Mox.defmock(El.MockApp, for: El.Behaviours.App)
 Mox.defmock(El.MockMonitor, for: El.Behaviours.Monitor)
 Mox.defmock(El.MockEl, for: El.Behaviours.El)
@@ -94,7 +94,7 @@ defmodule IdentityAgentDetectorStub do
   def detect_agent(name), do: name
 end
 
-Mox.defmock(El.MockSessionApi, for: El.Behaviours.Session)
+Mox.defmock(El.MockSessionApi, for: El.Session.Behaviours.Session)
 Mox.defmock(El.MockClaudeCode, for: El.Platform.Behaviours.Code)
 Mox.defmock(El.MockClaudeCodeSession, for: El.Platform.Behaviours.CodeSession)
 Mox.defmock(El.MockStoreModule, for: El.MessageStore.Behaviours.Store)
