@@ -2,7 +2,7 @@ defmodule El.ClaudePort.Parser do
   require Logger
 
   def try_extract_result(buffer, session_id) do
-    apply_extraction(extract_all_lines(buffer, []), session_id)
+    apply_extraction(line_extractor().extract_all_lines(buffer, []), session_id)
   end
 
   defp apply_extraction({[], _remaining}, _session_id), do: :incomplete
@@ -17,21 +17,6 @@ defmodule El.ClaudePort.Parser do
 
   defp resolve_sid(nil, fallback), do: fallback
   defp resolve_sid(sid, _fallback), do: sid
-
-  defp extract_all_lines(buffer, acc) do
-    apply_extracted_line(extract_one_line(buffer), buffer, acc)
-  end
-
-  defp apply_extracted_line({nil, _}, buffer, acc), do: {Enum.reverse(acc), buffer}
-  defp apply_extracted_line({line, remaining}, _buffer, acc), do: extract_all_lines(remaining, [line | acc])
-
-  defp extract_one_line(buffer) do
-    apply_split(String.split(buffer, "\n", parts: 2), buffer)
-  end
-
-  defp apply_split([line, rest], _buffer), do: {line, rest}
-  defp apply_split([_incomplete], buffer), do: {nil, buffer}
-  defp apply_split([], _buffer), do: {nil, ""}
 
   defp process_lines([], _acc, _session_id), do: :incomplete
   defp process_lines([line | rest], acc, session_id) do
@@ -107,4 +92,5 @@ defmodule El.ClaudePort.Parser do
 
   defp cc_parser, do: Application.get_env(:el, :cc_parser, El.CCParser)
   defp json_decoder, do: Application.get_env(:el, :json_decoder, El.JSONDecoder)
+  defp line_extractor, do: Application.get_env(:el, :line_extractor, El.ClaudePort.Parser.LineExtractor)
 end
