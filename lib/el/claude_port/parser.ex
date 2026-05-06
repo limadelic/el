@@ -30,7 +30,7 @@ defmodule El.ClaudePort.Parser do
 
   defp process_decoded(json, rest, acc, session_id) do
     normalized = cc_parser().normalize_keys(json)
-    {new_acc, complete?} = El.ClaudePort.Parser.Result.merge(normalized, acc)
+    {new_acc, complete?} = result_module().merge(normalized, acc)
     emit_or_continue(complete?, new_acc, rest, session_id)
   end
 
@@ -48,4 +48,5 @@ defmodule El.ClaudePort.Parser do
   defp cc_parser, do: Application.get_env(:el, :cc_parser, El.CCParser)
   defp json_decoder, do: Application.get_env(:el, :json_decoder, El.JSONDecoder)
   defp line_extractor, do: Application.get_env(:el, :line_extractor, El.ClaudePort.Parser.LineExtractor)
+  defp result_module, do: Application.get_env(:el, :result_module, El.ClaudePort.Parser.Result)
 end
