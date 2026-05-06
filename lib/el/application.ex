@@ -86,15 +86,8 @@ defmodule El.Application do
   def supervisor_opts, do: @supervisor_opts
 
   def init_message_store(opts \\ []) do
-    dir = setup_dir(opts)
+    dir = El.MessageStore.Init.setup_dir(opts)
     El.MessageStore.Init.open_dets_files(dir, Keyword.fetch!(opts, :dets_backend))
-  end
-
-  defp setup_dir(opts) do
-    dir = El.MessageStore.Init.store_dir(Keyword.fetch!(opts, :daemon))
-    expanded = Path.expand(dir)
-    Keyword.fetch!(opts, :file_system).mkdir_p!(expanded)
-    dir
   end
 
 end

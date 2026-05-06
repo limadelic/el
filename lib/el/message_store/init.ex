@@ -7,6 +7,13 @@ defmodule El.MessageStore.Init do
   def store_dir(false), do: "~/.el"
   def store_dir(daemon) when is_atom(daemon), do: store_dir(daemon.dev?())
 
+  def setup_dir(opts) do
+    dir = store_dir(Keyword.fetch!(opts, :daemon))
+    expanded = Path.expand(dir)
+    Keyword.fetch!(opts, :file_system).mkdir_p!(expanded)
+    dir
+  end
+
   def open_dets(backend, name, path) do
     {:ok, _} = backend.open_file(name, file: path, type: :bag)
   end
