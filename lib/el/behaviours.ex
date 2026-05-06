@@ -78,11 +78,6 @@ defmodule El.Behaviours.Store do
   @callback load_messages(term(), keyword()) :: term()
 end
 
-defmodule El.Behaviours.ClaudeCodeSession do
-  @callback start_link(keyword()) :: {:ok, pid()} | {:error, term()}
-  @callback stream(pid(), binary()) :: Enumerable.t()
-end
-
 defmodule El.Behaviours.Dets do
   @callback open_file(term(), term()) :: term()
   @callback close(term()) :: term()

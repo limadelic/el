@@ -96,7 +96,7 @@ end
 
 Mox.defmock(El.MockSessionApi, for: El.Behaviours.Session)
 Mox.defmock(El.MockClaudeCode, for: El.Behaviours.ClaudeCode)
-Mox.defmock(El.MockClaudeCodeSession, for: El.Behaviours.ClaudeCodeSession)
+Mox.defmock(El.MockClaudeCodeSession, for: El.Platform.Behaviours.CodeSession)
 Mox.defmock(El.MockStoreModule, for: El.Behaviours.Store)
 Mox.defmock(El.MockSessionMeta, for: El.SessionMeta)
 Mox.defmock(El.MockSessionAsk, for: El.Behaviours.SessionAsk)
