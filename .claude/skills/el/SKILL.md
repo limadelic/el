@@ -26,3 +26,4 @@ description: Use when delegating to another dude via "el <agent>"
 - Never kill it, it is one-shot, let it finish
 - Never block
 - Never one-shot complex issues
+- Never ask for logs unless troubleshooting
