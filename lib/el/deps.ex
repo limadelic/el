@@ -10,7 +10,8 @@ defmodule El.Deps do
       session: Application.get_env(:el, :session, El.Session),
       init_module: Application.get_env(:el, :init_module, El.MessageStore.Init),
       restorer_module: Application.get_env(:el, :restorer_module, El.SessionRestorer),
-      connection_module: Application.get_env(:el, :connection_module, El.ClaudePort.Connection)
+      connection_module: Application.get_env(:el, :connection_module, El.ClaudePort.Connection),
+      bootstrap_module: Application.get_env(:el, :bootstrap_module, El.Session.Bootstrap)
     ]
   end
 

@@ -9,7 +9,8 @@ defmodule El.Session.State do
     store_module: El.MessageStore.Facade,
     session_meta: El.SessionMeta,
     session_api: El.Session.Api,
-    el_module: El
+    el_module: El,
+    bootstrap_module: El.Session.Bootstrap
   }
   @base_state_defaults %{
     name: nil,

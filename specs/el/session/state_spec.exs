@@ -10,4 +10,9 @@ defmodule El.Session.StateSpec do
     result = El.Session.State.build(:test, [], [], "session-123", "/tmp")
     assert result[:name] == :test
   end
+
+  test "build/5 defaults bootstrap_module to El.Session.Bootstrap" do
+    result = El.Session.State.build(:test, [], [], "session-123", "/tmp")
+    assert result[:bootstrap_module] == El.Session.Bootstrap
+  end
 end
