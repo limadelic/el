@@ -41,19 +41,8 @@ defmodule El.Application do
 
   defdelegate opts_modules(opts), to: El.SessionRestorer
   defdelegate restore_context(opts), to: El.SessionRestorer
-
-  defp restore_session(name, el, _session_meta, deps, {:ok, session_id, agent, model}) do
-    opts = [resume: session_id, agent: agent, model: model] ++ deps
-    el.start(name, opts)
-  end
-
-  defp restore_session(name, el, _session_meta, deps, {:error, :not_found}) do
-    el.start(name, deps)
-  end
-
-  defp restore_session(name, el, session_meta, deps) do
-    restore_session(name, el, session_meta, deps, session_meta.lookup(name))
-  end
+  defdelegate restore_session(name, el, session_meta, deps), to: El.SessionRestorer
+  defdelegate restore_session(name, el, session_meta, deps, lookup_result), to: El.SessionRestorer
 
   def children do
     [
