@@ -33,16 +33,7 @@ defmodule El.Application do
     message_store.close()
   end
 
-  def restore_sessions(opts \\ []) do
-    ctx = restore_context(opts)
-    ctx.message_store.session_names()
-    |> Enum.each(&restore_session(&1, ctx.el, ctx.session_meta, ctx.deps))
-  end
-
-  defdelegate opts_modules(opts), to: El.SessionRestorer
-  defdelegate restore_context(opts), to: El.SessionRestorer
-  defdelegate restore_session(name, el, session_meta, deps), to: El.SessionRestorer
-  defdelegate restore_session(name, el, session_meta, deps, lookup_result), to: El.SessionRestorer
+  defdelegate restore_sessions(opts), to: El.SessionRestorer
 
   def children do
     [

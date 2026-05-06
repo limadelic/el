@@ -1,5 +1,11 @@
 defmodule El.SessionRestorer do
-  def opts_modules(opts) do
+  def restore_sessions(opts \\ []) do
+    ctx = restore_context(opts)
+    ctx.message_store.session_names()
+    |> Enum.each(&restore_session(&1, ctx.el, ctx.session_meta, ctx.deps))
+  end
+
+  defp opts_modules(opts) do
     %{
       el: Keyword.fetch!(opts, :el_module),
       message_store: Keyword.fetch!(opts, :message_store),
@@ -7,20 +13,20 @@ defmodule El.SessionRestorer do
     }
   end
 
-  def restore_context(opts) do
+  defp restore_context(opts) do
     Map.merge(opts_modules(opts), %{deps: El.Deps.production()})
   end
 
-  def restore_session(name, el, _session_meta, deps, {:ok, session_id, agent, model}) do
+  defp restore_session(name, el, _session_meta, deps, {:ok, session_id, agent, model}) do
     opts = [resume: session_id, agent: agent, model: model] ++ deps
     el.start(name, opts)
   end
 
-  def restore_session(name, el, _session_meta, deps, {:error, :not_found}) do
+  defp restore_session(name, el, _session_meta, deps, {:error, :not_found}) do
     el.start(name, deps)
   end
 
-  def restore_session(name, el, session_meta, deps) do
+  defp restore_session(name, el, session_meta, deps) do
     restore_session(name, el, session_meta, deps, session_meta.lookup(name))
   end
 end
