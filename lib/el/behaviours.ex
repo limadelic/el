@@ -72,13 +72,6 @@ defmodule El.Behaviours.NetKernel do
   @callback start([atom()]) :: {:ok, pid()} | {:error, term()}
 end
 
-defmodule El.Behaviours.SessionClaude do
-  @callback ask(pid(), String.t()) :: {String.t(), any(), any()}
-  @callback ask_work(pid(), String.t(), any()) :: {String.t(), any(), any()}
-  @callback start(any(), any()) :: pid() | nil
-  @callback safe_reply(any(), any()) :: pid()
-end
-
 defmodule El.Behaviours.System do
   @callback cmd(binary(), [binary()]) :: {Collectable.t(), exit_status :: non_neg_integer()}
 end
