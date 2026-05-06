@@ -1,5 +1,5 @@
 defmodule El.MessageStore.Init do
-  @behaviour El.Behaviours.MessageStoreInit
+  @behaviour El.MessageStore.Behaviours.Init
 
   def dets_path(dir, file) do
     Path.expand("#{dir}/#{file}.dets") |> String.to_charlist()
