@@ -41,7 +41,9 @@ defmodule El.CLI.Output do
   end
 
   def handle_result(response, _name) do
+    IO.puts("")
     IO.puts(response)
+    IO.puts("")
   end
 
   def handle_log_result(:not_found, name) do
@@ -49,14 +51,20 @@ defmodule El.CLI.Output do
   end
 
   def handle_log_result(log, _name) do
-    Enum.each(log, &log_line/1)
+    log
+    |> Enum.intersperse(:blank_line)
+    |> Enum.each(&print_log_item/1)
   end
 
-  defp log_line({_type, message, "", _metadata}) do
+  defp print_log_item(:blank_line) do
+    IO.puts("")
+  end
+
+  defp print_log_item({_type, message, "", _metadata}) do
     IO.puts("> #{message}")
   end
 
-  defp log_line({_type, message, response, _metadata}) do
+  defp print_log_item({_type, message, response, _metadata}) do
     IO.puts("> #{message}")
     IO.puts("> #{response}")
   end
