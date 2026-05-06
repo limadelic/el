@@ -13,5 +13,11 @@ defmodule El.ClaudePort.State.Spec do
 
       assert state.connection_module == MockModule
     end
+
+    test "defaults cli_resolver_module to El.ClaudePort.Connection.CliResolver" do
+      state = El.ClaudePort.State.build([])
+
+      assert state.cli_resolver_module == El.ClaudePort.Connection.CliResolver
+    end
   end
 end

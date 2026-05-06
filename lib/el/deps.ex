@@ -11,7 +11,8 @@ defmodule El.Deps do
       init_module: Application.get_env(:el, :init_module, El.MessageStore.Init),
       restorer_module: Application.get_env(:el, :restorer_module, El.SessionRestorer),
       connection_module: Application.get_env(:el, :connection_module, El.ClaudePort.Connection),
-      bootstrap_module: Application.get_env(:el, :bootstrap_module, El.Session.Bootstrap)
+      bootstrap_module: Application.get_env(:el, :bootstrap_module, El.Session.Bootstrap),
+      cli_resolver_module: Application.get_env(:el, :cli_resolver_module, El.ClaudePort.Connection.CliResolver)
     ]
   end
 
