@@ -9,7 +9,7 @@ defmodule El.CLI.Daemon.Spec do
     Code.ensure_loaded!(El.Behaviours.NetKernel)
     Code.ensure_loaded!(El.SystemImpl)
     Code.ensure_loaded!(El.NodeConnectorImpl)
-    Code.ensure_loaded!(El.NetKernelImpl)
+    Code.ensure_loaded!(El.Infra.NetKernel)
     :ok
   end
 
@@ -27,9 +27,9 @@ defmodule El.CLI.Daemon.Spec do
     end
   end
 
-  describe "El.NetKernelImpl" do
+  describe "El.Infra.NetKernel" do
     test "declares @behaviour El.Behaviours.NetKernel" do
-      assert El.Behaviours.NetKernel in El.NetKernelImpl.module_info(:attributes)[:behaviour] || []
+      assert El.Behaviours.NetKernel in El.Infra.NetKernel.module_info(:attributes)[:behaviour] || []
     end
   end
 end

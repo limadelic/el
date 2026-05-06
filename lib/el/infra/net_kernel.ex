@@ -1,4 +1,4 @@
-defmodule El.NetKernelImpl do
+defmodule El.Infra.NetKernel do
   @behaviour El.Behaviours.NetKernel
 
   @impl true
