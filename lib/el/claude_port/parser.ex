@@ -39,7 +39,7 @@ defmodule El.ClaudePort.Parser do
     process_lines(rest, new_acc, session_id)
   end
 
-  defp cc_parser, do: Application.get_env(:el, :cc_parser, El.CCParser)
+  defp cc_parser, do: Application.get_env(:el, :cc_parser, El.Platform.Parser)
   defp json_decoder, do: Application.get_env(:el, :json_decoder, El.JSONDecoder)
   defp line_extractor, do: Application.get_env(:el, :line_extractor, El.ClaudePort.Parser.LineExtractor)
   defp result_module, do: Application.get_env(:el, :result_module, El.ClaudePort.Parser.Result)
