@@ -1,4 +1,4 @@
-defmodule El.Behaviours.ParserEventSchema do
+defmodule El.ClaudePort.Behaviours.Parser.EventSchema do
   @callback is_result_message(map()) :: boolean()
   @callback has_model(map()) :: boolean()
   @callback has_session_id(map()) :: boolean()
