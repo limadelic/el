@@ -7,6 +7,7 @@ defmodule El.CLI.Start.DaemonHealth do
   defp do_ping(_name_atom, _agent, %{messages: messages}, _deps) when messages > 0, do: :ok
   defp do_ping(name_atom, _agent, _info, deps), do: quiet_ask(name_atom, deps)
 
+  # credo:disable-for-next-line Credo.Check.Refactor.CyclomaticComplexity
   defp quiet_ask(name_atom, deps) do
     {original, null_device, gl} = redirect_to_null(deps)
     ask_fn = fn -> session_api(deps).ask(name_atom, "who are you?") end
