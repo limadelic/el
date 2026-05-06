@@ -13,7 +13,8 @@ defmodule El.Deps do
       connection_module: Application.get_env(:el, :connection_module, El.ClaudePort.Connection),
       bootstrap_module: Application.get_env(:el, :bootstrap_module, El.Session.Bootstrap),
       cli_resolver_module: Application.get_env(:el, :cli_resolver_module, El.ClaudePort.Connection.CliResolver),
-      port_spawn_module: Application.get_env(:el, :port_spawn_module, El.ClaudePort.Connection.PortSpawn)
+      port_spawn_module: Application.get_env(:el, :port_spawn_module, El.ClaudePort.Connection.PortSpawn),
+      closer_module: Application.get_env(:el, :closer_module, El.ClaudePort.Connection.Closer)
     ]
   end
 

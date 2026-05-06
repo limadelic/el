@@ -26,7 +26,8 @@ defmodule El.ClaudePort.State do
       port_module: Keyword.get(opts, :port_module, El.PortImpl),
       connection_module: Keyword.get(opts, :connection_module, El.ClaudePort.Connection),
       cli_resolver_module: Keyword.get(opts, :cli_resolver_module, El.ClaudePort.Connection.CliResolver),
-      port_spawn_module: Keyword.get(opts, :port_spawn_module, El.ClaudePort.Connection.PortSpawn)
+      port_spawn_module: Keyword.get(opts, :port_spawn_module, El.ClaudePort.Connection.PortSpawn),
+      closer_module: Keyword.get(opts, :closer_module, El.ClaudePort.Connection.Closer)
     }
   end
 
