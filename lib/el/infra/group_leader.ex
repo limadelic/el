@@ -1,4 +1,4 @@
-defmodule El.GroupLeaderImpl do
+defmodule El.Infra.GroupLeader do
   @behaviour El.Behaviours.GroupLeader
 
   def open_null_device do

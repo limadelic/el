@@ -45,7 +45,7 @@ defmodule El.Deps do
 
   defp io_storage do
     [
-      dep(:group_leader, El.GroupLeaderImpl),
+      dep(:group_leader, El.Infra.GroupLeader),
       dep(:dets_backend, El.DetsBackend),
       dep(:message_store, El.MessageStore)
     ]
