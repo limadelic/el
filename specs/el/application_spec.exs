@@ -10,6 +10,7 @@ defmodule El.Application.Spec do
     original_dets_backend = Application.get_env(:el, :dets_backend)
     original_file_system = Application.get_env(:el, :file_system)
     original_init_module = Application.get_env(:el, :init_module)
+    original_restorer_module = Application.get_env(:el, :restorer_module)
 
     on_exit(fn ->
       Application.delete_env(:el, :message_store)
@@ -17,6 +18,7 @@ defmodule El.Application.Spec do
       Application.delete_env(:el, :daemon)
       Application.delete_env(:el, :dets_backend)
       Application.delete_env(:el, :init_module)
+      Application.delete_env(:el, :restorer_module)
 
       if original_el_module do
         Application.put_env(:el, :el_module, original_el_module)
@@ -49,11 +51,16 @@ defmodule El.Application.Spec do
       if original_init_module do
         Application.put_env(:el, :init_module, original_init_module)
       end
+
+      if original_restorer_module do
+        Application.put_env(:el, :restorer_module, original_restorer_module)
+      end
     end)
 
     Application.put_env(:el, :message_store, El.MessageStoreStub)
     Application.put_env(:el, :daemon, El.DaemonStub)
     Application.put_env(:el, :file_system, El.MockFileSystem)
+    Application.put_env(:el, :restorer_module, El.MockSessionRestorer)
 
     [
       children: El.Application.children(),
@@ -122,7 +129,7 @@ defmodule El.Application.Spec do
       Application.put_env(:el, :el_module, RestoreSessionsStubEl)
       Application.put_env(:el, :session_meta, RestoreSessionsStubSessionMeta)
 
-      El.Application.restore_sessions(
+      El.SessionRestorer.restore_sessions(
         el_module: RestoreSessionsStubEl,
         message_store: RestoreSessionsStubStore,
         session_meta: RestoreSessionsStubSessionMeta
@@ -139,7 +146,7 @@ defmodule El.Application.Spec do
       Application.put_env(:el, :el_module, RestoreWithMetaStubEl)
       Application.put_env(:el, :session_meta, RestoreWithMetaStubSessionMeta)
 
-      El.Application.restore_sessions(
+      El.SessionRestorer.restore_sessions(
         el_module: RestoreWithMetaStubEl,
         message_store: RestoreWithMetaStubStore,
         session_meta: RestoreWithMetaStubSessionMeta
@@ -158,7 +165,7 @@ defmodule El.Application.Spec do
       Application.put_env(:el, :el_module, RestoreWithModelStubEl)
       Application.put_env(:el, :session_meta, RestoreWithModelStubSessionMeta)
 
-      El.Application.restore_sessions(
+      El.SessionRestorer.restore_sessions(
         el_module: RestoreWithModelStubEl,
         message_store: RestoreWithModelStubStore,
         session_meta: RestoreWithModelStubSessionMeta
@@ -177,7 +184,7 @@ defmodule El.Application.Spec do
       Application.put_env(:el, :el_module, RestoreFallbackStubEl)
       Application.put_env(:el, :session_meta, RestoreFallbackStubSessionMeta)
 
-      El.Application.restore_sessions(
+      El.SessionRestorer.restore_sessions(
         el_module: RestoreFallbackStubEl,
         message_store: RestoreFallbackStubStore,
         session_meta: RestoreFallbackStubSessionMeta
@@ -196,7 +203,7 @@ defmodule El.Application.Spec do
       Application.put_env(:el, :el_module, WarmupStubEl)
       Application.put_env(:el, :session_meta, WarmupStubSessionMeta)
 
-      El.Application.restore_sessions(
+      El.SessionRestorer.restore_sessions(
         el_module: WarmupStubEl,
         message_store: WarmupStubStore,
         session_meta: WarmupStubSessionMeta

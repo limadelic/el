@@ -13,7 +13,7 @@ defmodule El.Application do
   def start(_type, _args) do
     init_module().init_message_store(init_module().message_store_opts())
     {:ok, pid} = Supervisor.start_link(children(), supervisor_opts())
-    restore_sessions(restore_opts())
+    restorer_module().restore_sessions(restore_opts())
     {:ok, pid}
   end
 
@@ -33,8 +33,6 @@ defmodule El.Application do
     message_store.close()
   end
 
-  defdelegate restore_sessions(opts), to: El.SessionRestorer
-
   def children do
     [
       {Registry, keys: :unique, name: El.Registry},
@@ -50,6 +48,10 @@ defmodule El.Application do
 
   defp init_module do
     Application.get_env(:el, :init_module, El.MessageStore.Init)
+  end
+
+  defp restorer_module do
+    Application.get_env(:el, :restorer_module, El.SessionRestorer)
   end
 
 end
