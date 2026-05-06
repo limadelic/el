@@ -49,7 +49,3 @@ end
 defmodule El.Behaviours.JSONDecoder do
   @callback decode(String.t()) :: {:ok, term()} | {:error, term()}
 end
-
-defmodule El.Behaviours.TextFormatter do
-  @callback format_response(term()) :: list()
-end

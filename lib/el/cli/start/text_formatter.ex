@@ -1,5 +1,5 @@
 defmodule El.CLI.Start.TextFormatter do
-  @behaviour El.Behaviours.TextFormatter
+  @behaviour El.CLI.Behaviours.TextFormatter
 
   @impl true
   def format_response(nil), do: []
