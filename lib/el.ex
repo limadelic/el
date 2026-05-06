@@ -1,6 +1,5 @@
 defmodule El do
   def registry(opts \\ []), do: Keyword.fetch!(opts, :registry)
-  def supervisor(opts \\ []), do: Keyword.fetch!(opts, :supervisor)
 
   def start(name, opts \\ []) when is_atom(name) do
     start_if_needed(name, opts, registry(opts).lookup(El.Registry, name))
@@ -17,7 +16,7 @@ defmodule El do
   end
 
   defp start_session_child(name, opts, filtered_opts) do
-    supervisor(opts).start_child(El.SessionSupervisor, session_spec(name, filtered_opts))
+    El.Deps.supervisor(opts).start_child(El.SessionSupervisor, session_spec(name, filtered_opts))
   end
 
   defp session_spec(name, opts) do

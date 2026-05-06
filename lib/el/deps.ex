@@ -4,6 +4,7 @@ defmodule El.Deps do
   end
 
   def monitor(opts), do: Keyword.fetch!(opts, :monitor)
+  def supervisor(opts), do: Keyword.fetch!(opts, :supervisor)
 
   defp dep(key, default) do
     {key, Application.get_env(:el, key, default)}

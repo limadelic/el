@@ -48,4 +48,20 @@ defmodule El.Deps.Spec do
       assert error.key == :monitor
     end
   end
+
+  describe "El.Deps.supervisor/1" do
+    test "returns supervisor value from opts" do
+      supervisor = DynamicSupervisor
+      opts = [supervisor: supervisor]
+
+      assert El.Deps.supervisor(opts) == supervisor
+    end
+
+    test "raises KeyError when supervisor key missing from opts" do
+      error = catch_error(El.Deps.supervisor([]))
+
+      assert is_struct(error, KeyError)
+      assert error.key == :supervisor
+    end
+  end
 end
