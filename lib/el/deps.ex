@@ -12,7 +12,8 @@ defmodule El.Deps do
       restorer_module: Application.get_env(:el, :restorer_module, El.SessionRestorer),
       connection_module: Application.get_env(:el, :connection_module, El.ClaudePort.Connection),
       bootstrap_module: Application.get_env(:el, :bootstrap_module, El.Session.Bootstrap),
-      cli_resolver_module: Application.get_env(:el, :cli_resolver_module, El.ClaudePort.Connection.CliResolver)
+      cli_resolver_module: Application.get_env(:el, :cli_resolver_module, El.ClaudePort.Connection.CliResolver),
+      port_spawn_module: Application.get_env(:el, :port_spawn_module, El.ClaudePort.Connection.PortSpawn)
     ]
   end
 
