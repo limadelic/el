@@ -59,11 +59,6 @@ defmodule El.Behaviours.FileSystem do
   @callback mkdir_p!(String.t()) :: :ok
 end
 
-defmodule El.Behaviours.ClaudeCode do
-  @callback stream(term(), term()) :: term()
-  @callback stream(term(), term(), list()) :: term()
-end
-
 defmodule El.Behaviours.Store do
   @callback delete_ask_entry(term(), term(), term()) :: term()
   @callback store_ask_entry(term(), term()) :: term()
