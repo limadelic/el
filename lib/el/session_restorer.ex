@@ -1,4 +1,6 @@
 defmodule El.SessionRestorer do
+  @behaviour El.Behaviours.SessionRestorer
+
   def restore_sessions(opts \\ []) do
     ctx = restore_context(opts)
     ctx.message_store.session_names()
