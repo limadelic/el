@@ -45,7 +45,3 @@ end
 defmodule El.Behaviours.Env do
   @callback get(String.t()) :: String.t() | nil
 end
-
-defmodule El.Behaviours.JSONDecoder do
-  @callback decode(String.t()) :: {:ok, term()} | {:error, term()}
-end
