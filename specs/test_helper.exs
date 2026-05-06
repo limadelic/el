@@ -122,16 +122,6 @@ Mox.defmock(El.MockParser, for: El.Behaviours.Parser)
 Mox.defmock(El.MockClaudePortConnection, for: El.Behaviours.ClaudePortConnection)
 Mox.defmock(El.MockSessionBootstrap, for: El.Behaviours.SessionBootstrap)
 
-defmodule ClaudeCodeResolverBehaviour do
-  @callback find_binary(opts :: keyword()) :: {:ok, String.t()} | {:error, atom()}
-end
-
-defmodule ClaudeCodeCommandBehaviour do
-  @callback build_args(cmd :: String.t(), opts :: keyword(), resume_id :: String.t()) :: list()
-end
-
-Mox.defmock(ClaudeCode.Adapter.Port.Resolver, for: ClaudeCodeResolverBehaviour)
-Mox.defmock(ClaudeCode.CLI.Command, for: ClaudeCodeCommandBehaviour)
 
 Mox.stub(El.MockNodeConnector, :connect, fn _ -> false end)
 Mox.stub(El.MockNodeConnector, :set_cookie, fn _ -> true end)
