@@ -18,7 +18,7 @@ defmodule El.CLI.Start.Options do
   def agent_model_for(model), do: [model: model]
 
   def agent_detector(deps) do
-    Keyword.get(deps, :agent_detector, El.AgentDetector)
+    Keyword.get(deps, :agent_detector, El.Agent.Detector)
   end
 
   def resolve_agent(nil, name, deps), do: agent_detector(deps).detect_agent(name)

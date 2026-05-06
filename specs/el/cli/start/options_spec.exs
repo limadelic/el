@@ -47,7 +47,7 @@ defmodule El.CLI.Start.Options.Spec do
   describe "El.CLI.Start.Options.agent_detector/1" do
     test "returns default detector when not in deps" do
       detector = El.CLI.Start.Options.agent_detector([])
-      assert detector == El.AgentDetector
+      assert detector == El.Agent.Detector
     end
 
     test "returns custom detector from deps" do

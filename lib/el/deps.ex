@@ -38,7 +38,7 @@ defmodule El.Deps do
   defp session_meta do
     [
       dep(:session_api, El.Session.Api),
-      dep(:agent_detector, El.AgentDetector),
+      dep(:agent_detector, El.Agent.Detector),
       dep(:agent_metadata, El.AgentMetadata)
     ]
   end

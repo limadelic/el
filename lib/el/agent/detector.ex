@@ -1,4 +1,4 @@
-defmodule El.AgentDetector do
+defmodule El.Agent.Detector do
   @behaviour El.Agent.Behaviours.Detector
   @behaviour El.Behaviours.FileSystem
 
