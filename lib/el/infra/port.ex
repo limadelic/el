@@ -1,5 +1,5 @@
 defmodule El.Infra.Port do
-  @behaviour El.Behaviours.Port
+  @behaviour El.Infra.Behaviours.Port
 
   @impl true
   def open(name, opts) do
