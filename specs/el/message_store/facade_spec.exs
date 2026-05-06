@@ -24,7 +24,7 @@ defmodule El.MessageStore.Facade.Spec do
     end
 
     test "passes session name through to delete unmodified" do
-      expect(El.MockMessageStore, :delete, fn name -> {:deleted, name} end)
+      stub(El.MockMessageStore, :delete, fn name -> {:deleted, name} end)
       opts = [message_store: El.MockMessageStore]
 
       result = El.MessageStore.Facade.delete_session_messages("my-session", opts)
