@@ -282,6 +282,49 @@ defmodule El.CLI.Spec do
       assert output =~ "name:  session"
     end
 
+    test "execute :msg merges env model into start opts when no agent detected" do
+      test_pid = self()
+      System.put_env("CLAUDE_CODE_SUBAGENT_MODEL", "sonnet")
+
+      expect(El.MockEl, :start, fn :session, opts ->
+        send(test_pid, {:start_opts, opts})
+        :created
+      end)
+      expect(El.MockEl, :ask, fn :session, "hello", _opts -> "reply" end)
+      expect(El.MockEl, :agent, fn :session, _opts -> nil end)
+
+      capture_io(fn ->
+        El.CLI.execute(:msg, ["session", "hello"],
+          [agent_detector: NilAgentDetectorStub, el_module: El.MockEl])
+      end)
+
+      assert_received {:start_opts, opts}
+      assert opts[:model] == "sonnet"
+    after
+      System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
+    end
+
+    test "execute :msg merges detected agent into start opts" do
+      test_pid = self()
+
+      expect(El.MockEl, :start, fn :session, opts ->
+        send(test_pid, {:start_opts, opts})
+        :created
+      end)
+      expect(El.MockEl, :ask, fn :session, "hello", _opts -> "reply" end)
+      expect(El.MockEl, :agent, fn :session, _opts -> "session" end)
+
+      capture_io(fn ->
+        El.CLI.execute(:msg, ["session", "hello"],
+          [agent_detector: IdentityAgentDetectorStub, el_module: El.MockEl])
+      end)
+
+      assert_received {:start_opts, opts}
+      assert opts[:agent] == "session"
+    after
+      System.delete_env("CLAUDE_CODE_SUBAGENT_MODEL")
+    end
+
     test "execute :start uses merge_session_opts to combine agent and model" do
       expect(El.MockEl, :start, fn :my_session, opts when is_list(opts) -> :ok end)
       expect(El.MockSessionApi, :ask, fn :my_session, "who are you?" -> "response" end)
