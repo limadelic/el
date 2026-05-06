@@ -30,14 +30,16 @@ defmodule El.ClaudePort do
 
   @impl GenServer
   def handle_info({port, {:data, data}}, %{port: port} = state) do
-    case Buffer.process(data, state) do
-      {:noreply, new_state} ->
-        {:noreply, new_state}
+    apply_buffer(Buffer.process(data, state))
+  end
 
-      {:reply, from, result, new_state} ->
-        GenServer.reply(from, result)
-        {:noreply, new_state}
-    end
+  defp apply_buffer({:noreply, new_state}) do
+    {:noreply, new_state}
+  end
+
+  defp apply_buffer({:reply, from, result, new_state}) do
+    GenServer.reply(from, result)
+    {:noreply, new_state}
   end
 
   def handle_info({port, {:exit_status, status}}, %{port: port} = state) do
