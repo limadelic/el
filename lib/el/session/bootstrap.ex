@@ -1,4 +1,6 @@
 defmodule El.Session.Bootstrap do
+  @behaviour El.Behaviours.SessionBootstrap
+
   alias El.Session.Claude
 
   def handle_continue(state) do
