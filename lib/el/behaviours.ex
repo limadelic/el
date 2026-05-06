@@ -48,13 +48,6 @@ defmodule El.Behaviours.FileSystem do
   @callback mkdir_p!(String.t()) :: :ok
 end
 
-defmodule El.Behaviours.GroupLeader do
-  @callback open_null_device() :: pid()
-  @callback close(pid()) :: :ok
-  @callback get() :: pid()
-  @callback set(pid(), pid()) :: true
-end
-
 defmodule El.Behaviours.Env do
   @callback get(String.t()) :: String.t() | nil
 end

@@ -3,7 +3,7 @@ defmodule El.Infra.GroupLeader.Spec do
   import Mox
 
   setup_all do
-    Code.ensure_loaded!(El.Behaviours.GroupLeader)
+    Code.ensure_loaded!(El.Infra.Behaviours.GroupLeader)
     Code.ensure_loaded!(El.Infra.GroupLeader)
     :ok
   end
@@ -12,7 +12,7 @@ defmodule El.Infra.GroupLeader.Spec do
 
   describe "El.Infra.GroupLeader" do
     test "declares @behaviour El.Behaviours.GroupLeader" do
-      assert El.Behaviours.GroupLeader in El.Infra.GroupLeader.module_info(:attributes)[:behaviour] || []
+      assert El.Infra.Behaviours.GroupLeader in El.Infra.GroupLeader.module_info(:attributes)[:behaviour] || []
     end
   end
 end
