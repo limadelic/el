@@ -24,4 +24,9 @@ defmodule El.MessageStore.Init do
     open_dets(dets_backend, :message_store, dets_path(dir, "messages"))
     open_dets(dets_backend, :session_meta, dets_path(dir, "session_meta"))
   end
+
+  def init_message_store(opts \\ []) do
+    dir = setup_dir(opts)
+    open_dets_files(dir, Keyword.fetch!(opts, :dets_backend))
+  end
 end

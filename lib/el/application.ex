@@ -11,7 +11,7 @@ defmodule El.Application do
 
   @impl true
   def start(_type, _args) do
-    init_message_store(message_store_opts())
+    init_module().init_message_store(message_store_opts())
     {:ok, pid} = Supervisor.start_link(children(), supervisor_opts())
     restore_sessions(restore_opts())
     {:ok, pid}
@@ -85,9 +85,8 @@ defmodule El.Application do
 
   def supervisor_opts, do: @supervisor_opts
 
-  def init_message_store(opts \\ []) do
-    dir = El.MessageStore.Init.setup_dir(opts)
-    El.MessageStore.Init.open_dets_files(dir, Keyword.fetch!(opts, :dets_backend))
+  defp init_module do
+    Application.get_env(:el, :init_module, El.MessageStore.Init)
   end
 
 end

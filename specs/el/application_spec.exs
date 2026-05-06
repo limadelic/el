@@ -9,12 +9,14 @@ defmodule El.Application.Spec do
     original_daemon = Application.get_env(:el, :daemon)
     original_dets_backend = Application.get_env(:el, :dets_backend)
     original_file_system = Application.get_env(:el, :file_system)
+    original_init_module = Application.get_env(:el, :init_module)
 
     on_exit(fn ->
       Application.delete_env(:el, :message_store)
       Application.delete_env(:el, :session_meta)
       Application.delete_env(:el, :daemon)
       Application.delete_env(:el, :dets_backend)
+      Application.delete_env(:el, :init_module)
 
       if original_el_module do
         Application.put_env(:el, :el_module, original_el_module)
@@ -42,6 +44,10 @@ defmodule El.Application.Spec do
         Application.put_env(:el, :file_system, original_file_system)
       else
         Application.delete_env(:el, :file_system)
+      end
+
+      if original_init_module do
+        Application.put_env(:el, :init_module, original_init_module)
       end
     end)
 
@@ -100,7 +106,7 @@ defmodule El.Application.Spec do
   test "init_message_store opens session_meta table alongside message_store" do
     Application.put_env(:el, :dets_backend, El.DetsBackendStub)
     stub(El.MockFileSystem, :mkdir_p!, fn _path -> :ok end)
-    El.Application.init_message_store(
+    El.MessageStore.Init.init_message_store(
       file_system: El.MockFileSystem,
       dets_backend: El.DetsBackendStub,
       daemon: El.DaemonStub
