@@ -4,10 +4,9 @@ defmodule El.ClaudePort.Connection do
   require Logger
 
   alias ClaudeCode.CLI.Input
-  alias El.ClaudePort.Connection.PortSpawn
 
   def open_port(state) do
-    PortSpawn.spawn(state.cli_resolver_module.resolve(state.cli_path, state.opts, state.resume_id), state)
+    state.port_spawn_module.spawn(state.cli_resolver_module.resolve(state.cli_path, state.opts, state.resume_id), state)
   end
 
   def safe_close_port(nil, _port_module), do: :ok
