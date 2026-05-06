@@ -7,6 +7,16 @@ defmodule El.ClaudePort.Parser.Result do
     {build_acc(normalized, acc), EventSchema.is_result_message(normalized)}
   end
 
+  def finalize(result, model, sid, session_id) do
+    {nil_to_empty(result), model, resolve_sid(sid, session_id)}
+  end
+
+  defp resolve_sid(nil, fallback), do: fallback
+  defp resolve_sid(sid, _fallback), do: sid
+
+  defp nil_to_empty(nil), do: ""
+  defp nil_to_empty(result), do: result
+
   defp build_acc(normalized, {result, model, sid}) do
     {
       pick_result(EventSchema.is_result_message(normalized), normalized, result),

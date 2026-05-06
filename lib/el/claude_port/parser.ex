@@ -10,11 +10,8 @@ defmodule El.ClaudePort.Parser do
 
   defp apply_process_result(:incomplete, _remaining, _session_id), do: :incomplete
   defp apply_process_result({:complete, result, model, sid}, remaining, session_id) do
-    {:ok, {nil_to_empty(result), model, resolve_sid(sid, session_id)}, remaining}
+    {:ok, result_module().finalize(result, model, sid, session_id), remaining}
   end
-
-  defp resolve_sid(nil, fallback), do: fallback
-  defp resolve_sid(sid, _fallback), do: sid
 
   defp process_lines([], _acc, _session_id), do: :incomplete
   defp process_lines([line | rest], acc, session_id) do
@@ -41,9 +38,6 @@ defmodule El.ClaudePort.Parser do
   defp emit_or_continue(false, new_acc, rest, session_id) do
     process_lines(rest, new_acc, session_id)
   end
-
-  defp nil_to_empty(nil), do: ""
-  defp nil_to_empty(result), do: result
 
   defp cc_parser, do: Application.get_env(:el, :cc_parser, El.CCParser)
   defp json_decoder, do: Application.get_env(:el, :json_decoder, El.JSONDecoder)
