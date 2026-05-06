@@ -1,6 +1,4 @@
 defmodule El.ClaudePort.Parser do
-  require Logger
-
   def try_extract_result(buffer, session_id) do
     apply_extraction(line_extractor().extract_all_lines(buffer, []), session_id)
   end
@@ -45,47 +43,25 @@ defmodule El.ClaudePort.Parser do
   end
 
   defp merge_line(normalized, acc) do
-    {build_acc(normalized, acc), is_result_message(normalized)}
+    {build_acc(normalized, acc), El.ClaudePort.Parser.EventSchema.is_result_message(normalized)}
   end
 
   defp build_acc(normalized, {result, model, sid}) do
     {
-      pick_result(is_result_message(normalized), normalized, result),
-      pick_model(has_model(normalized), normalized, model),
-      pick_sid(has_session_id(normalized), normalized, sid)
+      pick_result(El.ClaudePort.Parser.EventSchema.is_result_message(normalized), normalized, result),
+      pick_model(El.ClaudePort.Parser.EventSchema.has_model(normalized), normalized, model),
+      pick_sid(El.ClaudePort.Parser.EventSchema.has_session_id(normalized), normalized, sid)
     }
   end
 
-  defp pick_result(true, normalized, _result), do: get_result(normalized)
+  defp pick_result(true, normalized, _result), do: El.ClaudePort.Parser.EventSchema.get_result(normalized)
   defp pick_result(false, _normalized, result), do: result
 
-  defp pick_model(true, normalized, _model), do: get_model(normalized)
+  defp pick_model(true, normalized, _model), do: El.ClaudePort.Parser.EventSchema.get_model(normalized)
   defp pick_model(false, _normalized, model), do: model
 
-  defp pick_sid(true, normalized, _sid), do: get_session_id(normalized)
+  defp pick_sid(true, normalized, _sid), do: El.ClaudePort.Parser.EventSchema.get_session_id(normalized)
   defp pick_sid(false, _normalized, sid), do: sid
-
-  defp is_result_message(%{"type" => "result"}), do: true
-  defp is_result_message(_), do: false
-
-  defp has_model(%{"type" => "system", "subtype" => "init"}), do: true
-  defp has_model(_), do: false
-
-  defp has_session_id(%{"type" => "system", "subtype" => "init"}), do: true
-  defp has_session_id(_), do: false
-
-  defp get_result(%{"type" => "result", "result" => result}), do: result
-  defp get_result(%{"type" => "result"} = event) do
-    Logger.debug("ClaudePort found result event but no 'result' key: #{inspect(event)}")
-    nil
-  end
-  defp get_result(_), do: nil
-
-  defp get_model(%{"type" => "system", "subtype" => "init", "model" => model}), do: model
-  defp get_model(_), do: nil
-
-  defp get_session_id(%{"type" => "system", "subtype" => "init", "session_id" => session_id}), do: session_id
-  defp get_session_id(_), do: nil
 
   defp nil_to_empty(nil), do: ""
   defp nil_to_empty(result), do: result
