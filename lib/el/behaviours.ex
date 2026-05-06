@@ -1,8 +1,3 @@
-defmodule El.Behaviours.Registry do
-  @callback lookup(term(), term()) :: term()
-  @callback select(term(), term()) :: term()
-end
-
 defmodule El.Behaviours.Supervisor do
   @callback start_child(term(), term()) :: term()
   @callback terminate_child(term(), term()) :: term()

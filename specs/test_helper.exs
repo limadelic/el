@@ -39,7 +39,7 @@ extra_modules = extra_dirs
 |> Enum.uniq()
 |> Enum.each(&Code.ensure_loaded!/1)
 
-Mox.defmock(El.MockRegistry, for: El.Behaviours.Registry)
+Mox.defmock(El.MockRegistry, for: El.Infra.Behaviours.Registry)
 Mox.defmock(El.MockSupervisor, for: El.Behaviours.Supervisor)
 Mox.defmock(El.MockSession, for: El.Session.Behaviours.Session)
 Mox.defmock(El.MockApp, for: El.Behaviours.App)
