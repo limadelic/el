@@ -3,7 +3,6 @@ defmodule El.Session do
 
   require Logger
 
-  alias El.Session.Registry
   alias El.Session.Terminator
   alias El.Session.LogHandler
   alias El.Session.InfoHandler
@@ -11,49 +10,13 @@ defmodule El.Session do
   alias El.Session.CallHandler
   alias El.Session.Bootstrap
 
-  @defaults %{
-    claude_module: El.ClaudePort,
-    claude_session: El.Session.Claude,
-    task_module: Task,
-    ask_module: El.Session.Ask,
-    alive_fn: &El.Session.Api.alive?/1,
-    registry_module: Registry,
-    store_module: El.MessageStore.Facade,
-    session_meta: El.SessionMeta,
-    session_api: El.Session.Api,
-    el_module: El
-  }
-  @base_state_defaults %{
-    name: nil,
-    claude_pid: nil,
-    session_id: nil,
-    cwd: nil,
-    messages: [],
-    pending_calls: [],
-    opts: []
-  }
-
   @impl true
   def init({name, opts}) do
     Process.flag(:trap_exit, true)
     {session_id, rest} = El.Session.Id.extract_resume_or_id(opts)
     cwd = file_system(opts).cwd()
-    state = build_state(name, opts, rest, session_id, cwd)
-    {:ok, state, {:continue, :start_claude}}
+    {:ok, El.Session.State.build(name, opts, rest, session_id, cwd), {:continue, :start_claude}}
   end
-
-  defp build_state(name, opts, rest, session_id, cwd) do
-    base_state(name, session_id, cwd, opts)
-    |> Map.merge(modules_and_callbacks(opts))
-    |> Map.put(:claude_opts, El.Session.ClaudeOpts.build(rest, opts, session_id))
-  end
-
-  defp base_state(n, s, c, o),
-    do: @base_state_defaults |> Map.merge(%{name: n, session_id: s, cwd: c, opts: o})
-
-  defp modules_and_callbacks(o), do: get_opts(o)
-
-  defp get_opts(o), do: @defaults |> Map.merge(Map.new(o))
 
   defp file_system(opts) do
     Keyword.get(opts, :file_system, El.FileSystemImpl)
