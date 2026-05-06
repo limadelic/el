@@ -13,4 +13,9 @@ defmodule El.MessageStore.Facade do
     ms = Keyword.fetch!(opts, :message_store)
     ms.lookup(name)
   end
+
+  def delete_message(name, entry, opts \\ []) do
+    ms = Keyword.fetch!(opts, :message_store)
+    ms.delete_entry(name, entry)
+  end
 end

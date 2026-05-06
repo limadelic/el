@@ -54,4 +54,15 @@ defmodule El.MessageStore.Facade.Spec do
       assert result == [%{data: "msg"}]
     end
   end
+
+  describe "El.MessageStore.Facade.delete_message/3" do
+    test "delete_message returns result from delete_entry" do
+      stub(El.MockMessageStore, :delete_entry, fn "test-session", %{} -> :ok end)
+      opts = [message_store: El.MockMessageStore]
+
+      result = El.MessageStore.Facade.delete_message("test-session", %{}, opts)
+
+      assert result == :ok
+    end
+  end
 end
