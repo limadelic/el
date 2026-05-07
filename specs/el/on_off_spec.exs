@@ -83,22 +83,24 @@ defmodule El.Features.OnOffSpec do
 
   describe "El.ls/0" do
     test "returns sorted sessions by delegating to Session.Registry.list" do
-      expect(El.MockRegistry, :select, fn El.Registry, [{{:"$1", :_, :_}, [], [:"$1"]}] ->
+      expect(El.MockSessionRegistry, :list, fn _opts ->
         [:dude, :duder, :dudito]
       end)
-      sessions = El.ls(registry: El.MockRegistry)
+      sessions = El.ls()
       assert sessions == [:dude, :duder, :dudito]
     end
 
     test "returns sorted list" do
-      expect(El.MockRegistry, :select, fn El.Registry, _ -> [:dudito, :dude, :duder] end)
-      sessions = El.ls(registry: El.MockRegistry)
+      expect(El.MockSessionRegistry, :list, fn _opts ->
+        [:dude, :duder, :dudito]
+      end)
+      sessions = El.ls()
       assert sessions == [:dude, :duder, :dudito]
     end
 
     test "returns empty list when no sessions" do
-      expect(El.MockRegistry, :select, fn El.Registry, _ -> [] end)
-      sessions = El.ls(registry: El.MockRegistry)
+      expect(El.MockSessionRegistry, :list, fn _opts -> [] end)
+      sessions = El.ls()
       assert sessions == []
     end
   end
