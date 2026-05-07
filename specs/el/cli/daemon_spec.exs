@@ -60,4 +60,48 @@ defmodule El.CLI.Daemon.Spec do
       El.CLI.Daemon.stop_daemon(rpc: El.MockRPC, sleeper: El.MockSleeper, node_monitor: El.MockNodeMonitor)
     end
   end
+
+  describe "El.CLI.Daemon.restart_daemon/1" do
+    setup do
+      stub(El.MockRPC, :call, fn _node, :init, :stop, [] -> :ok end)
+      stub(El.MockNodeMonitor, :list, fn -> [] end)
+      stub(El.MockSleeper, :sleep, fn _ms -> :ok end)
+      stub(El.MockSystem, :cmd, fn _cmd, _args -> :ok end)
+      stub(El.MockNodeConnector, :connect, fn _ -> true end)
+      stub(El.MockNetKernel, :start, fn _args -> {:ok, :started} end)
+      stub(El.MockNodeConnector, :set_cookie, fn _ -> true end)
+      :ok
+    end
+
+    test "spawns a fresh daemon after stopping" do
+      expect(El.MockSystem, :cmd, 2, fn
+        "epmd", ["-daemon"] -> :ok
+        "sh", ["-c", cmd] ->
+          assert String.contains?(cmd, "daemon")
+          :ok
+      end)
+
+      El.CLI.Daemon.restart_daemon(
+        rpc: El.MockRPC,
+        sleeper: El.MockSleeper,
+        node_monitor: El.MockNodeMonitor,
+        system: El.MockSystem,
+        node_connector: El.MockNodeConnector,
+        net_kernel: El.MockNetKernel
+      )
+    end
+
+    test "returns ok when daemon restarts successfully" do
+      result = El.CLI.Daemon.restart_daemon(
+        rpc: El.MockRPC,
+        sleeper: El.MockSleeper,
+        node_monitor: El.MockNodeMonitor,
+        system: El.MockSystem,
+        node_connector: El.MockNodeConnector,
+        net_kernel: El.MockNetKernel
+      )
+
+      assert result == :ok
+    end
+  end
 end

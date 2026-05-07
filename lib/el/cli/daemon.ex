@@ -19,6 +19,17 @@ defmodule El.CLI.Daemon do
     wait_for_node_disconnect(node_monitor, sleeper, timeout: disconnect_timeout, poll_ms: disconnect_poll_ms)
   end
 
+  def restart_daemon(opts \\ [])
+  def restart_daemon(opts) when is_list(opts) do
+    stop_daemon(opts)
+    system = Keyword.get(opts, :system, El.Infra.System)
+    node_connector = Keyword.get(opts, :node_connector, El.Infra.NodeConnector)
+    net_kernel = Keyword.get(opts, :net_kernel, El.Infra.NetKernel)
+    spawn_daemon(system)
+    connect_to_daemon(system, node_connector, net_kernel)
+    :ok
+  end
+
   def connect_to_daemon(system \\ El.Infra.System, node_connector \\ El.Infra.NodeConnector, net_kernel \\ El.Infra.NetKernel) do
     start_epmd(system)
     start_client_node(net_kernel, node_connector) |> handle_client_started(system, node_connector)
