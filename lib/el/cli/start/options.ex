@@ -28,7 +28,7 @@ defmodule El.CLI.Start.Options do
 
   def resolve_agent(agent, _name, _deps), do: agent
 
-  defp resolve_agent_with_part(part, name, deps) when part != name do
+  defp resolve_agent_with_part(part, name, _deps) when part != name do
     part
   end
 
