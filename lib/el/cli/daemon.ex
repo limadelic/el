@@ -19,10 +19,6 @@ defmodule El.CLI.Daemon do
     wait_for_node_disconnect(node_monitor, sleeper, timeout: disconnect_timeout, poll_ms: disconnect_poll_ms)
   end
 
-  def stop_daemon(rpc, sleeper, node_monitor) do
-    stop_daemon(rpc: rpc, sleeper: sleeper, node_monitor: node_monitor)
-  end
-
   def connect_to_daemon(system \\ El.Infra.System, node_connector \\ El.Infra.NodeConnector, net_kernel \\ El.Infra.NetKernel) do
     start_epmd(system)
     start_client_node(net_kernel, node_connector) |> handle_client_started(system, node_connector)
