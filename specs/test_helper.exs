@@ -168,7 +168,6 @@ end
 Application.put_env(:el, :session_meta, El.MockSessionMeta)
 Application.put_env(:el, :file_system, El.MockFileSystem)
 Application.put_env(:el, :parser, El.MockParser)
-Application.put_env(:el, :session_registry, El.MockSessionRegistry)
 
 ExUnit.start(timeout: 20)
 
