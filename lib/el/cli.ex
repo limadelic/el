@@ -84,7 +84,8 @@ defmodule El.CLI do
   end
 
   def execute(:restart, [name], deps) do
-    el(deps).restart(String.to_atom(name), deps)
+    name_atom = String.to_atom(name)
+    el(deps).restart(name_atom, deps)
     Start.print_session_info(name, [], deps)
   end
 
