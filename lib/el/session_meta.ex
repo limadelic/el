@@ -31,5 +31,5 @@ defmodule El.SessionMeta do
     backend.close(:session_meta)
   end
 
-  defp dets_backend(deps), do: Keyword.get(deps, :dets_backend, El.DetsBackend)
+  defp dets_backend(deps), do: Keyword.get(deps, :dets_backend, El.MessageStore.Backend)
 end

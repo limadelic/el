@@ -1,5 +1,5 @@
 defmodule El.Session.Bootstrap do
-  @behaviour El.Behaviours.SessionBootstrap
+  @behaviour El.Session.Behaviours.Bootstrap
 
   alias El.Session.Claude
 

@@ -32,4 +32,52 @@ defmodule El.Deps.Spec do
       assert Keyword.get(result, :cli_resolver_module) == El.ClaudePort.Connection.CliResolver
     end
   end
+
+  describe "El.Deps.monitor/1" do
+    test "returns monitor value from opts" do
+      monitor = El.Infra.Monitor
+      opts = [monitor: monitor]
+
+      assert El.Deps.monitor(opts) == monitor
+    end
+
+    test "raises KeyError when monitor key missing from opts" do
+      error = catch_error(El.Deps.monitor([]))
+
+      assert is_struct(error, KeyError)
+      assert error.key == :monitor
+    end
+  end
+
+  describe "El.Deps.supervisor/1" do
+    test "returns supervisor value from opts" do
+      supervisor = DynamicSupervisor
+      opts = [supervisor: supervisor]
+
+      assert El.Deps.supervisor(opts) == supervisor
+    end
+
+    test "raises KeyError when supervisor key missing from opts" do
+      error = catch_error(El.Deps.supervisor([]))
+
+      assert is_struct(error, KeyError)
+      assert error.key == :supervisor
+    end
+  end
+
+  describe "El.Deps.registry/1" do
+    test "returns registry value from opts" do
+      registry = Registry
+      opts = [registry: registry]
+
+      assert El.Deps.registry(opts) == registry
+    end
+
+    test "raises KeyError when registry key missing from opts" do
+      error = catch_error(El.Deps.registry([]))
+
+      assert is_struct(error, KeyError)
+      assert error.key == :registry
+    end
+  end
 end

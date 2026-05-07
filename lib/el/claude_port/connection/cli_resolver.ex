@@ -1,5 +1,5 @@
 defmodule El.ClaudePort.Connection.CliResolver do
-  @behaviour El.Behaviours.ClaudePortCliResolver
+  @behaviour El.ClaudePort.Behaviours.CliResolver
 
   alias ClaudeCode.CLI.Command
   alias ClaudeCode.Adapter.Port.Resolver

@@ -81,7 +81,7 @@ CLEAN — no DRY violations.
 ## lib/el/dets_backend.ex
 - Whole module is transparent wrappers around `:dets` calls — DELETE module OR keep as behaviour-only
 
-## lib/el/file_adapter.ex
+## lib/el/adapters/file.ex
 CLEAN.
 
 ## lib/el/file_system_impl.ex

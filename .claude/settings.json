@@ -1,7 +1,7 @@
 {
   "model": "opus",
   "permissions": {
-    "allow": ["Write", "Bash"],
-    "deny": ["Bash(*cucumber*)"]
+    "allow": ["Write", "Bash", "Bash(bundle exec cucumber*)"],
+    "deny": []
   }
 }

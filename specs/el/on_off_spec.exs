@@ -53,13 +53,13 @@ defmodule El.Features.OnOffSpec do
   describe "El.exit/1" do
     setup do
       stub(El.MockSessionMeta, :delete, fn _ -> :ok end)
-      stub(El.MockApp, :delete_session_messages, fn _, _ -> :ok end)
+      stub(El.MockSessionDeletion, :delete_session_messages, fn _, _ -> :ok end)
       :ok
     end
 
     test "looks up session in registry" do
       expect(El.MockRegistry, :lookup, fn El.Registry, :dude -> [] end)
-      El.Lifecycle.exit(:dude, :normal, registry: El.MockRegistry, supervisor: El.MockSupervisor, app: El.MockApp, monitor: El.MockMonitor, session_meta: El.MockSessionMeta)
+      El.Lifecycle.exit(:dude, :normal, registry: El.MockRegistry, supervisor: El.MockSupervisor, app: El.MockSessionDeletion, monitor: El.MockMonitor, session_meta: El.MockSessionMeta)
     end
 
     test "terminates child when session found" do
@@ -68,7 +68,7 @@ defmodule El.Features.OnOffSpec do
       term_fn = fn El.SessionSupervisor, :mock_pid -> :ok end
       stub(El.MockSupervisor, :terminate_child, term_fn)
       stub(El.MockMonitor, :wait_for_down, fn _, _, _ -> :ok end)
-      El.Lifecycle.exit(:dude, :normal, registry: El.MockRegistry, supervisor: El.MockSupervisor, app: El.MockApp, monitor: El.MockMonitor, session_meta: El.MockSessionMeta)
+      El.Lifecycle.exit(:dude, :normal, registry: El.MockRegistry, supervisor: El.MockSupervisor, app: El.MockSessionDeletion, monitor: El.MockMonitor, session_meta: El.MockSessionMeta)
     end
 
     test "monitors process and waits for DOWN" do
@@ -77,7 +77,7 @@ defmodule El.Features.OnOffSpec do
       stub_fn = fn El.SessionSupervisor, _pid -> :ok end
       stub(El.MockSupervisor, :terminate_child, stub_fn)
       stub(El.MockMonitor, :wait_for_down, fn _ref, :dude, _opts -> :ok end)
-      El.Lifecycle.exit(:dude, :normal, registry: El.MockRegistry, supervisor: El.MockSupervisor, app: El.MockApp, monitor: El.MockMonitor, session_meta: El.MockSessionMeta)
+      El.Lifecycle.exit(:dude, :normal, registry: El.MockRegistry, supervisor: El.MockSupervisor, app: El.MockSessionDeletion, monitor: El.MockMonitor, session_meta: El.MockSessionMeta)
     end
   end
 

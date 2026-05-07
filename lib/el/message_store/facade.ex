@@ -1,4 +1,7 @@
 defmodule El.MessageStore.Facade do
+  @behaviour El.MessageStore.Behaviours.SessionDeletion
+
+  @impl true
   def delete_session_messages(name, opts \\ []) do
     ms = Keyword.fetch!(opts, :message_store)
     ms.delete(name)

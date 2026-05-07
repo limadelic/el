@@ -73,20 +73,20 @@ defmodule El.Spec do
       terminate_stub = fn El.SessionSupervisor, :pid -> :ok end
       stub(El.MockSupervisor, :terminate_child, terminate_stub)
       stub(El.MockMonitor, :wait_for_down, fn _ref, _name, _opts -> :ok end)
-      stub(El.MockApp, :delete_session_messages, fn :kent -> :ok end)
+      stub(El.MockSessionDeletion, :delete_session_messages, fn :kent -> :ok end)
       result = El.exit(:kent)
       assert result == :ok
     end
 
     test "deletes session messages when session not found" do
       expect(El.MockRegistry, :lookup, fn El.Registry, :kent -> [] end)
-      expect(El.MockApp, :delete_session_messages, fn :kent -> :ok end)
+      expect(El.MockSessionDeletion, :delete_session_messages, fn :kent -> :ok end)
       El.exit(:kent)
     end
 
     test "returns not_found when session not running" do
       expect(El.MockRegistry, :lookup, fn El.Registry, :unknown -> [] end)
-      stub(El.MockApp, :delete_session_messages, fn :unknown -> :ok end)
+      stub(El.MockSessionDeletion, :delete_session_messages, fn :unknown -> :ok end)
       assert El.exit(:unknown) == :not_found
     end
 
@@ -100,7 +100,7 @@ defmodule El.Spec do
       end)
 
       stub(El.MockMonitor, :wait_for_down, fn _, _, _ -> :ok end)
-      stub(El.MockApp, :delete_session_messages, fn :kent -> :ok end)
+      stub(El.MockSessionDeletion, :delete_session_messages, fn :kent -> :ok end)
       result = El.exit(:kent)
       assert result == :ok
     end
@@ -109,7 +109,7 @@ defmodule El.Spec do
   describe "exit/1 with :all" do
     setup do
       stub(El.MockSessionMeta, :delete, fn _ -> :ok end)
-      stub(El.MockApp, :delete_session_messages, fn _ -> :ok end)
+      stub(El.MockSessionDeletion, :delete_session_messages, fn _ -> :ok end)
       :ok
     end
 
@@ -136,7 +136,7 @@ defmodule El.Spec do
   describe "exit_pattern/1" do
     setup do
       stub(El.MockSessionMeta, :delete, fn _ -> :ok end)
-      stub(El.MockApp, :delete_session_messages, fn _ -> :ok end)
+      stub(El.MockSessionDeletion, :delete_session_messages, fn _ -> :ok end)
       :ok
     end
 

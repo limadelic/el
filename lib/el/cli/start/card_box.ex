@@ -1,5 +1,5 @@
 defmodule El.CLI.Start.CardBox do
-  @behaviour El.Behaviours.CardBox
+  @behaviour El.CLI.Behaviours.CardBox
 
   @impl true
   def box_frame([]), do: [top_border(), bottom_border()]

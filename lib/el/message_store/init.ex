@@ -1,5 +1,5 @@
 defmodule El.MessageStore.Init do
-  @behaviour El.Behaviours.MessageStoreInit
+  @behaviour El.MessageStore.Behaviours.Init
 
   def dets_path(dir, file) do
     Path.expand("#{dir}/#{file}.dets") |> String.to_charlist()
@@ -32,7 +32,7 @@ defmodule El.MessageStore.Init do
 
   def message_store_opts do
     [
-      file_system: Application.get_env(:el, :file_system, El.FileSystemImpl),
+      file_system: Application.get_env(:el, :file_system, El.Infra.FileSystem),
       dets_backend: Application.get_env(:el, :dets_backend, :dets),
       daemon: Application.get_env(:el, :daemon, El.CLI.Daemon)
     ]

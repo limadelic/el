@@ -47,7 +47,7 @@ defmodule El.CLI.Start.Options.Spec do
   describe "El.CLI.Start.Options.agent_detector/1" do
     test "returns default detector when not in deps" do
       detector = El.CLI.Start.Options.agent_detector([])
-      assert detector == El.AgentDetector
+      assert detector == El.Agent.Detector
     end
 
     test "returns custom detector from deps" do
@@ -59,7 +59,7 @@ defmodule El.CLI.Start.Options.Spec do
   describe "El.CLI.Start.Options.agent_metadata/1" do
     test "returns default metadata when not in deps" do
       metadata = El.CLI.Start.Options.agent_metadata([])
-      assert metadata == El.AgentMetadata
+      assert metadata == El.Agent.Metadata
     end
 
     test "returns custom metadata from deps" do
@@ -155,6 +155,11 @@ defmodule El.CLI.Start.Options.Spec do
       deps = [agent_detector: El.MockAgentDetector]
       assert El.CLI.Start.Options.resolve_agent(nil, "name", deps) == :detected
     end
+
+    test "extracts agent from name when explicit nil and name contains @" do
+      deps = [agent_detector: El.MockAgentDetector]
+      assert El.CLI.Start.Options.resolve_agent(nil, "kent@el", deps) == "kent"
+    end
   end
 
   describe "El.CLI.Start.Options.build_base_opts/3" do
@@ -191,6 +196,22 @@ defmodule El.CLI.Start.Options.Spec do
       result = El.CLI.Start.Options.detect_and_merge_agent("session", [], deps)
 
       refute Keyword.has_key?(result, :agent)
+    end
+  end
+
+  describe "El.CLI.Start.Options.merge_session_opts/4" do
+    setup do
+      stub(El.MockAgentMetadata, :model_for, fn
+        "kent" -> "opus"
+        _ -> nil
+      end)
+      stub(El.MockEnv, :get, fn _ -> nil end)
+      {:ok, deps: [agent_metadata: El.MockAgentMetadata, env: El.MockEnv]}
+    end
+
+    test "preserves explicit agent when provided", %{deps: deps} do
+      result = El.CLI.Start.Options.merge_session_opts("kento", "kent", nil, deps)
+      assert Keyword.get(result, :agent) == "kent"
     end
   end
 end

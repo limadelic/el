@@ -9,6 +9,9 @@ defmodule El.CLI.Start.SessionCard.Spec do
       Application.put_env(:el, :text_formatter, El.MockTextFormatter)
       stub_with(El.MockCardBox, El.CLI.Start.CardBox)
       stub_with(El.MockTextFormatter, El.CLI.Start.TextFormatter)
+      stub(El.MockTextFormatter, :format_prompt, fn prompt ->
+        El.CLI.Start.TextFormatter.format_prompt(prompt)
+      end)
       on_exit(fn ->
         Application.delete_env(:el, :card_box)
         Application.delete_env(:el, :text_formatter)
@@ -175,6 +178,38 @@ defmodule El.CLI.Start.SessionCard.Spec do
       result = El.CLI.Start.SessionCard.build_card_rows("test_session", opts, new_info)
       model_lines = Enum.filter(result, &String.contains?(&1, "model:"))
       assert length(model_lines) == 0
+    end
+
+    test "agent identity persists in card with explicit agent", %{info: info} do
+      opts = [agent: "kent"]
+      result = El.CLI.Start.SessionCard.build_card_rows("kento", opts, info)
+      assert Enum.any?(result, &String.contains?(&1, "agent: kent"))
+    end
+
+    test "multi-line prompt first line has > prefix", %{info: info} do
+      multi_line_prompt = "Line one\nLine two"
+      new_info = %{info | last_prompt: multi_line_prompt}
+      result = El.CLI.Start.SessionCard.build_card_rows("test_session", [], new_info)
+
+      assert Enum.any?(result, &String.starts_with?(&1, "> Line one"))
+    end
+
+    test "multi-line prompt continuation has no prefix", %{info: info} do
+      multi_line_prompt = "Line one\nLine two"
+      new_info = %{info | last_prompt: multi_line_prompt}
+      result = El.CLI.Start.SessionCard.build_card_rows("test_session", [], new_info)
+
+      assert Enum.any?(result, &String.starts_with?(&1, "Line two"))
+    end
+
+    test "long prompt wraps and displays on multiple rows", %{info: info} do
+      long_prompt = String.duplicate("word ", 20)
+      new_info = %{info | last_prompt: long_prompt}
+      result = El.CLI.Start.SessionCard.build_card_rows("test_session", [], new_info)
+
+      prompt_rows = Enum.filter(result, &String.starts_with?(&1, ">"))
+      first_prompt_row = hd(prompt_rows)
+      assert String.starts_with?(first_prompt_row, "> ")
     end
   end
 end

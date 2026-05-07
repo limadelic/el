@@ -18,14 +18,21 @@ defmodule El.CLI.Start.Options do
   def agent_model_for(model), do: [model: model]
 
   def agent_detector(deps) do
-    Keyword.get(deps, :agent_detector, El.AgentDetector)
+    Keyword.get(deps, :agent_detector, El.Agent.Detector)
   end
 
-  def resolve_agent(nil, name, deps), do: agent_detector(deps).detect_agent(name)
+  def resolve_agent(nil, name, deps) do
+    if String.contains?(name, "@") do
+      El.CLI.NameParser.split(name) |> elem(1)
+    else
+      agent_detector(deps).detect_agent(name)
+    end
+  end
+
   def resolve_agent(agent, _name, _deps), do: agent
 
   def agent_metadata(deps) do
-    Keyword.get(deps, :agent_metadata, El.AgentMetadata)
+    Keyword.get(deps, :agent_metadata, El.Agent.Metadata)
   end
 
   def subagent_model(nil), do: []
@@ -50,7 +57,7 @@ defmodule El.CLI.Start.Options do
   end
 
   defp env_adapter(deps) do
-    Keyword.get(deps, :env, El.Env)
+    Keyword.get(deps, :env, El.Infra.Env)
   end
 
   def detect_and_merge_agent(name, opts, deps \\ []) do

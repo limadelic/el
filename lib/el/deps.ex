@@ -3,6 +3,10 @@ defmodule El.Deps do
     core_modules() ++ supervision() ++ session_meta() ++ io_storage()
   end
 
+  def monitor(opts), do: Keyword.fetch!(opts, :monitor)
+  def supervisor(opts), do: Keyword.fetch!(opts, :supervisor)
+  def registry(opts), do: Keyword.fetch!(opts, :registry)
+
   defp dep(key, default) do
     {key, Application.get_env(:el, key, default)}
   end
@@ -31,22 +35,22 @@ defmodule El.Deps do
     [
       dep(:registry, Registry),
       dep(:supervisor, DynamicSupervisor),
-      dep(:monitor, El.ProcessMonitor)
+      dep(:monitor, El.Infra.Monitor)
     ]
   end
 
   defp session_meta do
     [
       dep(:session_api, El.Session.Api),
-      dep(:agent_detector, El.AgentDetector),
-      dep(:agent_metadata, El.AgentMetadata)
+      dep(:agent_detector, El.Agent.Detector),
+      dep(:agent_metadata, El.Agent.Metadata)
     ]
   end
 
   defp io_storage do
     [
-      dep(:group_leader, El.GroupLeaderImpl),
-      dep(:dets_backend, El.DetsBackend),
+      dep(:group_leader, El.Infra.GroupLeader),
+      dep(:dets_backend, El.MessageStore.Backend),
       dep(:message_store, El.MessageStore)
     ]
   end

@@ -32,6 +32,6 @@ defmodule El.CLI.Start.DaemonHealth do
   end
 
   defp group_leader(deps) do
-    Keyword.get(deps, :group_leader, El.GroupLeaderImpl)
+    Keyword.get(deps, :group_leader, El.Infra.GroupLeader)
   end
 end

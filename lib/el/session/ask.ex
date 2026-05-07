@@ -1,5 +1,5 @@
 defmodule El.Session.Ask do
-  @behaviour El.Behaviours.SessionAsk
+  @behaviour El.Session.Behaviours.Ask
 
   alias El.Session.Router
   alias El.Session.Store

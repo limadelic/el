@@ -1,5 +1,5 @@
 defmodule El.CLI.Start.TextFormatter do
-  @behaviour El.Behaviours.TextFormatter
+  @behaviour El.CLI.Behaviours.TextFormatter
 
   @impl true
   def format_response(nil), do: []
@@ -8,6 +8,21 @@ defmodule El.CLI.Start.TextFormatter do
     response
     |> wrap_text(46)
     |> cap_lines(2)
+  end
+
+  @impl true
+  def format_prompt(nil), do: []
+  @impl true
+  def format_prompt(prompt) do
+    prompt
+    |> String.split("\n")
+    |> Enum.flat_map(&wrap_text(&1, 44))
+    |> prefix_first_line("> ")
+  end
+
+  defp prefix_first_line([], _prefix), do: []
+  defp prefix_first_line([first | rest], prefix) do
+    [prefix <> first | rest]
   end
 
   defp wrap_text(text, width) do

@@ -1,5 +1,5 @@
 defmodule El.SessionRestorer do
-  @behaviour El.Behaviours.SessionRestorer
+  @behaviour El.Session.Behaviours.Restorer
 
   def restore_opts do
     [

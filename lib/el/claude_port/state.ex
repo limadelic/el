@@ -1,6 +1,6 @@
 defmodule El.ClaudePort.State do
   @seam_defaults [
-    port_module: El.PortImpl,
+    port_module: El.Infra.Port,
     connection_module: El.ClaudePort.Connection,
     cli_resolver_module: El.ClaudePort.Connection.CliResolver,
     port_spawn_module: El.ClaudePort.Connection.PortSpawn,
