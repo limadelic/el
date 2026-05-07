@@ -1,4 +1,6 @@
 defmodule El.CLI.Daemon do
+  @behaviour El.CLI.Behaviours.Daemon
+
   def daemon_script do
     :escript.script_name() |> to_string() |> Path.expand()
   end
@@ -19,6 +21,7 @@ defmodule El.CLI.Daemon do
     wait_for_node_disconnect(node_monitor, sleeper, timeout: disconnect_timeout, poll_ms: disconnect_poll_ms)
   end
 
+  @impl true
   def restart_daemon(opts \\ [])
   def restart_daemon(opts) when is_list(opts) do
     stop_daemon(opts)
