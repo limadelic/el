@@ -44,6 +44,7 @@ defmodule El.ClaudePort do
   end
 
   def handle_info({port, :eof}, %{port: port} = state) do
+    Logger.debug("Claude port EOF")
     {:noreply, state}
   end
 

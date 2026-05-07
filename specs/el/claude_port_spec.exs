@@ -2,6 +2,11 @@ defmodule El.ClaudePort.Spec do
   use ExUnit.Case
   import Mox
 
+  setup do
+    Logger.configure(level: :debug)
+    :ok
+  end
+
   setup :verify_on_exit!
 
   setup_all do
@@ -82,6 +87,34 @@ defmodule El.ClaudePort.Spec do
       payload = ~s(not json\n{"type":"result","result":"ok"}\n)
       El.ClaudePort.handle_info({:fake_port, {:data, payload}}, state)
       assert_receive {^ref, {"ok", _, _}}
+    end
+  end
+
+  describe "handle_info {port, :eof}" do
+    test "logs debug message" do
+      state = %{port: :fake_port, buffer: "", current_request_id: nil}
+      logs = ExUnit.CaptureLog.capture_log([level: :debug], fn ->
+        El.ClaudePort.handle_info({:fake_port, :eof}, state)
+      end)
+      assert logs =~ "Claude port EOF"
+    end
+
+    test "returns noreply tuple" do
+      state = %{port: :fake_port, buffer: "", current_request_id: nil}
+      result = El.ClaudePort.handle_info({:fake_port, :eof}, state)
+      assert elem(result, 0) == :noreply
+    end
+
+    test "preserves port in state" do
+      state = %{port: :fake_port, buffer: "", current_request_id: nil}
+      {:noreply, new_state} = El.ClaudePort.handle_info({:fake_port, :eof}, state)
+      assert new_state.port == state.port
+    end
+
+    test "preserves buffer in state" do
+      state = %{port: :fake_port, buffer: "", current_request_id: nil}
+      {:noreply, new_state} = El.ClaudePort.handle_info({:fake_port, :eof}, state)
+      assert new_state.buffer == state.buffer
     end
   end
 
