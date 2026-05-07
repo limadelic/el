@@ -229,6 +229,26 @@ defmodule El.CLI.Spec do
       ]
     end
 
+    test "execute :log_n_json with 'all' calls El.log with :all and outputs JSON" do
+      stub(El.MockSessionApi, :alive?, fn :session -> true end)
+      expect(El.MockEl, :log, fn :session, :all, _opts ->
+        [{"ask", "hi", "reply", %{}}]
+      end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.execute(
+            :log_n_json,
+            ["session", "log", "all", "-json"],
+            [el_module: El.MockEl, session_api: El.MockSessionApi]
+          )
+        end)
+
+      assert Jason.decode!(String.trim(output)) == [
+        %{"type" => "ask", "message" => "hi", "response" => "reply", "metadata" => %{}}
+      ]
+    end
+
     test "execute :log_json outputs empty array when session not alive" do
       stub(El.MockSessionApi, :alive?, fn :ghost -> false end)
 
