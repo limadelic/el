@@ -1,4 +1,4 @@
-defmodule El.Session.InfoHandler do
+defmodule El.Session.Handlers.Info do
   alias El.Session.Crash
 
   def handle({:EXIT, pid, :normal}, %{claude_pid: pid} = state) do

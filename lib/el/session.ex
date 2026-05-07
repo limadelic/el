@@ -5,7 +5,7 @@ defmodule El.Session do
 
   alias El.Session.Terminator
   alias El.Session.LogHandler
-  alias El.Session.InfoHandler
+  alias El.Session.Handlers.Info
   alias El.Session.Handlers.Cast
   alias El.Session.Handlers.Call
 
@@ -63,7 +63,7 @@ defmodule El.Session do
 
   @impl true
   def handle_info(msg, state) do
-    InfoHandler.handle(msg, state)
+    Info.handle(msg, state)
   end
 
   @impl true
