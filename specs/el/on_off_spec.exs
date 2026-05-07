@@ -82,19 +82,16 @@ defmodule El.Features.OnOffSpec do
   end
 
   describe "El.ls/0" do
-    test "calls Registry.select to list all sessions" do
-      select_fn = fn El.Registry, [{{:"$1", :_, :_}, [], [:"$1"]}] ->
+    test "returns sorted sessions by delegating to Session.Registry.list" do
+      expect(El.MockRegistry, :select, fn El.Registry, [{{:"$1", :_, :_}, [], [:"$1"]}] ->
         [:dude, :duder, :dudito]
-      end
-
-      expect(El.MockRegistry, :select, select_fn)
+      end)
       sessions = El.ls(registry: El.MockRegistry)
       assert sessions == [:dude, :duder, :dudito]
     end
 
     test "returns sorted list" do
-      select_fn = fn El.Registry, _ -> [:dudito, :dude, :duder] end
-      expect(El.MockRegistry, :select, select_fn)
+      expect(El.MockRegistry, :select, fn El.Registry, _ -> [:dudito, :dude, :duder] end)
       sessions = El.ls(registry: El.MockRegistry)
       assert sessions == [:dude, :duder, :dudito]
     end
