@@ -172,13 +172,18 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :log_json outputs messages as JSON array" do
+      stub(El.MockSessionApi, :alive?, fn :session -> true end)
       expect(El.MockEl, :log, fn :session, 1, _opts ->
         [{"ask", "hi", "reply", %{}}]
       end)
 
       output =
         capture_io(fn ->
-          El.CLI.execute(:log_json, ["session", "log"], [el_module: El.MockEl])
+          El.CLI.execute(
+            :log_json,
+            ["session", "log"],
+            [el_module: El.MockEl, session_api: El.MockSessionApi]
+          )
         end)
 
       assert Jason.decode!(String.trim(output)) == [
@@ -187,6 +192,7 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :log_n_json with number outputs messages as JSON array" do
+      stub(El.MockSessionApi, :alive?, fn :session -> true end)
       expect(El.MockEl, :log, fn :session, 5, _opts ->
         [{"ask", "hi", "reply", %{}}]
       end)
@@ -196,13 +202,28 @@ defmodule El.CLI.Spec do
           El.CLI.execute(
             :log_n_json,
             ["session", "log", "5", "-json"],
-            [el_module: El.MockEl]
+            [el_module: El.MockEl, session_api: El.MockSessionApi]
           )
         end)
 
       assert Jason.decode!(String.trim(output)) == [
         %{"type" => "ask", "message" => "hi", "response" => "reply", "metadata" => %{}}
       ]
+    end
+
+    test "execute :log_json outputs empty array when session not alive" do
+      stub(El.MockSessionApi, :alive?, fn :ghost -> false end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.execute(
+            :log_json,
+            ["ghost", "log"],
+            [el_module: El.MockEl, session_api: El.MockSessionApi]
+          )
+        end)
+
+      assert String.trim(output) == "[]"
     end
 
     test "execute :clear calls El.clear with name" do

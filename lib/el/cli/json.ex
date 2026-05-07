@@ -22,6 +22,15 @@ defmodule El.CLI.Json do
   end
 
   def execute_log(name, count, el_module, opts) do
+    api = Keyword.get(opts, :session_api, El.Session.Api)
+    do_execute_log(api.alive?(String.to_atom(name)), name, count, el_module, opts)
+  end
+
+  defp do_execute_log(false, _name, _count, _el_module, _opts) do
+    IO.puts("[]")
+  end
+
+  defp do_execute_log(true, name, count, el_module, opts) do
     El.CLI.Log.log_for_name(name, count, el_module, opts)
     |> encode_log()
     |> IO.puts()
