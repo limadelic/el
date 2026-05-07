@@ -12,7 +12,7 @@ defmodule El.CLI.Router do
   def parse_route([_name, "clear"]), do: :clear
 
   def parse_route([<<c, _::binary>>]) when c != ?- do
-    :start
+    :info
   end
 
   def parse_route([<<c, _::binary>>, "-m", _model | _rest]) when c != ?- do

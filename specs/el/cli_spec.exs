@@ -15,7 +15,7 @@ defmodule El.CLI.Spec do
     end
 
     test "returns start for single session name" do
-      assert El.CLI.Router.parse_route(["my_session"]) == :start
+      assert El.CLI.Router.parse_route(["my_session"]) == :info
     end
 
     test "returns start with -m flag" do
