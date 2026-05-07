@@ -1,4 +1,4 @@
-defmodule El.SessionMeta do
+defmodule El.Session.Meta do
   @callback insert(term(), term(), term(), term()) :: term()
   @callback lookup(term()) :: term()
   @callback delete(term()) :: term()

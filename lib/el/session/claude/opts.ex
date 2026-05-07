@@ -1,4 +1,4 @@
-defmodule El.Session.ClaudeOpts do
+defmodule El.Session.Claude.Opts do
   def build(rest, opts, _session_id) do
     rest
     |> add_resume(Keyword.has_key?(opts, :resume), opts)

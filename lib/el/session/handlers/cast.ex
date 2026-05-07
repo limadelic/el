@@ -1,11 +1,11 @@
-defmodule El.Session.CastHandler do
-  alias El.Session.Claude
-  alias El.Session.Tell
+defmodule El.Session.Handlers.Cast do
+  alias El.Session.Claude.Driver
+  alias El.Session.Commands.Tell
   alias El.Session.Store
-  alias El.Session.Router
+  alias El.Session.Handlers.Router
 
   def handle({:tell, message}, state) do
-    state = Claude.maybe_respawn_claude(state)
+    state = Driver.maybe_respawn_claude(state)
     Tell.tell_impl(state, message)
   end
 
@@ -18,13 +18,14 @@ defmodule El.Session.CastHandler do
 
   def handle({:complete_ask, from, message, response, ref, model, nil}, state) do
     ask = %{from: from, ref: ref, message: message, response: response, model: model}
-    new_state = state.ask_module.finalize_ask(state, ask)
-    {:noreply, new_state}
+    finalized = state.ask_module.finalize_ask(state, ask)
+    {:noreply, finalized}
   end
 
   def handle({:complete_ask, from, message, response, ref, model, session_id}, state) do
-    ask = %{from: from, message: message, response: response, ref: ref, model: model}
-    updated_state = build_updated_state(state, ask, session_id)
+    ask = %{from: from, ref: ref, message: message, response: response, model: model}
+    finalized = state.ask_module.finalize_ask(state, ask)
+    updated_state = %{finalized | session_id: session_id}
     persist_session_meta(updated_state, session_id, model)
     {:noreply, updated_state}
   end
@@ -35,13 +36,8 @@ defmodule El.Session.CastHandler do
     {:noreply, %{state | messages: state.messages ++ [entry]}}
   end
 
-  defp build_updated_state(state, ask, session_id) do
-    new_state = state.ask_module.finalize_ask(state, ask)
-    %{new_state | session_id: session_id}
-  end
-
   defp persist_session_meta(state, session_id, model) do
-    session_meta = Map.get(state, :session_meta, El.SessionMeta)
+    session_meta = state.session_meta
     session_meta.insert(state.name, agent_from(state), session_id, persisted_model(state, model))
   end
 

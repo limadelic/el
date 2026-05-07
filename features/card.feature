@@ -1,26 +1,26 @@
 Feature: Agent card
 
   Scenario Outline: New
-    * > el <el>:
+    * > el <args>:
       """
       ╭────────────────────────────────────────────────╮
       │ name:  <name>                            id: … │
-      │ agent: <agent>                  cwd: …/self/el │
+      │ agent: kent                     cwd: …/self/el │
       │ model: opus                                    │
       │ msgs:  1                                       │
       │ ────────────────────────────────────────────── │
       │ > who are you?                                 │
       │ ────────────────────────────────────────────── │
-      │ <agent>                                        │
+      │ kent                                           │
       ╰────────────────────────────────────────────────╯
       """
     * > el <name> exit
 
     Examples:
-      | el            | name    | agent |
-      | kent          | kent    | kent  |
-      | kento -a kent | kento   | kent  |
-      | kent@el       | kent@el | kent  |
+      | args          | name    |
+      | kent          | kent    |
+      | kento -a kent | kento   |
+      | kent@el       | kent@el |
 
   @el_kent
   Scenario: Used

@@ -230,7 +230,7 @@ defmodule El.Spec do
 
   describe "ls/0" do
     test "returns sorted list with message counts" do
-      expect(El.MockRegistry, :select, fn El.Registry, _pattern ->
+      expect(El.MockSessionRegistry, :list, fn _opts ->
         [:zeta, :alpha, :beta]
       end)
 
@@ -243,8 +243,21 @@ defmodule El.Spec do
     end
 
     test "returns empty list when no sessions" do
-      expect(El.MockRegistry, :select, fn El.Registry, _pattern -> [] end)
+      expect(El.MockSessionRegistry, :list, fn _opts -> [] end)
       assert El.ls() == []
+    end
+  end
+
+  describe "ls/0 seam via Application env" do
+    setup do
+      Application.put_env(:el, :session_registry, El.MockSessionRegistry)
+      on_exit(fn -> Application.delete_env(:el, :session_registry) end)
+      :ok
+    end
+
+    test "uses session_registry from Application env" do
+      expect(El.MockSessionRegistry, :list, fn _opts -> [:foo] end)
+      assert El.ls() == [:foo]
     end
   end
 

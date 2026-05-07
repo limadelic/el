@@ -1,10 +1,10 @@
-defmodule El.Session.Crash do
+defmodule El.Session.Lifecycle.Crash do
   require Logger
 
-  alias El.Session.Claude
+  alias El.Session.Claude.Driver
 
   def clear_pending_calls(pending) do
-    Enum.each(pending, &Claude.safe_reply(&1, "(error)"))
+    Enum.each(pending, &Driver.safe_reply(&1, "(error)"))
   end
 
   def handle_claude_crash(state, reason) do

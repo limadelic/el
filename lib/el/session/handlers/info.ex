@@ -1,5 +1,5 @@
-defmodule El.Session.InfoHandler do
-  alias El.Session.Crash
+defmodule El.Session.Handlers.Info do
+  alias El.Session.Lifecycle.Crash
 
   def handle({:EXIT, pid, :normal}, %{claude_pid: pid} = state) do
     Crash.clear_pending_calls(state.pending_calls)

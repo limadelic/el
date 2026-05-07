@@ -1,4 +1,4 @@
-defmodule El.Session.Ask.Spec do
+defmodule El.Session.Commands.Ask.Spec do
   use ExUnit.Case
   import Mox
 
@@ -19,7 +19,7 @@ defmodule El.Session.Ask.Spec do
 
       expect(El.MockSessionClaude, :ask_work, fn _, _, _ -> {"test result", "test-model", "test-session-id"} end)
 
-      El.Session.Ask.spawn_ask(state, ask_info, [], server_pid)
+      El.Session.Commands.Ask.spawn_ask(state, ask_info, [], server_pid)
 
       assert_receive {:"$gen_cast",
                       {:complete_ask, _, "test message", "test result", _,
@@ -48,7 +48,7 @@ defmodule El.Session.Ask.Spec do
       from = {self(), make_ref()}
       ref = make_ref()
 
-      El.Session.Ask.finalize_ask(state, %{from: from, ref: ref, message: "question", response: "answer", model: "claude-3"})
+      El.Session.Commands.Ask.finalize_ask(state, %{from: from, ref: ref, message: "question", response: "answer", model: "claude-3"})
     end
 
     test "calls store with nil when model is nil" do
@@ -63,7 +63,7 @@ defmodule El.Session.Ask.Spec do
       from = {self(), make_ref()}
       ref = make_ref()
 
-      El.Session.Ask.finalize_ask(state, %{from: from, ref: ref, message: "question", response: "answer", model: nil})
+      El.Session.Commands.Ask.finalize_ask(state, %{from: from, ref: ref, message: "question", response: "answer", model: nil})
     end
 
     test "replies to caller with response" do
@@ -78,7 +78,7 @@ defmodule El.Session.Ask.Spec do
       caller_ref = make_ref()
       from = {self(), caller_ref}
 
-      El.Session.Ask.finalize_ask(state, %{from: from, ref: make_ref(), message: "test", response: "the answer", model: "claude-3"})
+      El.Session.Commands.Ask.finalize_ask(state, %{from: from, ref: make_ref(), message: "test", response: "the answer", model: "claude-3"})
 
       assert_receive {^caller_ref, "the answer"}
     end
@@ -95,7 +95,7 @@ defmodule El.Session.Ask.Spec do
 
       from = {self(), make_ref()}
 
-      returned_state = El.Session.Ask.finalize_ask(state, %{from: from, ref: pending_ref, message: "question", response: "answer", model: "claude-3"})
+      returned_state = El.Session.Commands.Ask.finalize_ask(state, %{from: from, ref: pending_ref, message: "question", response: "answer", model: "claude-3"})
 
       assert returned_state.messages == [{"ask", "question", "answer", %{model: "claude-3"}}]
     end
@@ -121,7 +121,7 @@ defmodule El.Session.Ask.Spec do
 
       from = {self(), make_ref()}
 
-      {_ref, new_state} = El.Session.Ask.prepare_ask(state, from, "test question")
+      {_ref, new_state} = El.Session.Commands.Ask.prepare_ask(state, from, "test question")
 
       assert [{"ask", "test question", "", %{ref: _}}] = new_state.messages
     end
@@ -137,7 +137,7 @@ defmodule El.Session.Ask.Spec do
 
       from = {self(), make_ref()}
 
-      {_ref, new_state} = El.Session.Ask.prepare_ask(state, from, "test question")
+      {_ref, new_state} = El.Session.Commands.Ask.prepare_ask(state, from, "test question")
 
       ref = new_state.messages |> hd() |> elem(3) |> Map.fetch!(:ref)
       assert is_reference(ref)
@@ -159,7 +159,7 @@ defmodule El.Session.Ask.Spec do
 
       from = {self(), make_ref()}
 
-      {_ref, new_state} = El.Session.Ask.prepare_ask(state, from, "@target> routed question")
+      {_ref, new_state} = El.Session.Commands.Ask.prepare_ask(state, from, "@target> routed question")
 
       assert new_state.messages == []
     end
@@ -189,17 +189,17 @@ defmodule El.Session.Ask.Spec do
     end
 
     test "reset_session generates a session_id different from previous", %{state: state} do
-      new_state = El.Session.Ask.reset_session(state)
+      new_state = El.Session.Commands.Ask.reset_session(state)
       assert new_state.session_id != "test-session-id"
     end
 
     test "reset_session generates a binary session_id", %{state: state} do
-      new_state = El.Session.Ask.reset_session(state)
+      new_state = El.Session.Commands.Ask.reset_session(state)
       assert is_binary(new_state.session_id)
     end
 
     test "clears state.messages to empty list", %{state: state} do
-      new_state = El.Session.Ask.reset_session(state)
+      new_state = El.Session.Commands.Ask.reset_session(state)
       assert new_state.messages == []
     end
 
@@ -210,13 +210,13 @@ defmodule El.Session.Ask.Spec do
         :ok
       end)
 
-      El.Session.Ask.reset_session(state)
+      El.Session.Commands.Ask.reset_session(state)
 
       assert_receive {:delete_session_messages, :test_session}
     end
 
     test "sets claude_pid via claude_module", %{state: state} do
-      new_state = El.Session.Ask.reset_session(state)
+      new_state = El.Session.Commands.Ask.reset_session(state)
 
       assert new_state.claude_pid == :mock_pid
     end

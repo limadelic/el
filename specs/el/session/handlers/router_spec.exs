@@ -1,10 +1,10 @@
-defmodule El.Session.RouterSpec do
+defmodule El.Session.Handlers.Router.Spec do
   use ExUnit.Case
   import Mox
-  alias El.Session.Router
+  alias El.Session.Handlers.Router
 
   setup_all do
-    Code.ensure_loaded!(El.Session.Router)
+    Code.ensure_loaded!(El.Session.Handlers.Router)
     :ok
   end
 

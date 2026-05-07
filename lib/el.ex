@@ -96,7 +96,7 @@ defmodule El do
 
   @impl true
   def ls(opts \\ []) do
-    El.Deps.registry(opts).select(El.Registry, [{{:"$1", :_, :_}, [], [:"$1"]}])
-    |> Enum.sort()
+    session_registry = Application.get_env(:el, :session_registry, El.Session.Registry)
+    session_registry.list(opts)
   end
 end

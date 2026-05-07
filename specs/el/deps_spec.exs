@@ -8,10 +8,10 @@ defmodule El.Deps.Spec do
       assert Keyword.get(result, :init_module) == El.MessageStore.Init
     end
 
-    test "returns map with restorer_module key defaulting to El.SessionRestorer" do
+    test "returns map with restorer_module key defaulting to El.Session.Lifecycle.Restorer" do
       result = El.Deps.production()
 
-      assert Keyword.get(result, :restorer_module) == El.SessionRestorer
+      assert Keyword.get(result, :restorer_module) == El.Session.Lifecycle.Restorer
     end
 
     test "returns map with connection_module key defaulting to El.ClaudePort.Connection" do
@@ -20,10 +20,10 @@ defmodule El.Deps.Spec do
       assert Keyword.get(result, :connection_module) == El.ClaudePort.Connection
     end
 
-    test "core_modules defaults bootstrap_module to El.Session.Bootstrap" do
+    test "core_modules defaults bootstrap_module to El.Session.Lifecycle.Bootstrap" do
       result = El.Deps.production()
 
-      assert Keyword.get(result, :bootstrap_module) == El.Session.Bootstrap
+      assert Keyword.get(result, :bootstrap_module) == El.Session.Lifecycle.Bootstrap
     end
 
     test "core_modules defaults cli_resolver_module to El.ClaudePort.Connection.CliResolver" do

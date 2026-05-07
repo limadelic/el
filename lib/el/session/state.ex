@@ -1,16 +1,16 @@
 defmodule El.Session.State do
   @defaults %{
     claude_module: El.ClaudePort,
-    claude_session: El.Session.Claude,
+    claude_session: El.Session.Claude.Driver,
     task_module: Task,
-    ask_module: El.Session.Ask,
+    ask_module: El.Session.Commands.Ask,
     alive_fn: &El.Session.Api.alive?/1,
     registry_module: El.Session.Registry,
     store_module: El.MessageStore.Facade,
-    session_meta: El.SessionMeta,
+    session_meta: El.Session.Meta,
     session_api: El.Session.Api,
     el_module: El,
-    bootstrap_module: El.Session.Bootstrap
+    bootstrap_module: El.Session.Lifecycle.Bootstrap
   }
   @base_state_defaults %{
     name: nil,
@@ -25,7 +25,7 @@ defmodule El.Session.State do
   def build(name, opts, rest, session_id, cwd) do
     base_state(name, session_id, cwd, opts)
     |> Map.merge(modules_and_callbacks(opts))
-    |> Map.put(:claude_opts, El.Session.ClaudeOpts.build(rest, opts, session_id))
+    |> Map.put(:claude_opts, El.Session.Claude.Opts.build(rest, opts, session_id))
   end
 
   defp base_state(n, s, c, o),

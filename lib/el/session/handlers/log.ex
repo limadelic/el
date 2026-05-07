@@ -1,4 +1,4 @@
-defmodule El.Session.LogHandler do
+defmodule El.Session.Handlers.Log do
   def handle_log(:log, state) do
     {:reply, state.messages, state}
   end

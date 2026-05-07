@@ -3,11 +3,11 @@ defmodule El.Session do
 
   require Logger
 
-  alias El.Session.Terminator
-  alias El.Session.LogHandler
-  alias El.Session.InfoHandler
-  alias El.Session.CastHandler
-  alias El.Session.CallHandler
+  alias El.Session.Lifecycle.Terminator
+  alias El.Session.Handlers.Log
+  alias El.Session.Handlers.Info
+  alias El.Session.Handlers.Cast
+  alias El.Session.Handlers.Call
 
   @impl true
   def init({name, opts}) do
@@ -32,38 +32,38 @@ defmodule El.Session do
 
   @impl true
   def handle_cast(msg, state) do
-    CastHandler.handle(msg, state)
+    Cast.handle(msg, state)
   end
 
   @impl true
   def handle_call({:ask, _} = msg, from, state) do
-    CallHandler.handle(msg, from, state)
+    Call.handle(msg, from, state)
   end
 
   @impl true
   def handle_call(:log, _from, state) do
-    LogHandler.handle_log(:log, state)
+    Log.handle_log(:log, state)
   end
 
   @impl true
   def handle_call({:log, _} = msg, _from, state) do
-    LogHandler.handle_log(msg, state)
+    Log.handle_log(msg, state)
   end
 
   @impl true
   def handle_call(:clear, from, state) do
-    CallHandler.handle(:clear, from, state)
+    Call.handle(:clear, from, state)
   end
 
   @impl true
-  def handle_call(:agent, from, state), do: CallHandler.handle(:agent, from, state)
+  def handle_call(:agent, from, state), do: Call.handle(:agent, from, state)
 
   @impl true
-  def handle_call(:info, from, state), do: CallHandler.handle(:info, from, state)
+  def handle_call(:info, from, state), do: Call.handle(:info, from, state)
 
   @impl true
   def handle_info(msg, state) do
-    InfoHandler.handle(msg, state)
+    Info.handle(msg, state)
   end
 
   @impl true

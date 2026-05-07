@@ -1,9 +1,9 @@
-defmodule El.Session.Ask do
+defmodule El.Session.Commands.Ask do
   @behaviour El.Session.Behaviours.Ask
 
-  alias El.Session.Router
+  alias El.Session.Handlers.Router
   alias El.Session.Store
-  alias El.Session.Claude
+  alias El.Session.Claude.Driver
 
   def prepare_ask(state, from, message) do
     routes = Router.detect_routes(message)
@@ -27,7 +27,7 @@ defmodule El.Session.Ask do
   def finalize_ask(state, %{from: from, ref: ref, message: message, response: response, model: model} = ask) do
     Store.delete_ask_entry(state, message, ref)
     Store.store_ask_entry(state, {"ask", message, response, metadata_for(model)})
-    Claude.safe_reply(from, response)
+    Driver.safe_reply(from, response)
     finalize_ask_state(state, ask)
   end
 
@@ -54,7 +54,7 @@ defmodule El.Session.Ask do
   defp start_new_session(state) do
     session_id = El.Session.Id.generate_session_id()
     opts = Keyword.put(state.opts, :session_id, session_id)
-    pid = Claude.start(state.claude_module, opts)
+    pid = Driver.start(state.claude_module, opts)
     %{state | claude_pid: pid, claude_opts: opts, session_id: session_id}
   end
 end

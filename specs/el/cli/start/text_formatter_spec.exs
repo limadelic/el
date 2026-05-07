@@ -48,29 +48,20 @@ defmodule El.CLI.Start.TextFormatter.Spec do
       assert String.starts_with?(hd(result), "> ")
     end
 
-    test "handles multi-line prompt" do
+    test "caps multi-line prompt to one line" do
       prompt = "Line one\nLine two"
       result = El.CLI.Start.TextFormatter.format_prompt(prompt)
 
-      assert length(result) == 2
+      assert length(result) == 1
       assert String.starts_with?(hd(result), "> ")
     end
 
-    test "wraps long single-line prompt to multiple rows" do
+    test "caps long single-line prompt to one row" do
       long_prompt = String.duplicate("word ", 25)
       result = El.CLI.Start.TextFormatter.format_prompt(long_prompt)
 
-      assert length(result) > 1
+      assert length(result) == 1
       assert String.starts_with?(hd(result), "> ")
-      assert Enum.all?(result, fn line -> String.length(line) <= 46 end)
-    end
-
-    test "continuation lines have no > prefix" do
-      long_prompt = String.duplicate("word ", 25)
-      result = El.CLI.Start.TextFormatter.format_prompt(long_prompt)
-
-      continuation_lines = tl(result)
-      assert Enum.all?(continuation_lines, fn line -> !String.starts_with?(line, ">") end)
     end
   end
 end

@@ -85,6 +85,26 @@ defmodule El.ClaudePort.Spec do
     end
   end
 
+  describe "handle_info {port, :eof}" do
+    setup do
+      state = %{port: :fake_port, buffer: "", current_request_id: nil}
+      Logger.configure(level: :debug)
+      {:ok, state: state}
+    end
+
+    test "logs debug", %{state: state} do
+      logs = ExUnit.CaptureLog.capture_log([level: :debug], fn ->
+        El.ClaudePort.handle_info({:fake_port, :eof}, state)
+      end)
+      assert logs =~ "Claude port EOF"
+    end
+
+    test "returns unchanged noreply", %{state: state} do
+      result = El.ClaudePort.handle_info({:fake_port, :eof}, state)
+      assert result == {:noreply, state}
+    end
+  end
+
   describe "terminate/2" do
     test "returns :ok when port is nil" do
       assert :ok = El.ClaudePort.terminate(:normal, %{port: nil})

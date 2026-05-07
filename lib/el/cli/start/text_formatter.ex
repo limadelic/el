@@ -17,6 +17,7 @@ defmodule El.CLI.Start.TextFormatter do
     prompt
     |> String.split("\n")
     |> Enum.flat_map(&wrap_text(&1, 44))
+    |> cap_lines(1)
     |> prefix_first_line("> ")
   end
 

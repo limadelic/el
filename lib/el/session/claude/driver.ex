@@ -1,4 +1,4 @@
-defmodule El.Session.Claude do
+defmodule El.Session.Claude.Driver do
   @behaviour El.Session.Behaviours.Claude
 
   def start(claude_module, opts) do

@@ -1,4 +1,4 @@
-defmodule El.Session.Router do
+defmodule El.Session.Handlers.Router do
   def detect_routes(text) do
     Regex.scan(~r/^@(\w+)>\s*(.*)$/m, text, capture: :all_but_first)
     |> Enum.map(fn [target, payload] ->
