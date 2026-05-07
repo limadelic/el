@@ -78,42 +78,16 @@ defmodule El do
   end
 
   @impl true
-  def restart_pattern(pattern, opts \\ []) do
-    ls(opts) |> Enum.filter(&match_pattern?(&1, pattern)) |> Enum.each(&El.restart(&1, opts))
-  end
+  defdelegate restart_pattern(pattern, opts \\ []), to: El.Pattern, as: :restart
 
   @impl true
-  def exit_pattern(pattern, opts \\ []) do
-    ls(opts)
-    |> Enum.filter(&match_pattern?(&1, pattern))
-    |> Enum.each(&El.exit(&1, opts))
-  end
+  defdelegate exit_pattern(pattern, opts \\ []), to: El.Pattern, as: :exit
 
   @impl true
-  def clear_pattern(pattern, opts \\ []) do
-    ls(opts) |> Enum.filter(&match_pattern?(&1, pattern)) |> Enum.each(&El.clear(&1, opts))
-  end
+  defdelegate clear_pattern(pattern, opts \\ []), to: El.Pattern, as: :clear
 
   @impl true
-  def log_pattern(pattern, count, opts \\ []),
-    do:
-      ls(opts) |> Enum.filter(&match_pattern?(&1, pattern)) |> Enum.flat_map(&log_entries(&1, count, opts))
-
-  defp log_entries(name, count, opts) do
-    name |> session_api(opts).log(count) |> filter_found()
-  end
-
-  defp filter_found(:not_found), do: []
-  defp filter_found(entries), do: entries
-
-  defp match_pattern?(name, pattern) do
-    name_str = Atom.to_string(name)
-    regex_pattern = pattern_to_regex(pattern)
-    Regex.match?(~r/^#{regex_pattern}$/, name_str)
-  end
-
-  defp pattern_to_regex(pattern),
-    do: pattern |> String.replace("*", ".*") |> String.replace("?", ".")
+  defdelegate log_pattern(pattern, count, opts \\ []), to: El.Pattern, as: :log
 
   @impl true
   def ls(opts \\ []) do
