@@ -48,19 +48,16 @@ defmodule El.CLI.Daemon.Spec do
     end
 
     test "calls :init.stop on the daemon node via RPC" do
-      expect(El.MockRPC, :call, fn node, :init, :stop, [] ->
-        assert node == El.CLI.Daemon.daemon_node()
-        :ok
-      end)
+      expected = El.CLI.Daemon.daemon_node()
+      expect(El.MockRPC, :call, fn ^expected, :init, :stop, [] -> :ok end)
 
-      El.CLI.Daemon.stop_daemon(El.MockRPC, El.MockSleeper, El.MockNodeMonitor)
+      El.CLI.Daemon.stop_daemon(rpc: El.MockRPC, sleeper: El.MockSleeper, node_monitor: El.MockNodeMonitor)
     end
 
     test "invokes node monitor to check if node is still connected" do
-      stub(El.MockRPC, :call, fn _node, :init, :stop, [] -> :ok end)
       expect(El.MockNodeMonitor, :list, fn -> [] end)
 
-      El.CLI.Daemon.stop_daemon(El.MockRPC, El.MockSleeper, El.MockNodeMonitor)
+      El.CLI.Daemon.stop_daemon(rpc: El.MockRPC, sleeper: El.MockSleeper, node_monitor: El.MockNodeMonitor)
     end
   end
 end
