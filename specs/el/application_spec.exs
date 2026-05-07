@@ -129,7 +129,7 @@ defmodule El.Application.Spec do
       Application.put_env(:el, :el_module, RestoreSessionsStubEl)
       Application.put_env(:el, :session_meta, RestoreSessionsStubSessionMeta)
 
-      El.Session.Restorer.restore_sessions(
+      El.Session.Lifecycle.Restorer.restore_sessions(
         el_module: RestoreSessionsStubEl,
         message_store: RestoreSessionsStubStore,
         session_meta: RestoreSessionsStubSessionMeta
@@ -146,7 +146,7 @@ defmodule El.Application.Spec do
       Application.put_env(:el, :el_module, RestoreWithMetaStubEl)
       Application.put_env(:el, :session_meta, RestoreWithMetaStubSessionMeta)
 
-      El.Session.Restorer.restore_sessions(
+      El.Session.Lifecycle.Restorer.restore_sessions(
         el_module: RestoreWithMetaStubEl,
         message_store: RestoreWithMetaStubStore,
         session_meta: RestoreWithMetaStubSessionMeta
@@ -165,7 +165,7 @@ defmodule El.Application.Spec do
       Application.put_env(:el, :el_module, RestoreWithModelStubEl)
       Application.put_env(:el, :session_meta, RestoreWithModelStubSessionMeta)
 
-      El.Session.Restorer.restore_sessions(
+      El.Session.Lifecycle.Restorer.restore_sessions(
         el_module: RestoreWithModelStubEl,
         message_store: RestoreWithModelStubStore,
         session_meta: RestoreWithModelStubSessionMeta
@@ -184,7 +184,7 @@ defmodule El.Application.Spec do
       Application.put_env(:el, :el_module, RestoreFallbackStubEl)
       Application.put_env(:el, :session_meta, RestoreFallbackStubSessionMeta)
 
-      El.Session.Restorer.restore_sessions(
+      El.Session.Lifecycle.Restorer.restore_sessions(
         el_module: RestoreFallbackStubEl,
         message_store: RestoreFallbackStubStore,
         session_meta: RestoreFallbackStubSessionMeta
@@ -203,7 +203,7 @@ defmodule El.Application.Spec do
       Application.put_env(:el, :el_module, WarmupStubEl)
       Application.put_env(:el, :session_meta, WarmupStubSessionMeta)
 
-      El.Session.Restorer.restore_sessions(
+      El.Session.Lifecycle.Restorer.restore_sessions(
         el_module: WarmupStubEl,
         message_store: WarmupStubStore,
         session_meta: WarmupStubSessionMeta

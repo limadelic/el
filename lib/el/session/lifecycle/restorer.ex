@@ -1,4 +1,4 @@
-defmodule El.Session.Restorer do
+defmodule El.Session.Lifecycle.Restorer do
   @behaviour El.Session.Behaviours.Restorer
 
   def restore_opts do
