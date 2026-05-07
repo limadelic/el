@@ -72,6 +72,11 @@ defmodule El.CLI do
     print_info(session_api.alive?(String.to_atom(name)), name, deps)
   end
 
+  def execute(:restart, [name], deps) do
+    el(deps).restart(String.to_atom(name), deps)
+    Start.print_session_info(name, [], deps)
+  end
+
   defp print_info(true, name, deps), do: Start.print_session_info(name, [], deps)
   defp print_info(false, _name, _deps), do: IO.puts(Output.usage_message())
 
