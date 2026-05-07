@@ -67,6 +67,10 @@ defmodule El.CLI do
     IO.puts("exited all")
   end
 
+  def execute(:info, [name], deps) do
+    Start.print_session_info(name, [], deps)
+  end
+
   defp maybe_print_card(:created, name, opts, deps), do: Start.print_session_info(name, opts, deps)
   defp maybe_print_card(:already_running, _name, _opts, _deps), do: :ok
 end

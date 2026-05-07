@@ -405,6 +405,17 @@ defmodule El.CLI.Spec do
         El.CLI.execute(:start, ["my_session"], [agent_detector: NilAgentDetectorStub, el_module: El.MockEl])
       end)
     end
+
+    test "execute :info outputs session name" do
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 2, last_prompt: "who?", last_response: "me", model: "haiku", cwd: nil, id: nil} end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.execute(:info, ["session"], [session_api: El.MockSessionApi])
+        end)
+
+      assert output =~ "session"
+    end
   end
 
   describe "daemon spawning" do
