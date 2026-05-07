@@ -526,6 +526,31 @@ defmodule El.CLI.Spec do
       end)
       assert Jason.decode!(String.trim(output)) == %{"name" => "ghost", "alive" => false}
     end
+
+    test "execute :info_json outputs alive JSON with all locked fields when session alive" do
+      stub(El.MockSessionApi, :alive?, fn :live -> true end)
+      stub(El.MockSessionApi, :info, fn :live ->
+        %{id: "abc-123", model: "sonnet", cwd: "/work", messages: 3, last_prompt: nil, last_response: nil}
+      end)
+      stub(El.MockSessionApi, :agent, fn :live -> "researcher" end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.execute(:info_json, ["live"], [session_api: El.MockSessionApi])
+        end)
+
+      assert Jason.decode!(String.trim(output)) == %{
+        "name" => "live",
+        "id" => "abc-123",
+        "agent" => "researcher",
+        "model" => "sonnet",
+        "cwd" => "/work",
+        "messages" => 3,
+        "last_prompt" => nil,
+        "last_response" => nil,
+        "alive" => true
+      }
+    end
   end
 
   describe "daemon spawning" do
