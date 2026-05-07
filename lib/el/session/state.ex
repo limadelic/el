@@ -25,7 +25,7 @@ defmodule El.Session.State do
   def build(name, opts, rest, session_id, cwd) do
     base_state(name, session_id, cwd, opts)
     |> Map.merge(modules_and_callbacks(opts))
-    |> Map.put(:claude_opts, El.Session.ClaudeOpts.build(rest, opts, session_id))
+    |> Map.put(:claude_opts, El.Session.Claude.Opts.build(rest, opts, session_id))
   end
 
   defp base_state(n, s, c, o),
