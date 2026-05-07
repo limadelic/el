@@ -1,16 +1,22 @@
 defmodule El.CLI.Daemon.Env do
+  @behaviour El.CLI.Daemon.Behaviours.Env
+
+  @impl true
   def daemon_script do
     :escript.script_name() |> to_string() |> Path.expand()
   end
 
+  @impl true
   def daemon_node do
     dev?() |> daemon_node_for()
   end
 
+  @impl true
   def daemon_cookie do
     dev?() |> daemon_cookie_for()
   end
 
+  @impl true
   def dev? do
     dev_check(System.get_env("DEV"))
   end

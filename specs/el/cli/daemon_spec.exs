@@ -16,6 +16,8 @@ defmodule El.CLI.Daemon.Spec do
     Code.ensure_loaded!(El.Infra.RPC)
     Code.ensure_loaded!(El.Infra.Sleeper)
     Code.ensure_loaded!(El.Infra.NodeMonitor)
+    Code.ensure_loaded!(El.CLI.Daemon.Behaviours.Env)
+    Code.ensure_loaded!(El.CLI.Daemon.Env)
     :ok
   end
 
@@ -36,6 +38,12 @@ defmodule El.CLI.Daemon.Spec do
   describe "El.Infra.NetKernel" do
     test "declares @behaviour El.Infra.Behaviours.NetKernel" do
       assert El.Infra.Behaviours.NetKernel in El.Infra.NetKernel.module_info(:attributes)[:behaviour] || []
+    end
+  end
+
+  describe "El.CLI.Daemon.Env" do
+    test "declares @behaviour El.CLI.Daemon.Behaviours.Env" do
+      assert El.CLI.Daemon.Behaviours.Env in El.CLI.Daemon.Env.module_info(:attributes)[:behaviour] || []
     end
   end
 
