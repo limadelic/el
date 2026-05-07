@@ -69,6 +69,11 @@ defmodule El.CLI do
     IO.puts("exited all")
   end
 
+  def execute(:clear_all, ["clear"], opts) do
+    el(opts).clear_pattern("*", opts)
+    IO.puts("cleared all")
+  end
+
   def execute(:restart_daemon, ["restart"], opts) do
     daemon(opts).restart_daemon(opts)
     IO.puts("daemon restarted")

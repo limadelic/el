@@ -183,6 +183,21 @@ defmodule El.CLI.Spec do
       assert output =~ "exited all"
     end
 
+    test "execute :clear_all calls El.clear_pattern with '*'" do
+      expect(El.MockEl, :clear_pattern, fn "*", _opts -> :ok end)
+
+      capture_io(fn -> El.CLI.execute(:clear_all, ["clear"], [el_module: El.MockEl]) end)
+    end
+
+    test "execute :clear_all prints confirmation" do
+      stub(El.MockEl, :clear_pattern, fn "*", _opts -> :ok end)
+
+      output =
+        capture_io(fn -> El.CLI.execute(:clear_all, ["clear"], [el_module: El.MockEl]) end)
+
+      assert output =~ "cleared all"
+    end
+
     test "execute :exit with glob pattern calls El.exit_pattern" do
       expect(El.MockEl, :exit_pattern, fn "dud*", _opts -> :ok end)
 
