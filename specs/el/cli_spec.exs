@@ -433,8 +433,17 @@ defmodule El.CLI.Spec do
       assert output =~ "el ls"
     end
 
-    test "execute :restart calls El.restart and prints session card" do
+    test "execute :restart calls El.restart on the named session" do
       expect(El.MockEl, :restart, fn :session, _opts -> :ok end)
+      stub(El.MockSessionApi, :info, fn :session -> %{messages: 1, last_prompt: "who?", last_response: "me", model: "haiku", cwd: nil, id: nil} end)
+
+      capture_io(fn ->
+        El.CLI.execute(:restart, ["session"], [el_module: El.MockEl, session_api: El.MockSessionApi])
+      end)
+    end
+
+    test "execute :restart prints the session card" do
+      stub(El.MockEl, :restart, fn :session, _opts -> :ok end)
       stub(El.MockSessionApi, :info, fn :session -> %{messages: 1, last_prompt: "who?", last_response: "me", model: "haiku", cwd: nil, id: nil} end)
 
       output =
