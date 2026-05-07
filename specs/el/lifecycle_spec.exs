@@ -35,4 +35,17 @@ defmodule El.Lifecycle.Spec do
 
     verify!(El.MockSessionMeta)
   end
+
+  test "session_meta survives restart" do
+    expect(El.MockRegistry, :lookup, fn El.Registry, :restarted_session -> [] end)
+    stub(El.MockMonitor, :wait_for_down, fn _, _, _ -> :ok end)
+
+    El.Lifecycle.exit(:restarted_session, :restart, [
+      registry: El.MockRegistry,
+      session_meta: El.MockSessionMeta,
+      monitor: El.MockMonitor
+    ])
+
+    verify!(El.MockSessionMeta)
+  end
 end

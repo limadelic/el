@@ -32,6 +32,10 @@ defmodule El.Lifecycle do
     El.Deps.monitor(opts).wait_for_down(ref, name, Keyword.put(opts, :app, app))
   end
 
+  defp delete_stores(_name, :restart, _opts) do
+    :ok
+  end
+
   defp delete_stores(name, reason, opts) when reason in [:normal, :shutdown] do
     app = Keyword.fetch!(opts, :app)
     app.delete_session_messages(name, opts)
