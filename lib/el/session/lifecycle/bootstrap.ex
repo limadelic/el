@@ -1,4 +1,4 @@
-defmodule El.Session.Bootstrap do
+defmodule El.Session.Lifecycle.Bootstrap do
   @behaviour El.Session.Behaviours.Bootstrap
 
   alias El.Session.Claude

@@ -20,10 +20,10 @@ defmodule El.Deps.Spec do
       assert Keyword.get(result, :connection_module) == El.ClaudePort.Connection
     end
 
-    test "core_modules defaults bootstrap_module to El.Session.Bootstrap" do
+    test "core_modules defaults bootstrap_module to El.Session.Lifecycle.Bootstrap" do
       result = El.Deps.production()
 
-      assert Keyword.get(result, :bootstrap_module) == El.Session.Bootstrap
+      assert Keyword.get(result, :bootstrap_module) == El.Session.Lifecycle.Bootstrap
     end
 
     test "core_modules defaults cli_resolver_module to El.ClaudePort.Connection.CliResolver" do

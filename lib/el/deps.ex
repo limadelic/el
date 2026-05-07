@@ -24,7 +24,7 @@ defmodule El.Deps do
   end
 
   defp core_bootstrap do
-    [dep(:bootstrap_module, El.Session.Bootstrap), dep(:connection_module, El.ClaudePort.Connection)]
+    [dep(:bootstrap_module, El.Session.Lifecycle.Bootstrap), dep(:connection_module, El.ClaudePort.Connection)]
   end
 
   defp core_ports do

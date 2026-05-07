@@ -6,7 +6,7 @@ defmodule BootstrapMockClaude do
   def start_link(_opts), do: {:ok, :test_pid}
 end
 
-defmodule El.Session.BootstrapSpec do
+defmodule El.Session.Lifecycle.Bootstrap.Spec do
   use ExUnit.Case
 
   test "handle_continue/1 returns noreply tuple with updated state" do
@@ -20,7 +20,7 @@ defmodule El.Session.BootstrapSpec do
       claude_pid: nil
     }
 
-    {:noreply, result_state} = El.Session.Bootstrap.handle_continue(state)
+    {:noreply, result_state} = El.Session.Lifecycle.Bootstrap.handle_continue(state)
 
     assert result_state.claude_pid == :test_pid
   end

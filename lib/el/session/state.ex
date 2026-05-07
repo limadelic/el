@@ -10,7 +10,7 @@ defmodule El.Session.State do
     session_meta: El.Session.Meta,
     session_api: El.Session.Api,
     el_module: El,
-    bootstrap_module: El.Session.Bootstrap
+    bootstrap_module: El.Session.Lifecycle.Bootstrap
   }
   @base_state_defaults %{
     name: nil,
