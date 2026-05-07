@@ -3,7 +3,7 @@ defmodule El.Session do
 
   require Logger
 
-  alias El.Session.Terminator
+  alias El.Session.Lifecycle.Terminator
   alias El.Session.Handlers.Log
   alias El.Session.Handlers.Info
   alias El.Session.Handlers.Cast

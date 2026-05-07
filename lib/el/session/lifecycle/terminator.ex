@@ -1,4 +1,4 @@
-defmodule El.Session.Terminator do
+defmodule El.Session.Lifecycle.Terminator do
   def handle(reason, _state) when reason in [:normal, :shutdown] do
     :ok
   end
