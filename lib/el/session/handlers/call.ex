@@ -1,4 +1,4 @@
-defmodule El.Session.CallHandler do
+defmodule El.Session.Handlers.Call do
   alias El.Session.Claude
   alias El.Session.Router
 

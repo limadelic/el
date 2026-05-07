@@ -7,7 +7,7 @@ defmodule El.Session do
   alias El.Session.LogHandler
   alias El.Session.InfoHandler
   alias El.Session.CastHandler
-  alias El.Session.CallHandler
+  alias El.Session.Handlers.Call
 
   @impl true
   def init({name, opts}) do
@@ -37,7 +37,7 @@ defmodule El.Session do
 
   @impl true
   def handle_call({:ask, _} = msg, from, state) do
-    CallHandler.handle(msg, from, state)
+    Call.handle(msg, from, state)
   end
 
   @impl true
@@ -52,14 +52,14 @@ defmodule El.Session do
 
   @impl true
   def handle_call(:clear, from, state) do
-    CallHandler.handle(:clear, from, state)
+    Call.handle(:clear, from, state)
   end
 
   @impl true
-  def handle_call(:agent, from, state), do: CallHandler.handle(:agent, from, state)
+  def handle_call(:agent, from, state), do: Call.handle(:agent, from, state)
 
   @impl true
-  def handle_call(:info, from, state), do: CallHandler.handle(:info, from, state)
+  def handle_call(:info, from, state), do: Call.handle(:info, from, state)
 
   @impl true
   def handle_info(msg, state) do
