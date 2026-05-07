@@ -51,6 +51,7 @@ defmodule El.CLI do
   end
 
   def execute(:log, [name, "log"], opts), do: Log.execute(name, opts)
+  def execute(:log_json, [name, "log"], opts), do: Json.execute_log(name, 1, el(opts), opts)
   def execute(:log_n, [name, "log", n], opts), do: Log.execute_n(name, n, opts)
 
   def execute(:exit, [name, "exit"], opts) do

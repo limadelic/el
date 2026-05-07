@@ -20,4 +20,18 @@ defmodule El.CLI.Json do
     |> Map.put(:agent, api.agent(name_atom))
     |> Map.put(:alive, true)
   end
+
+  def execute_log(name, count, el_module, opts) do
+    El.CLI.Log.log_for_name(name, count, el_module, opts)
+    |> encode_log()
+    |> IO.puts()
+  end
+
+  defp encode_log(entries) do
+    entries |> Enum.map(&log_entry/1) |> Jason.encode!()
+  end
+
+  defp log_entry({type, message, response, metadata}) do
+    %{type: type, message: message, response: response, metadata: metadata}
+  end
 end
