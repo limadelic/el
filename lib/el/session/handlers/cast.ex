@@ -17,12 +17,14 @@ defmodule El.Session.Handlers.Cast do
   end
 
   def handle({:complete_ask, from, message, response, ref, model, nil}, state) do
-    finalized = finalize_and_build_ask(state, from, message, response, ref, model)
+    ask = %{from: from, ref: ref, message: message, response: response, model: model}
+    finalized = state.ask_module.finalize_ask(state, ask)
     {:noreply, finalized}
   end
 
   def handle({:complete_ask, from, message, response, ref, model, session_id}, state) do
-    finalized = finalize_and_build_ask(state, from, message, response, ref, model)
+    ask = %{from: from, ref: ref, message: message, response: response, model: model}
+    finalized = state.ask_module.finalize_ask(state, ask)
     updated_state = %{finalized | session_id: session_id}
     persist_session_meta(updated_state, session_id, model)
     {:noreply, updated_state}
@@ -32,11 +34,6 @@ defmodule El.Session.Handlers.Cast do
     entry = {"relay", message, response, %{from: state.name}}
     state.store_module.store_message(state.name, entry, message_store: state.opts[:message_store])
     {:noreply, %{state | messages: state.messages ++ [entry]}}
-  end
-
-  defp finalize_and_build_ask(state, from, message, response, ref, model) do
-    ask = %{from: from, ref: ref, message: message, response: response, model: model}
-    state.ask_module.finalize_ask(state, ask)
   end
 
   defp persist_session_meta(state, session_id, model) do
