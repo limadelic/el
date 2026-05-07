@@ -248,6 +248,19 @@ defmodule El.Spec do
     end
   end
 
+  describe "ls/0 seam via Application env" do
+    setup do
+      Application.put_env(:el, :session_registry, El.MockSessionRegistry)
+      on_exit(fn -> Application.delete_env(:el, :session_registry) end)
+      :ok
+    end
+
+    test "uses session_registry from Application env" do
+      expect(El.MockSessionRegistry, :list, fn _opts -> [:foo] end)
+      assert El.ls() == [:foo]
+    end
+  end
+
   describe "session_info/1" do
     test "returns message count for session" do
       expect(El.MockSession, :info, fn :kent -> %{messages: 5} end)
