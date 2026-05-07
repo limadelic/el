@@ -30,6 +30,18 @@ defmodule El.CLI.Spec do
       assert El.CLI.Router.parse_route(["my_session", "-a", "kent"]) == :start
     end
 
+    test "returns :start for name start (bare)" do
+      assert El.CLI.Router.parse_route(["my_session", "start"]) == :start
+    end
+
+    test "returns :start for name start -m model" do
+      assert El.CLI.Router.parse_route(["my_session", "start", "-m", "sonnet"]) == :start
+    end
+
+    test "returns :start for name start -a agent" do
+      assert El.CLI.Router.parse_route(["my_session", "start", "-a", "kent"]) == :start
+    end
+
     test "returns msg for name word message" do
       assert El.CLI.Router.parse_route(["session", "hello"]) == :msg
     end
@@ -421,6 +433,21 @@ defmodule El.CLI.Spec do
 
       assert_received {:start_opts, opts}
       assert opts[:model] == "opus"
+    end
+
+    test "execute :start with bare 'start' literal calls El.start" do
+      expect(El.MockEl, :start, fn :dude, _opts -> :created end)
+      stub(El.MockSessionApi, :info, fn :dude -> %{messages: 0, last_prompt: nil, last_response: nil, model: nil, cwd: nil, id: nil} end)
+      stub(El.MockSessionApi, :ask, fn :dude, "who are you?" -> "response" end)
+      stub(El.MockSessionApi, :agent, fn :dude -> nil end)
+
+      capture_io(fn ->
+        El.CLI.execute(
+          :start,
+          ["dude", "start"],
+          [el_module: El.MockEl, session_api: El.MockSessionApi]
+        )
+      end)
     end
 
     test "execute :start uses merge_session_opts to combine agent and model" do

@@ -28,6 +28,18 @@ defmodule El.CLI.Router do
     :start
   end
 
+  def parse_route([<<c, _::binary>>, "start"]) when c != ?- do
+    :start
+  end
+
+  def parse_route([<<c, _::binary>>, "start", "-m", _model | _rest]) when c != ?- do
+    :start
+  end
+
+  def parse_route([<<c, _::binary>>, "start", "-a", _agent | _rest]) when c != ?- do
+    :start
+  end
+
   def parse_route([<<c, _::binary>>, "-json"]) when c != ?- do
     :info_json
   end

@@ -28,6 +28,8 @@ defmodule El.CLI do
     Start.start_daemon_node_for(name, model, el(opts), El.Infra.Sleeper, opts)
   end
 
+  def execute(:start, [name, "start" | rest], deps), do: execute(:start, [name | rest], deps)
+
   def execute(:start, [name], deps) do
     opts = Start.Options.merge_session_opts(name, nil, nil, deps)
     Start.handle_find_daemon_for_start(name, opts, el(deps), deps)
