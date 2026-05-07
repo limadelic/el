@@ -30,12 +30,18 @@ defmodule El.CLI.Daemon do
   def restart_daemon(opts \\ [])
   def restart_daemon(opts) when is_list(opts) do
     stop_daemon(opts)
-    system = Keyword.get(opts, :system, El.Infra.System)
-    node_connector = Keyword.get(opts, :node_connector, El.Infra.NodeConnector)
-    net_kernel = Keyword.get(opts, :net_kernel, El.Infra.NetKernel)
+    %{system: system, node_connector: node_connector, net_kernel: net_kernel} = restart_daemon_deps(opts)
     spawn_daemon(system)
     connect_to_daemon(system, node_connector, net_kernel)
     :ok
+  end
+
+  defp restart_daemon_deps(opts) do
+    %{
+      system: Keyword.get(opts, :system, El.Infra.System),
+      node_connector: Keyword.get(opts, :node_connector, El.Infra.NodeConnector),
+      net_kernel: Keyword.get(opts, :net_kernel, El.Infra.NetKernel)
+    }
   end
 
   def connect_to_daemon(system \\ El.Infra.System, node_connector \\ El.Infra.NodeConnector, net_kernel \\ El.Infra.NetKernel) do
