@@ -12,19 +12,19 @@ defmodule El.CLI.Start.TextFormatter.Spec do
       assert El.CLI.Start.TextFormatter.format_response(nil) == []
     end
 
-    test "caps wrapped text at 1 line", %{result: result} do
-      assert length(result) == 1
+    test "caps wrapped text at 2 lines", %{result: result} do
+      assert length(result) <= 2
     end
 
     test "wraps text to 46 char width", %{result: result} do
       assert Enum.all?(result, fn line -> String.length(line) <= 46 end)
     end
 
-    test "caps lines at 1 even with many lines of input" do
+    test "caps lines at 2 even with many lines of input" do
       three_lines = "Line1 " <> String.duplicate("word ", 20) <> "Line2 " <> String.duplicate("word ", 20) <> "Line3"
       result = El.CLI.Start.TextFormatter.format_response(three_lines)
 
-      assert length(result) == 1
+      assert length(result) <= 2
     end
 
     test "handles short text that needs no wrapping" do
@@ -52,17 +52,25 @@ defmodule El.CLI.Start.TextFormatter.Spec do
       prompt = "Line one\nLine two"
       result = El.CLI.Start.TextFormatter.format_prompt(prompt)
 
-      assert length(result) == 1
+      assert length(result) == 2
       assert String.starts_with?(hd(result), "> ")
     end
 
-    test "caps long single-line prompt to first line only" do
+    test "wraps long single-line prompt to multiple rows" do
       long_prompt = String.duplicate("word ", 25)
       result = El.CLI.Start.TextFormatter.format_prompt(long_prompt)
 
-      assert length(result) == 1
+      assert length(result) > 1
       assert String.starts_with?(hd(result), "> ")
-      assert String.length(hd(result)) <= 46
+      assert Enum.all?(result, fn line -> String.length(line) <= 46 end)
+    end
+
+    test "continuation lines have no > prefix" do
+      long_prompt = String.duplicate("word ", 25)
+      result = El.CLI.Start.TextFormatter.format_prompt(long_prompt)
+
+      continuation_lines = tl(result)
+      assert Enum.all?(continuation_lines, fn line -> !String.starts_with?(line, ">") end)
     end
   end
 end

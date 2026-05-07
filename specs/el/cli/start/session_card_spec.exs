@@ -194,13 +194,12 @@ defmodule El.CLI.Start.SessionCard.Spec do
       assert Enum.any?(result, &String.starts_with?(&1, "> Line one"))
     end
 
-    test "multi-line prompt capped to first line only", %{info: info} do
+    test "multi-line prompt continuation has no prefix", %{info: info} do
       multi_line_prompt = "Line one\nLine two"
       new_info = %{info | last_prompt: multi_line_prompt}
       result = El.CLI.Start.SessionCard.build_card_rows("test_session", [], new_info)
 
-      assert Enum.any?(result, &String.starts_with?(&1, "> Line one"))
-      assert Enum.all?(result, &(!String.contains?(&1, "Line two")))
+      assert Enum.any?(result, &String.starts_with?(&1, "Line two"))
     end
 
     test "long prompt wraps and displays on multiple rows", %{info: info} do

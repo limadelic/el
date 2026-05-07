@@ -7,7 +7,7 @@ defmodule El.CLI.Start.TextFormatter do
   def format_response(response) do
     response
     |> wrap_text(46)
-    |> cap_lines(1)
+    |> cap_lines(2)
   end
 
   @impl true
@@ -17,7 +17,6 @@ defmodule El.CLI.Start.TextFormatter do
     prompt
     |> String.split("\n")
     |> Enum.flat_map(&wrap_text(&1, 44))
-    |> cap_lines(1)
     |> prefix_first_line("> ")
   end
 
