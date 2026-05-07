@@ -704,10 +704,10 @@ defmodule El.CLI.Spec do
           El.CLI.Start.handle_find_daemon_for_start("session", [], El.MockEl, [session_api: El.MockSessionApi])
         end)
 
-      assert output =~ "stack together."
+      assert output =~ "I'm Dude, man. The rug that ties this whole"
     end
 
-    test "caps response at 2 lines" do
+    test "caps response at 1 line" do
       expect(El.MockEl, :start, fn :session, opts when is_list(opts) -> :ok end)
       long_response = "This is a very long response that will definitely wrap across multiple lines when formatted with word awareness at 46 characters per line"
       stub(El.MockSessionApi, :info, fn :session -> %{messages: 1, last_prompt: "who are you?", last_response: long_response, model: nil, cwd: nil, id: nil} end)
@@ -719,7 +719,7 @@ defmodule El.CLI.Spec do
 
       lines = String.split(output, "\n")
       response_lines = Enum.filter(lines, fn line -> String.contains?(line, ["definitely", "word", "awareness"]) end)
-      assert length(response_lines) <= 2
+      assert length(response_lines) == 0
     end
 
     test "sends ping when agent in opts" do
@@ -1083,14 +1083,14 @@ defmodule El.CLI.Spec do
       text = "I'm Dude, man. The rug that ties this whole stack together."
       result = El.CLI.Start.TextFormatter.format_response(text)
 
-      assert result == ["I'm Dude, man. The rug that ties this whole", "stack together."]
+      assert result == ["I'm Dude, man. The rug that ties this whole"]
     end
 
-    test "caps at 2 lines maximum" do
+    test "caps at 1 line maximum" do
       long_text = "This is a very long response that will definitely wrap across multiple lines when formatted with word awareness at 46 characters per line"
       result = El.CLI.Start.TextFormatter.format_response(long_text)
 
-      assert length(result) == 2
+      assert length(result) == 1
     end
 
     test "respects 46 character line width" do
