@@ -11,14 +11,19 @@ defmodule El.CLI.Daemon do
 
   def stop_daemon(opts \\ [])
   def stop_daemon(opts) when is_list(opts) do
-    rpc = Keyword.get(opts, :rpc, El.Infra.RPC)
-    sleeper = Keyword.get(opts, :sleeper, El.Infra.Sleeper)
-    node_monitor = Keyword.get(opts, :node_monitor, El.Infra.NodeMonitor)
-    disconnect_timeout = Keyword.get(opts, :disconnect_timeout, 5000)
-    disconnect_poll_ms = Keyword.get(opts, :disconnect_poll_ms, 100)
-
+    %{rpc: rpc, sleeper: sleeper, node_monitor: node_monitor, disconnect_timeout: disconnect_timeout, disconnect_poll_ms: disconnect_poll_ms} = stop_daemon_deps(opts)
     rpc.call(daemon_node(), :init, :stop, [])
     wait_for_node_disconnect(node_monitor, sleeper, timeout: disconnect_timeout, poll_ms: disconnect_poll_ms)
+  end
+
+  defp stop_daemon_deps(opts) do
+    %{
+      rpc: Keyword.get(opts, :rpc, El.Infra.RPC),
+      sleeper: Keyword.get(opts, :sleeper, El.Infra.Sleeper),
+      node_monitor: Keyword.get(opts, :node_monitor, El.Infra.NodeMonitor),
+      disconnect_timeout: Keyword.get(opts, :disconnect_timeout, 5000),
+      disconnect_poll_ms: Keyword.get(opts, :disconnect_poll_ms, 100)
+    }
   end
 
   @impl true
