@@ -8,19 +8,14 @@ defmodule El.CLI.Daemon do
 
   def stop_daemon(opts \\ [])
   def stop_daemon(opts) when is_list(opts) do
-    %{rpc: rpc, sleeper: sleeper, node_monitor: node_monitor, disconnect_timeout: disconnect_timeout, disconnect_poll_ms: disconnect_poll_ms} = stop_daemon_deps(opts)
+    %{rpc: rpc, sleeper: sleeper, node_monitor: node_monitor, env: env, disconnect_timeout: disconnect_timeout, disconnect_poll_ms: disconnect_poll_ms} = stop_daemon_deps(opts)
     rpc.call(daemon_node(), :init, :stop, [])
-    wait_for_node_disconnect(node_monitor, sleeper, timeout: disconnect_timeout, poll_ms: disconnect_poll_ms)
+    wait_for_node_disconnect(node_monitor, sleeper, env, timeout: disconnect_timeout, poll_ms: disconnect_poll_ms)
   end
 
   defp stop_daemon_deps(opts) do
-    %{
-      rpc: Keyword.get(opts, :rpc, El.Infra.RPC),
-      sleeper: Keyword.get(opts, :sleeper, El.Infra.Sleeper),
-      node_monitor: Keyword.get(opts, :node_monitor, El.Infra.NodeMonitor),
-      disconnect_timeout: Keyword.get(opts, :disconnect_timeout, 5000),
-      disconnect_poll_ms: Keyword.get(opts, :disconnect_poll_ms, 100)
-    }
+    defaults = %{rpc: El.Infra.RPC, sleeper: El.Infra.Sleeper, node_monitor: El.Infra.NodeMonitor, env: El.CLI.Daemon.Env, disconnect_timeout: 5000, disconnect_poll_ms: 100}
+    Map.merge(defaults, Map.new(opts))
   end
 
   @impl true
@@ -34,11 +29,8 @@ defmodule El.CLI.Daemon do
   end
 
   defp restart_daemon_deps(opts) do
-    %{
-      system: Keyword.get(opts, :system, El.Infra.System),
-      node_connector: Keyword.get(opts, :node_connector, El.Infra.NodeConnector),
-      net_kernel: Keyword.get(opts, :net_kernel, El.Infra.NetKernel)
-    }
+    defaults = %{system: El.Infra.System, node_connector: El.Infra.NodeConnector, net_kernel: El.Infra.NetKernel}
+    Map.merge(defaults, Map.new(opts))
   end
 
   def connect_to_daemon(system \\ El.Infra.System, node_connector \\ El.Infra.NodeConnector, net_kernel \\ El.Infra.NetKernel) do
@@ -103,28 +95,29 @@ defmodule El.CLI.Daemon do
   defp env_prefix(true), do: "DEV=1 "
   defp env_prefix(false), do: ""
 
-  defp wait_for_node_disconnect(node_monitor, sleeper, timeout: max_ms, poll_ms: poll_interval) do
-    wait_until_disconnected(node_monitor, sleeper, current_time_ms(), max_ms, poll_interval)
+  defp wait_for_node_disconnect(node_monitor, sleeper, env, timeout: max_ms, poll_ms: poll_interval) do
+    state = %{node_monitor: node_monitor, sleeper: sleeper, start_ms: current_time_ms(), max_ms: max_ms, poll_interval: poll_interval, env: env}
+    wait_until_disconnected(state)
   end
 
-  defp wait_until_disconnected(_node_monitor, _sleeper, start_ms, max_ms, _poll_interval) when start_ms >= max_ms do
+  defp wait_until_disconnected(%{start_ms: start_ms, max_ms: max_ms}) when start_ms >= max_ms do
     :ok
   end
 
-  defp wait_until_disconnected(node_monitor, sleeper, start_ms, max_ms, poll_interval) do
-    node_disconnected?(node_monitor)
-    |> continue_or_retry(node_monitor, sleeper, start_ms, max_ms, poll_interval)
+  defp wait_until_disconnected(%{node_monitor: node_monitor, env: env} = state) do
+    node_disconnected?(node_monitor, env)
+    |> continue_or_retry(state)
   end
 
-  defp continue_or_retry(true, _node_monitor, _sleeper, _start_ms, _max_ms, _poll_interval), do: :ok
+  defp continue_or_retry(true, _state), do: :ok
 
-  defp continue_or_retry(false, node_monitor, sleeper, start_ms, max_ms, poll_interval) do
+  defp continue_or_retry(false, %{sleeper: sleeper, start_ms: start_ms, poll_interval: poll_interval} = state) do
     sleeper.sleep(poll_interval)
-    wait_until_disconnected(node_monitor, sleeper, start_ms + poll_interval, max_ms, poll_interval)
+    wait_until_disconnected(%{state | start_ms: start_ms + poll_interval})
   end
 
-  defp node_disconnected?(node_monitor) do
-    not Enum.member?(node_monitor.list(), daemon_node())
+  defp node_disconnected?(node_monitor, env) do
+    not Enum.member?(node_monitor.list(), env.daemon_node())
   end
 
   defp current_time_ms do

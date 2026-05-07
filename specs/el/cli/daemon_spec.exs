@@ -67,6 +67,13 @@ defmodule El.CLI.Daemon.Spec do
 
       El.CLI.Daemon.stop_daemon(rpc: El.MockRPC, sleeper: El.MockSleeper, node_monitor: El.MockNodeMonitor)
     end
+
+    test "accepts env parameter for dependency injection" do
+      stub(El.MockDaemonEnv, :daemon_node, fn -> :"el_dev@127.0.0.1" end)
+      expect(El.MockNodeMonitor, :list, fn -> [] end)
+
+      El.CLI.Daemon.stop_daemon(rpc: El.MockRPC, sleeper: El.MockSleeper, node_monitor: El.MockNodeMonitor, env: El.MockDaemonEnv)
+    end
   end
 
   describe "El.CLI.Daemon.restart_daemon/1" do
