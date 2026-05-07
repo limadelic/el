@@ -252,6 +252,12 @@ defmodule El.CLI.Spec do
       capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "5"], [el_module: El.MockEl]) end)
     end
 
+    test "execute :log_n with glob and \"all\" calls El.log_pattern with :all" do
+      expect(El.MockEl, :log_pattern, fn "dud*", :all, _opts -> [] end)
+
+      capture_io(fn -> El.CLI.execute(:log_n, ["dud*", "log", "all"], el_module: El.MockEl) end)
+    end
+
     test "execute :msg auto-starts session with agent detection" do
       expect(El.MockEl, :start, fn :session, opts when is_list(opts) -> :created end)
       expect(El.MockEl, :ask, fn :session, "hello world", _opts -> "reply" end)
