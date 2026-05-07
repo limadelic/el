@@ -8,10 +8,10 @@ defmodule El.Deps.Spec do
       assert Keyword.get(result, :init_module) == El.MessageStore.Init
     end
 
-    test "returns map with restorer_module key defaulting to El.SessionRestorer" do
+    test "returns map with restorer_module key defaulting to El.Session.Restorer" do
       result = El.Deps.production()
 
-      assert Keyword.get(result, :restorer_module) == El.SessionRestorer
+      assert Keyword.get(result, :restorer_module) == El.Session.Restorer
     end
 
     test "returns map with connection_module key defaulting to El.ClaudePort.Connection" do

@@ -41,7 +41,7 @@ defmodule El.Session.CastHandler do
   end
 
   defp persist_session_meta(state, session_id, model) do
-    session_meta = Map.get(state, :session_meta, El.SessionMeta)
+    session_meta = Map.get(state, :session_meta, El.Session.Meta)
     session_meta.insert(state.name, agent_from(state), session_id, persisted_model(state, model))
   end
 

@@ -43,7 +43,7 @@ defmodule El.Application do
   end
 
   defp restorer_module do
-    Application.get_env(:el, :restorer_module, El.SessionRestorer)
+    Application.get_env(:el, :restorer_module, El.Session.Restorer)
   end
 
 end

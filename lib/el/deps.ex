@@ -20,7 +20,7 @@ defmodule El.Deps do
   end
 
   defp core_init_restorer do
-    [dep(:init_module, El.MessageStore.Init), dep(:restorer_module, El.SessionRestorer)]
+    [dep(:init_module, El.MessageStore.Init), dep(:restorer_module, El.Session.Restorer)]
   end
 
   defp core_bootstrap do

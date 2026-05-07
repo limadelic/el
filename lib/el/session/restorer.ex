@@ -1,10 +1,10 @@
-defmodule El.SessionRestorer do
+defmodule El.Session.Restorer do
   @behaviour El.Session.Behaviours.Restorer
 
   def restore_opts do
     [
       el_module: Application.get_env(:el, :el_module, El),
-      session_meta: Application.get_env(:el, :session_meta, El.SessionMeta),
+      session_meta: Application.get_env(:el, :session_meta, El.Session.Meta),
       message_store: Application.get_env(:el, :message_store, El.MessageStore)
     ]
   end

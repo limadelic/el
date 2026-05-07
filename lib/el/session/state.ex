@@ -7,7 +7,7 @@ defmodule El.Session.State do
     alive_fn: &El.Session.Api.alive?/1,
     registry_module: El.Session.Registry,
     store_module: El.MessageStore.Facade,
-    session_meta: El.SessionMeta,
+    session_meta: El.Session.Meta,
     session_api: El.Session.Api,
     el_module: El,
     bootstrap_module: El.Session.Bootstrap
