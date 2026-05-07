@@ -1,6 +1,6 @@
 defmodule El.Session.CastHandler do
   alias El.Session.Claude
-  alias El.Session.Tell
+  alias El.Session.Commands.Tell
   alias El.Session.Store
   alias El.Session.Router
 

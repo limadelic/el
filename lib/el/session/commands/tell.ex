@@ -1,4 +1,4 @@
-defmodule El.Session.Tell do
+defmodule El.Session.Commands.Tell do
   alias El.Session.Router
   alias El.Session.Store
 

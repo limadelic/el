@@ -3,7 +3,7 @@ defmodule El.Session.State do
     claude_module: El.ClaudePort,
     claude_session: El.Session.Claude,
     task_module: Task,
-    ask_module: El.Session.Ask,
+    ask_module: El.Session.Commands.Ask,
     alive_fn: &El.Session.Api.alive?/1,
     registry_module: El.Session.Registry,
     store_module: El.MessageStore.Facade,

@@ -1,4 +1,4 @@
-defmodule El.Session.Ask do
+defmodule El.Session.Commands.Ask do
   @behaviour El.Session.Behaviours.Ask
 
   alias El.Session.Router
