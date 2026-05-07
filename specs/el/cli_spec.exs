@@ -126,47 +126,53 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :log_n with number calls El.log with count" do
+      stub(El.MockSessionApi, :alive?, fn :session -> true end)
       expect(El.MockEl, :log, fn :session, 5, _opts -> [] end)
 
-      capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "5"], [el_module: El.MockEl]) end)
+      capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "5"], [el_module: El.MockEl, session_api: El.MockSessionApi]) end)
     end
 
     test "execute :log_n with number prints result" do
+      stub(El.MockSessionApi, :alive?, fn :session -> true end)
       expect(El.MockEl, :log, fn :session, 5, _opts -> [{"ask", "hello", "world", %{}}] end)
 
       output =
-        capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "5"], [el_module: El.MockEl]) end)
+        capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "5"], [el_module: El.MockEl, session_api: El.MockSessionApi]) end)
 
       assert output =~ "> hello"
     end
 
     test "execute :log_n with 'all' calls El.log with :all" do
+      stub(El.MockSessionApi, :alive?, fn :session -> true end)
       expect(El.MockEl, :log, fn :session, :all, _opts -> [] end)
 
-      capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "all"], [el_module: El.MockEl]) end)
+      capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "all"], [el_module: El.MockEl, session_api: El.MockSessionApi]) end)
     end
 
     test "execute :log_n with 'all' prints result" do
+      stub(El.MockSessionApi, :alive?, fn :session -> true end)
       expect(El.MockEl, :log, fn :session, :all, _opts ->
         [{"tell", "goodbye", "see ya", %{}}]
       end)
 
       output =
-        capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "all"], [el_module: El.MockEl]) end)
+        capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "all"], [el_module: El.MockEl, session_api: El.MockSessionApi]) end)
 
       assert output =~ "> goodbye"
     end
 
     test "execute :log calls El.log with count 1" do
+      stub(El.MockSessionApi, :alive?, fn :session -> true end)
       expect(El.MockEl, :log, fn :session, 1, _opts -> [] end)
 
-      capture_io(fn -> El.CLI.execute(:log, ["session", "log"], [el_module: El.MockEl]) end)
+      capture_io(fn -> El.CLI.execute(:log, ["session", "log"], [el_module: El.MockEl, session_api: El.MockSessionApi]) end)
     end
 
     test "execute :log prints result" do
+      stub(El.MockSessionApi, :alive?, fn :session -> true end)
       expect(El.MockEl, :log, fn :session, 1, _opts -> [{"ask", "hi", "reply", %{}}] end)
 
-      output = capture_io(fn -> El.CLI.execute(:log, ["session", "log"], [el_module: El.MockEl]) end)
+      output = capture_io(fn -> El.CLI.execute(:log, ["session", "log"], [el_module: El.MockEl, session_api: El.MockSessionApi]) end)
 
       assert output =~ "> hi"
     end
@@ -224,6 +230,21 @@ defmodule El.CLI.Spec do
         end)
 
       assert String.trim(output) == "[]"
+    end
+
+    test "execute :log prints not-found message when session not alive" do
+      stub(El.MockSessionApi, :alive?, fn :ghost -> false end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.execute(
+            :log,
+            ["ghost", "log"],
+            [el_module: El.MockEl, session_api: El.MockSessionApi]
+          )
+        end)
+
+      assert output =~ "No sessions running"
     end
 
     test "execute :clear calls El.clear with name" do
@@ -302,9 +323,10 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :log with session name calls El.log" do
+      stub(El.MockSessionApi, :alive?, fn :session -> true end)
       expect(El.MockEl, :log, fn :session, 1, _opts -> [] end)
 
-      capture_io(fn -> El.CLI.execute(:log, ["session", "log"], [el_module: El.MockEl]) end)
+      capture_io(fn -> El.CLI.execute(:log, ["session", "log"], [el_module: El.MockEl, session_api: El.MockSessionApi]) end)
     end
 
     test "execute :log_n with glob pattern calls El.log_pattern" do
@@ -314,9 +336,10 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :log_n with session name calls El.log" do
+      stub(El.MockSessionApi, :alive?, fn :session -> true end)
       expect(El.MockEl, :log, fn :session, 5, _opts -> [] end)
 
-      capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "5"], [el_module: El.MockEl]) end)
+      capture_io(fn -> El.CLI.execute(:log_n, ["session", "log", "5"], [el_module: El.MockEl, session_api: El.MockSessionApi]) end)
     end
 
     test "execute :log_n with glob and \"all\" calls El.log_pattern with :all" do

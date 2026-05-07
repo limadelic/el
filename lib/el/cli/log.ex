@@ -21,8 +21,15 @@ defmodule El.CLI.Log do
   end
 
   def log_by_kind(false, name, count, el_module, opts) do
+    api = Keyword.get(opts, :session_api, El.Session.Api)
+    do_log(api.alive?(String.to_atom(name)), name, count, el_module, opts)
+  end
+
+  defp do_log(true, name, count, el_module, opts) do
     el_module.log(String.to_atom(name), count, opts)
   end
+
+  defp do_log(false, _name, _count, _el_module, _opts), do: :not_found
 
   def parse_log_count("all"), do: :all
   def parse_log_count(n), do: String.to_integer(n)
