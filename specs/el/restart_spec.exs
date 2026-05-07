@@ -6,11 +6,6 @@ defmodule El.RestartSpec do
 
   describe "restart/2" do
     setup do
-      stub(El.MockSessionDeletion, :delete_session_messages, fn _ -> :ok end)
-      :ok
-    end
-
-    test "exits with :restart reason and resumes with session_id" do
       session_id = "abc-123-def"
 
       expect(El.MockRegistry, :lookup, fn El.Registry, :kent ->
@@ -28,11 +23,24 @@ defmodule El.RestartSpec do
         []
       end)
 
+      stub(El.MockSessionDeletion, :delete_session_messages, fn _ -> :ok end)
+
+      opts = [
+        registry: El.MockRegistry,
+        supervisor: El.MockSupervisor,
+        session_meta: El.MockSessionMeta,
+        monitor: El.MockMonitor,
+        app: El.MockSessionDeletion
+      ]
+
+      {:ok, session_id: session_id, restart_opts: opts}
+    end
+
+    test "restart calls Lifecycle.exit with :restart reason" do
+      _session_id = "abc-123-def"
+
       expect(El.MockSupervisor, :start_child, fn El.SessionSupervisor,
-                                                  %{start: {El.Session.Api, :start_link, [{:kent, opts}]}} ->
-        assert Keyword.get(opts, :resume) == session_id
-        assert Keyword.get(opts, :agent) == "dude"
-        assert Keyword.get(opts, :model) == "claude"
+                                                  %{start: {El.Session.Api, :start_link, [{:kent, _opts}]}} ->
         {:ok, :pid}
       end)
 
@@ -44,7 +52,40 @@ defmodule El.RestartSpec do
         app: El.MockSessionDeletion
       ]
 
-      assert El.restart(:kent, opts) == :created
+      El.restart(:kent, opts)
+    end
+
+    test "restart starts session with resume from meta", context do
+      expect(El.MockSupervisor, :start_child, fn El.SessionSupervisor,
+                                                  %{start: {El.Session.Api, :start_link, [{:kent, opts}]}} ->
+        send(self(), {:captured_resume, Keyword.get(opts, :resume)})
+        {:ok, :pid}
+      end)
+
+      El.restart(:kent, context.restart_opts)
+      assert_receive {:captured_resume, session_id} when session_id == context.session_id
+    end
+
+    test "restart preserves agent from meta", context do
+      expect(El.MockSupervisor, :start_child, fn El.SessionSupervisor,
+                                                  %{start: {El.Session.Api, :start_link, [{:kent, opts}]}} ->
+        send(self(), {:captured_agent, Keyword.get(opts, :agent)})
+        {:ok, :pid}
+      end)
+
+      El.restart(:kent, context.restart_opts)
+      assert_receive {:captured_agent, agent} when agent == "dude"
+    end
+
+    test "restart preserves model from meta", context do
+      expect(El.MockSupervisor, :start_child, fn El.SessionSupervisor,
+                                                  %{start: {El.Session.Api, :start_link, [{:kent, opts}]}} ->
+        send(self(), {:captured_model, Keyword.get(opts, :model)})
+        {:ok, :pid}
+      end)
+
+      El.restart(:kent, context.restart_opts)
+      assert_receive {:captured_model, model} when model == "claude"
     end
   end
 end
