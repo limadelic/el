@@ -62,6 +62,22 @@ defmodule El do
   end
 
   @impl true
+  def restart(name, opts \\ []) do
+    El.Lifecycle.exit(name, :restart, opts)
+    resume_session(name, opts)
+  end
+
+  defp resume_session(name, opts) do
+    session_meta = Keyword.get(opts, :session_meta, El.Session.Meta)
+    resume_with_session_meta(name, opts, session_meta.lookup(name))
+  end
+
+  defp resume_with_session_meta(name, opts, {:ok, session_id, agent, model}) do
+    resume_opts = [resume: session_id, agent: agent, model: model] ++ opts
+    start(name, resume_opts)
+  end
+
+  @impl true
   def exit_pattern(pattern, opts \\ []) do
     ls(opts)
     |> Enum.filter(&match_pattern?(&1, pattern))

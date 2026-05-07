@@ -20,5 +20,7 @@ defmodule El.Behaviours.El do
   @callback ls() :: term()
   @callback agent(term()) :: term()
   @callback agent(term(), term()) :: term()
+  @callback restart(term()) :: term()
+  @callback restart(term(), term()) :: term()
 end
 
