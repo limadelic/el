@@ -8,6 +8,7 @@ defmodule El.CLI.Router do
   def parse_route(["--daemon", _name]), do: :daemon
   def parse_route(["--daemon", _name, "-m", _model]), do: :daemon
   def parse_route([_name, "log", "-json"]), do: :log_json
+  def parse_route([_name, "log", _n, "-json"]), do: :log_n_json
   def parse_route([_name, "log", _n]), do: :log_n
   def parse_route([_name, "log"]), do: :log
   def parse_route([_name, "exit"]), do: :exit

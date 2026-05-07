@@ -50,6 +50,10 @@ defmodule El.CLI.Spec do
       assert El.CLI.Router.parse_route(["myagent", "log", "-json"]) == :log_json
     end
 
+    test "returns :log_n_json for name log n with -json" do
+      assert El.CLI.Router.parse_route(["myagent", "log", "5", "-json"]) == :log_n_json
+    end
+
     test "returns log for name log" do
       assert El.CLI.Router.parse_route(["session", "log"]) == :log
     end
