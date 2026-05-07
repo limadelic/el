@@ -454,7 +454,7 @@ defmodule El.CLI.Spec do
       assert output =~ "session"
     end
 
-    test "execute :restart with glob pattern calls El.restart_pattern" do
+    test "execute :restart with glob pattern prints confirmation" do
       expect(El.MockEl, :restart_pattern, fn "foo*", _opts -> :ok end)
 
       output =
