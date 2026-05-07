@@ -16,19 +16,17 @@ defmodule El.Session.Handlers.Cast do
     {:noreply, new_state}
   end
 
-  def handle({:complete_ask, from, message, response, ref, model, session_id}, state) do
+  def handle({:complete_ask, from, message, response, ref, model, nil}, state) do
     ask = %{from: from, ref: ref, message: message, response: response, model: model}
     new_state = state.ask_module.finalize_ask(state, ask)
+    {:noreply, new_state}
+  end
 
-    case session_id do
-      nil ->
-        {:noreply, new_state}
-
-      _ ->
-        updated_state = build_updated_state(new_state, ask, session_id)
-        persist_session_meta(updated_state, session_id, model)
-        {:noreply, updated_state}
-    end
+  def handle({:complete_ask, from, message, response, ref, model, session_id}, state) do
+    ask = %{from: from, message: message, response: response, ref: ref, model: model}
+    updated_state = build_updated_state(state, ask, session_id)
+    persist_session_meta(updated_state, session_id, model)
+    {:noreply, updated_state}
   end
 
   def handle({:cast_store_relay, message, response}, state) do
