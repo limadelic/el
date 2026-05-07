@@ -2,7 +2,7 @@ defmodule El.Session.Handlers.Cast do
   alias El.Session.Claude
   alias El.Session.Commands.Tell
   alias El.Session.Store
-  alias El.Session.Router
+  alias El.Session.Handlers.Router
 
   def handle({:tell, message}, state) do
     state = Claude.maybe_respawn_claude(state)

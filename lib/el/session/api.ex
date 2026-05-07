@@ -33,7 +33,7 @@ defmodule El.Session.Api do
   end
 
   def detect_routes(text) do
-    El.Session.Router.detect_routes(text)
+    El.Session.Handlers.Router.detect_routes(text)
   end
 
   def alive?(name) do

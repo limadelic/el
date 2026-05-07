@@ -1,6 +1,6 @@
 defmodule El.Session.Handlers.Call do
   alias El.Session.Claude
-  alias El.Session.Router
+  alias El.Session.Handlers.Router
 
   def handle({:ask, message}, from, state) do
     state = Claude.maybe_respawn_claude(state)

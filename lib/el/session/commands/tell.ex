@@ -1,5 +1,5 @@
 defmodule El.Session.Commands.Tell do
-  alias El.Session.Router
+  alias El.Session.Handlers.Router
   alias El.Session.Store
 
   def tell_impl(state, message) do
