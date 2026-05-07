@@ -1,4 +1,4 @@
-defmodule El.Session.Handlers.LogSpec do
+defmodule El.Session.Handlers.Log.Spec do
   use ExUnit.Case
   alias El.Session.Handlers.Log
 
