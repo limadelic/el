@@ -1,12 +1,12 @@
-defmodule El.Session.Claude.Spec do
+defmodule El.Session.Claude.Driver.Spec do
   use ExUnit.Case
 
   setup_all do
-    Code.ensure_loaded!(El.Session.Claude)
+    Code.ensure_loaded!(El.Session.Claude.Driver)
     Code.ensure_loaded!(El.ClaudePort)
     Code.ensure_loaded!(TestClaudePortStub)
     {:ok, warmup_pid} = TestClaudePortStub.start_link(nil)
-    El.Session.Claude.ask(warmup_pid, "warmup")
+    El.Session.Claude.Driver.ask(warmup_pid, "warmup")
     GenServer.stop(warmup_pid)
     :ok
   end
@@ -25,25 +25,25 @@ defmodule El.Session.Claude.Spec do
   describe "resume_options/2" do
     test "adds :resume to opts with session_id" do
       assert [resume: "session-123", session_id: "session-123"] =
-        El.Session.Claude.resume_options([], "session-123")
+        El.Session.Claude.Driver.resume_options([], "session-123")
     end
   end
 
   describe "ask/2" do
     test "returns result from ask", %{test_pid: test_pid} do
-      assert {"test result", _, _} = El.Session.Claude.ask(test_pid, "test")
+      assert {"test result", _, _} = El.Session.Claude.Driver.ask(test_pid, "test")
     end
 
     test "captures model from Init event", %{test_pid: test_pid} do
-      assert {_, "test-model", _} = El.Session.Claude.ask(test_pid, "test")
+      assert {_, "test-model", _} = El.Session.Claude.Driver.ask(test_pid, "test")
     end
 
     test "captures session_id from Init event", %{test_pid: test_pid} do
-      assert {_, _, "test-session-id"} = El.Session.Claude.ask(test_pid, "test")
+      assert {_, _, "test-session-id"} = El.Session.Claude.Driver.ask(test_pid, "test")
     end
 
     test "returns error tuple with nils when pid is nil" do
-      assert {"(unavailable)", nil, nil} = El.Session.Claude.ask(nil, "test")
+      assert {"(unavailable)", nil, nil} = El.Session.Claude.Driver.ask(nil, "test")
     end
   end
 end

@@ -1,9 +1,9 @@
 defmodule El.Session.Handlers.Call do
-  alias El.Session.Claude
+  alias El.Session.Claude.Driver
   alias El.Session.Handlers.Router
 
   def handle({:ask, message}, from, state) do
-    state = Claude.maybe_respawn_claude(state)
+    state = Driver.maybe_respawn_claude(state)
     {ref, ask_state} = state.ask_module.prepare_ask(state, from, message)
     routes = Router.detect_routes(message)
     ask_state.ask_module.spawn_ask(ask_state, {from, message, ref}, routes, self())
@@ -20,7 +20,7 @@ defmodule El.Session.Handlers.Call do
   end
 
   def handle(:clear, _from, state) do
-    Claude.stop_claude(state.claude_pid)
+    Driver.stop_claude(state.claude_pid)
     state.ask_module.reset_session(state) |> reply_ok()
   end
 

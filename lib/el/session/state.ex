@@ -1,7 +1,7 @@
 defmodule El.Session.State do
   @defaults %{
     claude_module: El.ClaudePort,
-    claude_session: El.Session.Claude,
+    claude_session: El.Session.Claude.Driver,
     task_module: Task,
     ask_module: El.Session.Commands.Ask,
     alive_fn: &El.Session.Api.alive?/1,

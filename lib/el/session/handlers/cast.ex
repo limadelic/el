@@ -1,11 +1,11 @@
 defmodule El.Session.Handlers.Cast do
-  alias El.Session.Claude
+  alias El.Session.Claude.Driver
   alias El.Session.Commands.Tell
   alias El.Session.Store
   alias El.Session.Handlers.Router
 
   def handle({:tell, message}, state) do
-    state = Claude.maybe_respawn_claude(state)
+    state = Driver.maybe_respawn_claude(state)
     Tell.tell_impl(state, message)
   end
 
