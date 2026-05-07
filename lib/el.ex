@@ -96,6 +96,7 @@ defmodule El do
 
   @impl true
   def ls(opts \\ []) do
-    El.Session.Registry.list(opts)
+    session_registry = Keyword.get(opts, :session_registry, El.Session.Registry)
+    session_registry.list(opts)
   end
 end

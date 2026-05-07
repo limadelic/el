@@ -1,12 +1,11 @@
 defmodule El.Deps do
   def production do
-    core_modules() ++ supervision() ++ session_meta() ++ session_infra() ++ io_storage()
+    core_modules() ++ supervision() ++ session_meta() ++ io_storage()
   end
 
   def monitor(opts), do: Keyword.fetch!(opts, :monitor)
   def supervisor(opts), do: Keyword.fetch!(opts, :supervisor)
   def registry(opts), do: Keyword.fetch!(opts, :registry)
-  def session_registry(opts), do: Keyword.fetch!(opts, :session_registry)
 
   defp dep(key, default) do
     {key, Application.get_env(:el, key, default)}
@@ -37,12 +36,6 @@ defmodule El.Deps do
       dep(:registry, Registry),
       dep(:supervisor, DynamicSupervisor),
       dep(:monitor, El.Infra.Monitor)
-    ]
-  end
-
-  defp session_infra do
-    [
-      dep(:session_registry, El.Session.Registry.Impl)
     ]
   end
 
