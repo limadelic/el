@@ -60,15 +60,22 @@ defmodule El.Pattern.Spec do
 
   describe "El.Pattern.log/3" do
     setup do
-      stub(El.MockSessionApi, :log, fn _name, _count -> [%{text: "log entry"}] end)
-      stub(El.MockSessionRegistry, :list, fn _opts -> [:agent1] end)
+      stub(El.MockSessionRegistry, :list, fn _opts -> [:dude, :dude_two] end)
       :ok
     end
 
-    test "returns log entries for sessions matching pattern" do
-      result = El.Pattern.log("agent*", 10, session_api: El.MockSessionApi)
+    test "forwards :all to session_api per matching session" do
+      expect(El.MockSessionApi, :log, 2, fn name, :all when name in [:dude, :dude_two] -> [] end)
 
-      assert result == [%{text: "log entry"}]
+      El.Pattern.log("dude*", :all, session_api: El.MockSessionApi)
+    end
+
+    test "flattens log entries from each matching session" do
+      stub(El.MockSessionApi, :log, fn _, _ -> [{"ask", "hi", "yo", %{}}] end)
+
+      result = El.Pattern.log("dude*", :all, session_api: El.MockSessionApi)
+
+      assert length(result) == 2
     end
   end
 end
