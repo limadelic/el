@@ -72,6 +72,10 @@ defmodule El.CLI do
     print_info(session_api.alive?(String.to_atom(name)), name, deps)
   end
 
+  def execute(:restart, [name, "restart"], opts) do
+    Pattern.restart_by_kind(el(opts), Pattern.pattern?(name), name, opts)
+  end
+
   def execute(:restart, [name], deps) do
     el(deps).restart(String.to_atom(name), deps)
     Start.print_session_info(name, [], deps)

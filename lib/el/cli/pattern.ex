@@ -11,6 +11,9 @@ defmodule El.CLI.Pattern do
   def clear_by_kind(el_module, true, name, opts), do: clear_pattern(el_module, name, opts)
   def clear_by_kind(el_module, false, name, opts), do: clear_single(el_module, name, opts)
 
+  def restart_by_kind(el_module, true, name, opts), do: restart_pattern(el_module, name, opts)
+  def restart_by_kind(el_module, false, name, opts), do: restart_single(el_module, name, opts)
+
   defp exit_pattern(el_module, name, opts) do
     el_module.exit_pattern(name, opts)
     IO.puts("exited sessions matching #{name}")
@@ -29,5 +32,15 @@ defmodule El.CLI.Pattern do
   defp clear_single(el_module, name, opts) do
     result = el_module.clear(String.to_existing_atom(name), opts)
     Output.handle_result(result, name)
+  end
+
+  defp restart_pattern(el_module, name, opts) do
+    el_module.restart_pattern(name, opts)
+    IO.puts("restarted sessions matching #{name}")
+  end
+
+  defp restart_single(el_module, name, opts) do
+    el_module.restart(String.to_existing_atom(name), opts)
+    IO.puts("restarted #{name}")
   end
 end

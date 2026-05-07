@@ -78,6 +78,11 @@ defmodule El do
   end
 
   @impl true
+  def restart_pattern(pattern, opts \\ []) do
+    ls(opts) |> Enum.filter(&match_pattern?(&1, pattern)) |> Enum.each(&El.restart(&1, opts))
+  end
+
+  @impl true
   def exit_pattern(pattern, opts \\ []) do
     ls(opts)
     |> Enum.filter(&match_pattern?(&1, pattern))

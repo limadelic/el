@@ -15,6 +15,8 @@ defmodule El.Behaviours.El do
   @callback exit_pattern(term(), term()) :: term()
   @callback clear_pattern(term()) :: term()
   @callback clear_pattern(term(), term()) :: term()
+  @callback restart_pattern(term()) :: term()
+  @callback restart_pattern(term(), term()) :: term()
   @callback log_pattern(term(), term()) :: term()
   @callback log_pattern(term(), term(), term()) :: term()
   @callback ls() :: term()

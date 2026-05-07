@@ -453,6 +453,15 @@ defmodule El.CLI.Spec do
 
       assert output =~ "session"
     end
+
+    test "execute :restart with glob pattern calls El.restart_pattern" do
+      expect(El.MockEl, :restart_pattern, fn "foo*", _opts -> :ok end)
+
+      output =
+        capture_io(fn -> El.CLI.execute(:restart, ["foo*", "restart"], [el_module: El.MockEl]) end)
+
+      assert output =~ "restarted sessions matching foo*"
+    end
   end
 
   describe "daemon spawning" do
