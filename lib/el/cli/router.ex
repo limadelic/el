@@ -26,6 +26,10 @@ defmodule El.CLI.Router do
     :start
   end
 
+  def parse_route([<<c, _::binary>>, "-json"]) when c != ?- do
+    :info_json
+  end
+
   def parse_route([<<c, _::binary>>, _word | _more_words]) when c != ?- do
     :msg
   end

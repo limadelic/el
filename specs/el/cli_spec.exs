@@ -42,6 +42,10 @@ defmodule El.CLI.Spec do
       assert El.CLI.Router.parse_route(["bogus", "args"]) == :msg
     end
 
+    test "returns :info_json for name with -json" do
+      assert El.CLI.Router.parse_route(["myagent", "-json"]) == :info_json
+    end
+
     test "returns log for name log" do
       assert El.CLI.Router.parse_route(["session", "log"]) == :log
     end
