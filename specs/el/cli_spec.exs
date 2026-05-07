@@ -186,6 +186,25 @@ defmodule El.CLI.Spec do
       ]
     end
 
+    test "execute :log_n_json with number outputs messages as JSON array" do
+      expect(El.MockEl, :log, fn :session, 5, _opts ->
+        [{"ask", "hi", "reply", %{}}]
+      end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.execute(
+            :log_n_json,
+            ["session", "log", "5", "-json"],
+            [el_module: El.MockEl]
+          )
+        end)
+
+      assert Jason.decode!(String.trim(output)) == [
+        %{"type" => "ask", "message" => "hi", "response" => "reply", "metadata" => %{}}
+      ]
+    end
+
     test "execute :clear calls El.clear with name" do
       expect(El.MockEl, :clear, fn :session, _opts -> "cleared" end)
 

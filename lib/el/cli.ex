@@ -53,6 +53,9 @@ defmodule El.CLI do
   def execute(:log, [name, "log"], opts), do: Log.execute(name, opts)
   def execute(:log_json, [name, "log"], opts), do: Json.execute_log(name, 1, el(opts), opts)
   def execute(:log_n, [name, "log", n], opts), do: Log.execute_n(name, n, opts)
+  def execute(:log_n_json, [name, "log", n, "-json"], opts) do
+    Json.execute_log_n(name, n, opts)
+  end
 
   def execute(:exit, [name, "exit"], opts) do
     Pattern.exit_by_kind(el(opts), Pattern.pattern?(name), name, opts)
@@ -76,7 +79,6 @@ defmodule El.CLI do
     daemon(opts).restart_daemon(opts)
     IO.puts("daemon restarted")
   end
-
   def execute(:info, [name], deps) do
     session_api = Keyword.get(deps, :session_api, El.Session.Api)
     print_info(session_api.alive?(String.to_atom(name)), name, deps)
@@ -85,7 +87,6 @@ defmodule El.CLI do
   def execute(:restart, [name, "restart"], opts) do
     Pattern.restart_by_kind(el(opts), Pattern.pattern?(name), name, opts)
   end
-
   def execute(:restart, [name], deps) do
     name_atom = String.to_atom(name)
     el(deps).restart(name_atom, deps)
@@ -94,7 +95,6 @@ defmodule El.CLI do
 
   defp print_info(true, name, deps), do: Start.print_session_info(name, [], deps)
   defp print_info(false, _name, _deps), do: IO.puts(Output.usage_message())
-
   defp maybe_print_card(:created, name, opts, deps), do: Start.print_session_info(name, opts, deps)
   defp maybe_print_card(:already_running, _name, _opts, _deps), do: :ok
 end

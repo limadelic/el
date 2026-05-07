@@ -27,6 +27,11 @@ defmodule El.CLI.Json do
     |> IO.puts()
   end
 
+  def execute_log_n(name, n, opts) do
+    count = El.CLI.Log.parse_log_count(n)
+    execute_log(name, count, Keyword.fetch!(opts, :el_module), opts)
+  end
+
   defp encode_log(entries) do
     entries |> Enum.map(&log_entry/1) |> Jason.encode!()
   end
