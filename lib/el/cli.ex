@@ -1,5 +1,5 @@
 defmodule El.CLI do
-  alias El.CLI.{Router, Output, Log, Pattern, Start, Msg}
+  alias El.CLI.{Router, Output, Log, Pattern, Start, Msg, Json}
 
   defp version do
     Application.spec(:el, :vsn) |> Output.format_version()
@@ -83,7 +83,7 @@ defmodule El.CLI do
     session_api = Keyword.get(deps, :session_api, El.Session.Api)
     print_info(session_api.alive?(String.to_atom(name)), name, deps)
   end
-
+  def execute(:info_json, [name], deps), do: Json.execute_info(name, deps)
   def execute(:restart, [name, "restart"], opts) do
     Pattern.restart_by_kind(el(opts), Pattern.pattern?(name), name, opts)
   end

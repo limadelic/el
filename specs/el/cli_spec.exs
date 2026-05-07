@@ -518,6 +518,14 @@ defmodule El.CLI.Spec do
 
       assert output =~ "daemon restarted"
     end
+
+    test "execute :info_json outputs dead JSON when session not alive" do
+      stub(El.MockSessionApi, :alive?, fn :ghost -> false end)
+      output = capture_io(fn ->
+        El.CLI.execute(:info_json, ["ghost"], [session_api: El.MockSessionApi])
+      end)
+      assert Jason.decode!(String.trim(output)) == %{"name" => "ghost", "alive" => false}
+    end
   end
 
   describe "daemon spawning" do
