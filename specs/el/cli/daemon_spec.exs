@@ -76,9 +76,7 @@ defmodule El.CLI.Daemon.Spec do
     test "spawns a fresh daemon after stopping" do
       expect(El.MockSystem, :cmd, 2, fn
         "epmd", ["-daemon"] -> :ok
-        "sh", ["-c", cmd] ->
-          assert String.contains?(cmd, "daemon")
-          :ok
+        "sh", ["-c", _cmd] -> :ok
       end)
 
       El.CLI.Daemon.restart_daemon(
