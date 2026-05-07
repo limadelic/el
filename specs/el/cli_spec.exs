@@ -703,24 +703,33 @@ defmodule El.CLI.Spec do
       assert String.starts_with?(String.trim(output), "v0.1.")
     end
 
-    test "usage message contains el ls" do
-      output = capture_io(fn -> El.CLI.dispatch([], []) end)
-      assert String.contains?(output, "el ls")
-    end
+    test "usage_message returns the block from features/help.feature" do
+      vsn = El.CLI.Output.format_version(Application.spec(:el, :vsn))
 
-    test "usage message contains el -v" do
-      output = capture_io(fn -> El.CLI.dispatch([], []) end)
-      assert String.contains?(output, "el -v")
-    end
+      expected = """
+      el #{vsn}
 
-    test "usage message contains el exit" do
-      output = capture_io(fn -> El.CLI.dispatch([], []) end)
-      assert String.contains?(output, "el exit")
-    end
+      el -v                                 version
+      el ls                                 list names
+      el <name> [-json]                     info
+      el <name> log [n|all] [-json]         view log (default: last 1)
 
-    test "usage message contains el <name|glob> exit" do
-      output = capture_io(fn -> El.CLI.dispatch([], []) end)
-      assert String.contains?(output, "el <name|glob> exit")
+      el <name> start [args]                start session
+        args:
+          -m <model>                        model
+          -a <agent>                        agent
+
+      el <name> <msg>                       send a msg
+
+      el <name|glob> <cmd>                  apply command to one or many
+      el <cmd>                              apply command to all
+        cmds:
+          clear                             start new session
+          exit                              exit session
+          restart                           restart session
+      """
+
+      assert El.CLI.Output.usage_message() == String.trim_trailing(expected)
     end
 
     test "version does not contain usage info" do
