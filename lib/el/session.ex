@@ -4,7 +4,7 @@ defmodule El.Session do
   require Logger
 
   alias El.Session.Terminator
-  alias El.Session.LogHandler
+  alias El.Session.Handlers.Log
   alias El.Session.Handlers.Info
   alias El.Session.Handlers.Cast
   alias El.Session.Handlers.Call
@@ -42,12 +42,12 @@ defmodule El.Session do
 
   @impl true
   def handle_call(:log, _from, state) do
-    LogHandler.handle_log(:log, state)
+    Log.handle_log(:log, state)
   end
 
   @impl true
   def handle_call({:log, _} = msg, _from, state) do
-    LogHandler.handle_log(msg, state)
+    Log.handle_log(msg, state)
   end
 
   @impl true
