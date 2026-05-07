@@ -3,6 +3,7 @@ defmodule El.CLI.Router do
   def parse_route(["-v"]), do: :version
   def parse_route(["ls"]), do: :ls
   def parse_route(["exit"]), do: :exit_all
+  def parse_route(["restart"]), do: :restart_daemon
   def parse_route(["--daemon"]), do: :daemon_hub
   def parse_route(["--daemon", _name]), do: :daemon
   def parse_route(["--daemon", _name, "-m", _model]), do: :daemon
