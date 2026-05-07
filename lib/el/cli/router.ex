@@ -10,6 +10,7 @@ defmodule El.CLI.Router do
   def parse_route([_name, "log"]), do: :log
   def parse_route([_name, "exit"]), do: :exit
   def parse_route([_name, "clear"]), do: :clear
+  def parse_route([_name, "restart"]), do: :restart
 
   def parse_route([<<c, _::binary>>]) when c != ?- do
     :info

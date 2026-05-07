@@ -66,6 +66,10 @@ defmodule El.CLI.Spec do
       assert El.CLI.Router.parse_route(["session", "clear"]) == :clear
     end
 
+    test "returns restart for name restart" do
+      assert El.CLI.Router.parse_route(["my_session", "restart"]) == :restart
+    end
+
     test "returns daemon for --daemon flag" do
       assert El.CLI.Router.parse_route(["--daemon", "my_session"]) == :daemon
     end
