@@ -27,5 +27,10 @@ defmodule El.CLI.Output.Json.Spec do
         "alive" => true
       }
     end
+
+    test "encodes dead session to locked dead shape" do
+      assert El.CLI.Output.Json.info(%{name: "myagent", alive: false})
+             |> Jason.decode!() == %{"name" => "myagent", "alive" => false}
+    end
   end
 end
