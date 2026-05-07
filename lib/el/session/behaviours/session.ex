@@ -7,4 +7,5 @@ defmodule El.Session.Behaviours.Session do
   @callback agent(term()) :: term()
   @callback info(term()) :: term()
   @callback cast_store_relay(term(), term(), term()) :: term()
+  @callback alive?(term()) :: boolean()
 end

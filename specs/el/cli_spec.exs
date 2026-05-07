@@ -407,6 +407,7 @@ defmodule El.CLI.Spec do
     end
 
     test "execute :info outputs session name" do
+      stub(El.MockSessionApi, :alive?, fn :session -> true end)
       stub(El.MockSessionApi, :info, fn :session -> %{messages: 2, last_prompt: "who?", last_response: "me", model: "haiku", cwd: nil, id: nil} end)
 
       output =
@@ -415,6 +416,17 @@ defmodule El.CLI.Spec do
         end)
 
       assert output =~ "session"
+    end
+
+    test "execute :info falls back to usage when session absent" do
+      stub(El.MockSessionApi, :alive?, fn :session -> false end)
+
+      output =
+        capture_io(fn ->
+          El.CLI.execute(:info, ["session"], [session_api: El.MockSessionApi])
+        end)
+
+      assert output =~ "el ls"
     end
   end
 
