@@ -1,4 +1,4 @@
-defmodule El.Session.Claude.OptsSpec do
+defmodule El.Session.Claude.Opts.Spec do
   use ExUnit.Case
 
   test "build/3 returns keyword list" do
