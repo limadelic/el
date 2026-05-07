@@ -62,6 +62,10 @@ defmodule El.CLI.Spec do
       assert El.CLI.Router.parse_route(["exit"]) == :exit_all
     end
 
+    test "returns clear_all for clear" do
+      assert El.CLI.Router.parse_route(["clear"]) == :clear_all
+    end
+
     test "returns exit for dud* exit" do
       assert El.CLI.Router.parse_route(["dud*", "exit"]) == :exit
     end
