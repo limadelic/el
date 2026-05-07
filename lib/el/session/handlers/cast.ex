@@ -1,4 +1,4 @@
-defmodule El.Session.CastHandler do
+defmodule El.Session.Handlers.Cast do
   alias El.Session.Claude
   alias El.Session.Commands.Tell
   alias El.Session.Store

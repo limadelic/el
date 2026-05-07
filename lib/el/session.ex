@@ -6,7 +6,7 @@ defmodule El.Session do
   alias El.Session.Terminator
   alias El.Session.LogHandler
   alias El.Session.InfoHandler
-  alias El.Session.CastHandler
+  alias El.Session.Handlers.Cast
   alias El.Session.Handlers.Call
 
   @impl true
@@ -32,7 +32,7 @@ defmodule El.Session do
 
   @impl true
   def handle_cast(msg, state) do
-    CastHandler.handle(msg, state)
+    Cast.handle(msg, state)
   end
 
   @impl true
