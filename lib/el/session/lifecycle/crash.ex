@@ -1,4 +1,4 @@
-defmodule El.Session.Crash do
+defmodule El.Session.Lifecycle.Crash do
   require Logger
 
   alias El.Session.Claude
