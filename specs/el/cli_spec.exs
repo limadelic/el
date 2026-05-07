@@ -466,6 +466,21 @@ defmodule El.CLI.Spec do
 
       assert output =~ "restarted sessions matching foo*"
     end
+
+    test "execute :restart_daemon calls Daemon.restart_daemon" do
+      expect(El.MockDaemon, :restart_daemon, fn _opts -> :ok end)
+
+      capture_io(fn -> El.CLI.execute(:restart_daemon, ["restart"], [daemon_module: El.MockDaemon]) end)
+    end
+
+    test "execute :restart_daemon prints status" do
+      stub(El.MockDaemon, :restart_daemon, fn _opts -> :ok end)
+
+      output =
+        capture_io(fn -> El.CLI.execute(:restart_daemon, ["restart"], [daemon_module: El.MockDaemon]) end)
+
+      assert output =~ "daemon restarted"
+    end
   end
 
   describe "daemon spawning" do

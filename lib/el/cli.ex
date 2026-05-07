@@ -7,6 +7,8 @@ defmodule El.CLI do
 
   defp el(opts), do: Keyword.fetch!(opts, :el_module)
 
+  defp daemon(opts), do: Keyword.get(opts, :daemon_module, El.CLI.Daemon)
+
   def dispatch(args), do: dispatch(args, El.Deps.production())
 
   def dispatch(args, opts) do
@@ -65,6 +67,11 @@ defmodule El.CLI do
   def execute(:exit_all, ["exit"], opts) do
     el(opts).exit(:all, opts)
     IO.puts("exited all")
+  end
+
+  def execute(:restart_daemon, ["restart"], opts) do
+    daemon(opts).restart_daemon(opts)
+    IO.puts("daemon restarted")
   end
 
   def execute(:info, [name], deps) do
