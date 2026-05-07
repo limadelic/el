@@ -69,12 +69,11 @@ defmodule El.CLI do
 
   def execute(:info, [name], deps) do
     session_api = Keyword.get(deps, :session_api, El.Session.Api)
-    if session_api.alive?(String.to_atom(name)) do
-      Start.print_session_info(name, [], deps)
-    else
-      IO.puts(Output.usage_message())
-    end
+    print_info(session_api.alive?(String.to_atom(name)), name, deps)
   end
+
+  defp print_info(true, name, deps), do: Start.print_session_info(name, [], deps)
+  defp print_info(false, _name, _deps), do: IO.puts(Output.usage_message())
 
   defp maybe_print_card(:created, name, opts, deps), do: Start.print_session_info(name, opts, deps)
   defp maybe_print_card(:already_running, _name, _opts, _deps), do: :ok
