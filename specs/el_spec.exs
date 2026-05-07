@@ -230,7 +230,7 @@ defmodule El.Spec do
 
   describe "ls/0" do
     test "returns sorted list with message counts" do
-      expect(El.MockRegistry, :select, fn El.Registry, _pattern ->
+      expect(El.MockSessionRegistry, :list, fn _opts ->
         [:zeta, :alpha, :beta]
       end)
 
@@ -243,7 +243,7 @@ defmodule El.Spec do
     end
 
     test "returns empty list when no sessions" do
-      expect(El.MockRegistry, :select, fn El.Registry, _pattern -> [] end)
+      expect(El.MockSessionRegistry, :list, fn _opts -> [] end)
       assert El.ls() == []
     end
   end

@@ -8,7 +8,10 @@ defmodule El.Session.Registry do
   end
 
   def list(opts) do
-    El.Deps.registry(opts).select(El.Registry, [{{:"$1", :_, :_}, [], [:"$1"]}])
-    |> Enum.sort()
+    session_registry_for(opts).list(opts)
+  end
+
+  defp session_registry_for(opts) do
+    Keyword.get(opts, :session_registry, El.Session.Registry.Impl)
   end
 end
