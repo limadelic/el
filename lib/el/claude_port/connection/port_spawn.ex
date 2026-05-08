@@ -32,10 +32,12 @@ defmodule El.ClaudePort.Connection.PortSpawn do
   defp port_flags, do: [:binary, :exit_status, :stderr_to_stdout]
 
   defp env_charlist do
-    Enum.map(System.get_env(), &charlist_pair/1)
+    Enum.map(env_module().get(), &charlist_pair/1)
   end
 
   defp charlist_pair({k, v}) do
     {String.to_charlist(k), String.to_charlist(v)}
   end
+
+  defp env_module, do: Application.get_env(:el, :env_module, El.Infra.Env)
 end
