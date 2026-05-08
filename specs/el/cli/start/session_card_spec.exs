@@ -76,10 +76,16 @@ defmodule El.CLI.Start.SessionCard.Spec do
       assert Enum.any?(result, &String.contains?(&1, "cwd:"))
     end
 
-    test "excludes cwd when no agent", %{info: info} do
+    test "includes cwd in second row with opts model", %{info: info} do
       opts = [model: "claude-3-5-opus"]
       result = El.CLI.Start.SessionCard.build_card_rows("test_session", opts, info)
-      assert Enum.all?(result, &(!String.contains?(&1, "cwd:")))
+      assert Enum.any?(result, &String.contains?(&1, "cwd:"))
+    end
+
+    test "includes cwd in second row with info model", %{info: info} do
+      opts = []
+      result = El.CLI.Start.SessionCard.build_card_rows("test_session", opts, info)
+      assert Enum.any?(result, &String.contains?(&1, "cwd:"))
     end
 
     test "truncates long cwd values in frame", %{info: info} do
@@ -223,16 +229,6 @@ defmodule El.CLI.Start.SessionCard.Spec do
       result = El.CLI.Start.SessionCard.build_card_rows("test_session", opts, new_info)
 
       model_lines = Enum.filter(result, &String.starts_with?(&1, "model:"))
-      assert Enum.count(model_lines) == 1
-    end
-
-    test "no double model when agent nil and info has model", %{info: info} do
-      opts = []
-      new_info = %{info | model: "claude-haiku-4-5-20251001", id: "some-id", cwd: "/tmp"}
-      result = El.CLI.Start.SessionCard.build_card_rows("test_session", opts, new_info)
-
-      model_pattern = ~r/^model:/
-      model_lines = Enum.filter(result, &Regex.match?(model_pattern, &1))
       assert Enum.count(model_lines) == 1
     end
   end
