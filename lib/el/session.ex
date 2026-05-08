@@ -12,7 +12,7 @@ defmodule El.Session do
   @impl true
   def init({name, opts}) do
     Process.flag(:trap_exit, true)
-    {session_id, rest} = El.Session.Id.pop_resume(opts)
+    {session_id, rest} = Keyword.pop(opts, :resume)
     cwd = file_system(opts).cwd()
     {:ok, state_module(opts).build(name, opts, rest, session_id, cwd), {:continue, :start_claude}}
   end
