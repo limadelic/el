@@ -5,7 +5,7 @@ defmodule El.Session.Handlers.Ask.ProbeSpec do
 
   setup do
     Mox.stub(El.MockSessionMeta, :insert, fn _, _, _, _ -> :ok end)
-    Mox.stub(El.MockFileSystem, :cwd, fn -> "/test/dir" end)
+    Mox.stub(El.MockFileSystem, :cwd!, fn -> "/test/dir" end)
 
     state = %{
       name: :test_session,

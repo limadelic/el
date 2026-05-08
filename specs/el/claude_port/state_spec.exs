@@ -1,5 +1,14 @@
 defmodule El.ClaudePort.State.Spec do
   use ExUnit.Case
+  import Mox
+
+  setup_all do
+    Code.ensure_loaded!(El.ClaudePort.State)
+    Code.ensure_loaded!(El.Infra.Behaviours.FileSystem)
+    :ok
+  end
+
+  setup :verify_on_exit!
 
   describe "El.ClaudePort.State.build/1" do
     test "defaults connection_module to El.ClaudePort.Connection" do
@@ -18,6 +27,31 @@ defmodule El.ClaudePort.State.Spec do
       state = El.ClaudePort.State.build([])
 
       assert state.cli_resolver_module == El.ClaudePort.Connection.CliResolver
+    end
+  end
+
+  describe "El.ClaudePort.State.build cwd routing" do
+    test "gets cwd from mocked FileSystem when cwd not provided" do
+      expect(El.MockFileSystem, :cwd!, fn -> "/mocked/cwd" end)
+      Application.put_env(:el, :fs_module, El.MockFileSystem)
+
+      state = El.ClaudePort.State.build([])
+
+      assert state.cwd == "/mocked/cwd"
+
+      Application.delete_env(:el, :fs_module)
+    end
+
+    test "uses provided cwd instead of calling fs_module" do
+      state = El.ClaudePort.State.build(cwd: "/provided/cwd")
+
+      assert state.cwd == "/provided/cwd"
+    end
+
+    test "uses default FileSystem when fs_module not configured" do
+      state = El.ClaudePort.State.build([])
+
+      assert is_binary(state.cwd)
     end
   end
 end

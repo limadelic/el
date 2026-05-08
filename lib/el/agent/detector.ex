@@ -6,8 +6,8 @@ defmodule El.Agent.Detector do
     check_paths(fs, paths(name))
   end
 
-  def cwd(fs \\ El.Infra.FileSystem) do
-    fs.cwd()
+  def cwd!(fs \\ El.Infra.FileSystem) do
+    fs.cwd!()
   end
 
   def mkdir_p!(path, fs \\ El.Infra.FileSystem) do

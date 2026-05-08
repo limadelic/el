@@ -5,7 +5,7 @@ defmodule El.Session.Spec do
 
   setup do
     Mox.stub(El.MockSessionMeta, :insert, fn _, _, _, _ -> :ok end)
-    Mox.stub(El.MockFileSystem, :cwd, fn -> "/test/dir" end)
+    Mox.stub(El.MockFileSystem, :cwd!, fn -> "/test/dir" end)
     Mox.stub(El.MockSessionAsk, :prepare_ask, fn state, _from, _message ->
       {make_ref(), state}
     end)
