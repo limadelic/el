@@ -32,14 +32,13 @@ defmodule El.ClaudePort.State.Spec do
 
   describe "El.ClaudePort.State.build cwd routing" do
     test "gets cwd from mocked FileSystem when cwd not provided" do
-      expect(El.MockFileSystem, :cwd!, fn -> "/mocked/cwd" end)
       Application.put_env(:el, :fs_module, El.MockFileSystem)
+      on_exit(fn -> Application.delete_env(:el, :fs_module) end)
+      expect(El.MockFileSystem, :cwd!, fn -> "/mocked/cwd" end)
 
       state = El.ClaudePort.State.build([])
 
       assert state.cwd == "/mocked/cwd"
-
-      Application.delete_env(:el, :fs_module)
     end
 
     test "uses provided cwd instead of calling fs_module" do
