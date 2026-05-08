@@ -1,4 +1,4 @@
-defmodule El.Session.Commands.Ask.ProbeSpec do
+defmodule El.Session.Handlers.Ask.ProbeSpec do
   use ExUnit.Case
   import Mox
   setup :verify_on_exit!
@@ -20,7 +20,7 @@ defmodule El.Session.Commands.Ask.ProbeSpec do
       registry_module: MockSessionModule,
       store_module: MockProbeStore,
       session_meta: El.MockSessionMeta,
-      ask_module: El.Session.Commands.Ask,
+      ask_module: El.Session.Handlers.Ask,
       session_api: El.MockSessionApi,
       el_module: El.MockEl,
       opts: [],
@@ -33,19 +33,19 @@ defmodule El.Session.Commands.Ask.ProbeSpec do
   describe "prepare_probe" do
     test "does not store message to messages list", %{state: state} do
       from = {self(), make_ref()}
-      {_ref, state_after} = El.Session.Commands.Ask.prepare_probe(state, from, "who are you?")
+      {_ref, state_after} = El.Session.Handlers.Ask.prepare_probe(state, from, "who are you?")
       assert state_after.messages == []
     end
 
     test "still adds from to pending_calls", %{state: state} do
       from = {self(), make_ref()}
-      {_ref, state_after} = El.Session.Commands.Ask.prepare_probe(state, from, "who are you?")
+      {_ref, state_after} = El.Session.Handlers.Ask.prepare_probe(state, from, "who are you?")
       assert from in state_after.pending_calls
     end
 
     test "returns a ref for GenServer reply", %{state: state} do
       from = {self(), make_ref()}
-      {ref, _state_after} = El.Session.Commands.Ask.prepare_probe(state, from, "who are you?")
+      {ref, _state_after} = El.Session.Handlers.Ask.prepare_probe(state, from, "who are you?")
       assert is_reference(ref)
     end
   end
@@ -53,14 +53,14 @@ defmodule El.Session.Commands.Ask.ProbeSpec do
   describe "prepare_ask (normal ask)" do
     test "stores message to messages list", %{state: state} do
       from = {self(), make_ref()}
-      {_ref, state_after} = El.Session.Commands.Ask.prepare_ask(state, from, "who are you?")
+      {_ref, state_after} = El.Session.Handlers.Ask.prepare_ask(state, from, "who are you?")
       assert length(state_after.messages) == 1
       assert [{"ask", "who are you?", "", %{ref: _ref}}] = state_after.messages
     end
 
     test "adds from to pending_calls", %{state: state} do
       from = {self(), make_ref()}
-      {_ref, state_after} = El.Session.Commands.Ask.prepare_ask(state, from, "who are you?")
+      {_ref, state_after} = El.Session.Handlers.Ask.prepare_ask(state, from, "who are you?")
       assert from in state_after.pending_calls
     end
   end
@@ -68,24 +68,24 @@ defmodule El.Session.Commands.Ask.ProbeSpec do
   describe "integration: probe flow with session_id capture" do
     test "probe message does not appear in final messages", %{state: state} do
       from = {self(), make_ref()}
-      {ref, state_after_prepare} = El.Session.Commands.Ask.prepare_probe(state, from, "who are you?")
+      {ref, state_after_prepare} = El.Session.Handlers.Ask.prepare_probe(state, from, "who are you?")
 
       assert state_after_prepare.messages == []
 
       ask = %{from: from, ref: ref, message: "who are you?", response: "I am Claude", model: nil}
-      state_after_finalize = El.Session.Commands.Ask.finalize_probe(state_after_prepare, ask)
+      state_after_finalize = El.Session.Handlers.Ask.finalize_probe(state_after_prepare, ask)
 
       assert state_after_finalize.messages == []
     end
 
     test "normal ask stores message even if it is 'who are you?'", %{state: state} do
       from = {self(), make_ref()}
-      {ref, state_after_prepare} = El.Session.Commands.Ask.prepare_ask(state, from, "who are you?")
+      {ref, state_after_prepare} = El.Session.Handlers.Ask.prepare_ask(state, from, "who are you?")
 
       assert length(state_after_prepare.messages) == 1
 
       ask = %{from: from, ref: ref, message: "who are you?", response: "I am Claude", model: "claude-3-opus"}
-      state_after_finalize = El.Session.Commands.Ask.finalize_ask(state_after_prepare, ask)
+      state_after_finalize = El.Session.Handlers.Ask.finalize_ask(state_after_prepare, ask)
 
       assert length(state_after_finalize.messages) == 1
       assert [{"ask", "who are you?", "I am Claude", %{model: "claude-3-opus"}}] = state_after_finalize.messages
