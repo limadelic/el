@@ -44,7 +44,7 @@ defmodule El.CLI.Start.DaemonHealth.Spec do
     @tag timeout: :infinity
     test "executes ping when conditions met", %{name: name, base_deps: deps} do
       expect(El.MockSessionApi, :info, fn _ -> %{messages: 0} end)
-      expect(El.MockSessionApi, :probe_ask, fn _, _ -> "test response" end)
+      expect(El.MockSessionApi, :ask, fn _, _ -> "test response" end)
       opts = [agent: :some_agent]
       result = El.CLI.Start.DaemonHealth.ping_for_session_id(name, opts, deps)
       assert result == "test response"
