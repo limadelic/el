@@ -1,5 +1,5 @@
 defmodule El.ClaudePort.Parser.EventSchema do
-  @behaviour El.ClaudePort.Behaviours.Parser.EventSchema
+  @behaviour El.ClaudePort.Behaviours.ParserExtract.EventSchema
   require Logger
 
   def is_result_message(%{"type" => "result"}), do: true
