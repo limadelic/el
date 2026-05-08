@@ -212,5 +212,15 @@ defmodule El.CLI.Start.SessionCard.Spec do
       assert length(prompt_rows) == 1
       assert String.starts_with?(hd(prompt_rows), "> ")
     end
+
+    test "renders agent, model short form, and message count", %{info: info} do
+      opts = [agent: "kent"]
+      new_info = %{info | model: "claude-opus-4-7", messages: 2, last_prompt: nil, last_response: nil}
+      result = El.CLI.Start.SessionCard.build_card_rows("test_session", opts, new_info)
+
+      assert Enum.any?(result, &String.contains?(&1, "agent: kent"))
+      assert Enum.any?(result, &String.contains?(&1, "model: opus"))
+      assert Enum.any?(result, &String.contains?(&1, "msgs:  2"))
+    end
   end
 end
