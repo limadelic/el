@@ -6,10 +6,11 @@ defmodule El.Credo.FolderSize.Spec do
     :ok
   end
 
-  test "returns empty list for source file" do
-    source_file = %Credo.SourceFile{filename: "test.ex"}
+  test "module exports run_on_all_source_files/3" do
+    assert function_exported?(El.Credo.FolderSize, :run_on_all_source_files, 3)
+  end
 
-    result = El.Credo.FolderSize.run(source_file, [])
-    assert result == []
+  test "run_on_all?/0 returns true" do
+    assert El.Credo.FolderSize.run_on_all?() == true
   end
 end
