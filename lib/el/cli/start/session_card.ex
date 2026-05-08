@@ -6,10 +6,10 @@ defmodule El.CLI.Start.SessionCard do
     |> add_message_history(info)
   end
 
-  def normalize_model("claude-opus-4-7"), do: "opus"
-  def normalize_model("claude-sonnet-4-6"), do: "sonnet"
-  def normalize_model("claude-haiku-4-5-20251001"), do: "haiku"
-  def normalize_model(model), do: model
+  defp normalize_model("claude-opus-4-7"), do: "opus"
+  defp normalize_model("claude-sonnet-4-6"), do: "sonnet"
+  defp normalize_model("claude-haiku-4-5-20251001"), do: "haiku"
+  defp normalize_model(model), do: model
 
   defp add_identity(rows, name, opts, info) do
     rows

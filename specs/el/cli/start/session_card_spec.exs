@@ -223,26 +223,4 @@ defmodule El.CLI.Start.SessionCard.Spec do
       assert Enum.any?(result, &String.contains?(&1, "msgs:  2"))
     end
   end
-
-  describe "El.CLI.Start.SessionCard.normalize_model/1" do
-    test "normalizes claude-opus-4-7 to opus" do
-      assert El.CLI.Start.SessionCard.normalize_model("claude-opus-4-7") == "opus"
-    end
-
-    test "normalizes claude-sonnet-4-6 to sonnet" do
-      assert El.CLI.Start.SessionCard.normalize_model("claude-sonnet-4-6") == "sonnet"
-    end
-
-    test "normalizes claude-haiku-4-5-20251001 to haiku" do
-      assert El.CLI.Start.SessionCard.normalize_model("claude-haiku-4-5-20251001") == "haiku"
-    end
-
-    test "passes through unknown model names unchanged" do
-      assert El.CLI.Start.SessionCard.normalize_model("custom-model") == "custom-model"
-    end
-
-    test "passes through short form names unchanged" do
-      assert El.CLI.Start.SessionCard.normalize_model("opus") == "opus"
-    end
-  end
 end
