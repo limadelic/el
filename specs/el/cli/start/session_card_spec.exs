@@ -219,7 +219,7 @@ defmodule El.CLI.Start.SessionCard.Spec do
       result = El.CLI.Start.SessionCard.build_card_rows("test_session", opts, new_info)
 
       assert Enum.any?(result, &String.contains?(&1, "agent: kent"))
-      assert Enum.any?(result, &String.contains?(&1, "model: claude-opus-4-7"))
+      assert Enum.any?(result, &String.contains?(&1, "model: opus"))
       assert Enum.any?(result, &String.contains?(&1, "msgs:  2"))
     end
   end
