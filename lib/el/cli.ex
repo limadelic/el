@@ -83,7 +83,7 @@ defmodule El.CLI do
   end
   def execute(:info, [name], deps) do
     session_api = Keyword.get(deps, :session_api, El.Session.Api)
-    print_info(session_api.alive?(String.to_atom(name)), name, deps)
+    print_info(session_api.alive?(String.to_atom(name)), name, session_api, deps)
   end
   def execute(:info_json, [name], deps), do: Json.execute_info(name, deps)
   def execute(:restart, [name, "restart"], opts) do
@@ -95,8 +95,13 @@ defmodule El.CLI do
     Start.print_session_info(name, [], deps)
   end
 
-  defp print_info(true, name, deps), do: Start.print_session_info(name, [], deps)
-  defp print_info(false, _name, _deps), do: IO.puts(Output.usage_message())
+  defp print_info(true, name, session_api, deps) do
+    name_atom = String.to_atom(name)
+    agent = session_api.agent(name_atom)
+    opts = if agent, do: [agent: agent], else: []
+    Start.print_session_info(name, opts, deps)
+  end
+  defp print_info(false, _name, _session_api, _deps), do: IO.puts(Output.usage_message())
   defp maybe_print_card(:created, name, opts, deps), do: Start.print_session_info(name, opts, deps)
   defp maybe_print_card(:already_running, _name, _opts, _deps), do: :ok
 end
