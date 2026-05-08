@@ -53,8 +53,7 @@ defmodule El.CLI.Start.SessionCard do
   end
 
   defp second_left_value(agent, _, _) when agent != nil, do: "agent: #{agent}"
-  defp second_left_value(nil, opts_model, _) when opts_model != nil, do: "model: #{opts_model}"
-  defp second_left_value(nil, nil, _info_model), do: nil
+  defp second_left_value(nil, _, _), do: nil
 
   defp do_add_second_with_cwd(rows, nil, cwd) do
     right = "cwd: #{cwd}"

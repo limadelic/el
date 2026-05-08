@@ -248,5 +248,22 @@ defmodule El.CLI.Start.SessionCard.Spec do
       assert Enum.count(model_lines) == 1
       assert Enum.any?(result, &String.contains?(&1, "cwd:"))
     end
+
+    test "model emitted exactly once when opts model provided without agent" do
+      opts = [model: "haiku"]
+      info = %{
+        id: "session-123",
+        model: "claude-sonnet-4-6",
+        cwd: "/tmp",
+        messages: 0,
+        last_prompt: nil,
+        last_response: nil
+      }
+      result = El.CLI.Start.SessionCard.build_card_rows("test_session", opts, info)
+
+      model_lines = Enum.filter(result, &String.contains?(&1, "model:"))
+      assert Enum.count(model_lines) == 1
+      assert Enum.any?(result, &String.contains?(&1, "cwd:"))
+    end
   end
 end
