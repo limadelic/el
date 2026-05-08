@@ -17,10 +17,10 @@ Feature: Agent card
     * > el <name> exit
 
     Examples:
-      | args                | name    |
-      | kent start          | kent    |
-      | kento start -a kent | kento   |
-      | kent@el start       | kent@el |
+      | args          | name    |
+      | kent          | kent    |
+      | kento -a kent | kento   |
+      | kent@el       | kent@el |
 
   @el_kent
   Scenario: Used
@@ -41,7 +41,7 @@ Feature: Agent card
     * > el kent exit
 
   Scenario: Anom
-    * > el anom start:
+    * > el anom:
       """
       ╭────────────────────────────────────────────────╮
       │ name:  anom                              id: … │
