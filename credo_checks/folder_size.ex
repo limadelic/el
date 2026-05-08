@@ -6,7 +6,7 @@ defmodule El.Credo.FolderSize do
   alias Credo.IssueMeta
 
   def param_defaults do
-    [max: 13, min: 3, exempt: []]
+    [max: 13, min: 3, exempt: [], exempt_names: []]
   end
 
   @check_desc "Folder structure is maintainable."
@@ -17,7 +17,8 @@ defmodule El.Credo.FolderSize do
       params: [
         max: "Maximum .ex files allowed in a folder (default 13)",
         min: "Minimum .ex files required in a folder (default 3)",
-        exempt: "List of folder paths to skip (default [])"
+        exempt: "List of folder paths to skip (default [])",
+        exempt_names: "List of folder names to skip (default [])"
       ]
     ]
   end
@@ -30,10 +31,13 @@ defmodule El.Credo.FolderSize do
     max = Params.get(params, :max, __MODULE__)
     min = Params.get(params, :min, __MODULE__)
     exempt = Params.get(params, :exempt, __MODULE__)
+    exempt_names = Params.get(params, :exempt_names, __MODULE__)
     source_files
     |> Enum.group_by(fn sf -> Path.dirname(sf.filename) end)
     |> Enum.each(fn {folder, files} ->
-      unless folder in exempt do
+      folder_name = Path.basename(folder)
+      skip? = folder in exempt or folder_name in exempt_names
+      unless skip? do
         sf = hd(files)
         issue_meta = IssueMeta.for(sf, params)
         file_count = length(files)
