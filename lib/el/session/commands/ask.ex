@@ -26,27 +26,16 @@ defmodule El.Session.Commands.Ask do
 
   def finalize_ask(state, %{from: from, ref: ref, message: message, response: response, model: model} = ask) do
     Store.delete_ask_entry(state, message, ref)
-    unless is_probe(message) do
-      Store.store_ask_entry(state, {"ask", message, response, metadata_for(model)})
-    end
+    Store.store_ask_entry(state, {"ask", message, response, metadata_for(model)})
     Driver.safe_reply(from, response)
     finalize_ask_state(state, ask)
   end
 
-  defp is_probe(message), do: message == "who are you?"
-
   defp finalize_ask_state(state, %{from: from, ref: ref, message: message, response: response, model: model}) do
-    new_messages = if is_probe(message), do: remove_probe(state.messages, ref), else: Store.replace_ask(state.messages, ref, message, response, model)
+    new_messages = Store.replace_ask(state.messages, ref, message, response, model)
     new_pending = List.delete(state.pending_calls, from)
     %{state | messages: new_messages, pending_calls: new_pending}
   end
-
-  defp remove_probe(messages, ref) do
-    Enum.reject(messages, &match_probe_entry(&1, ref))
-  end
-
-  defp match_probe_entry({_, "", "", %{ref: ref}}, ref), do: true
-  defp match_probe_entry(_, _), do: false
 
   defp metadata_for(nil), do: %{}
   defp metadata_for(model), do: %{model: model}
