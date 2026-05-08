@@ -10,6 +10,14 @@ defmodule El.Session.Handlers.Call do
     {:noreply, ask_state}
   end
 
+  def handle({:probe_ask, message}, from, state) do
+    state = Driver.maybe_respawn_claude(state)
+    {ref, ask_state} = state.ask_module.prepare_probe(state, from, message)
+    routes = Router.detect_routes(message)
+    ask_state.ask_module.spawn_probe(ask_state, {from, message, ref}, routes, self())
+    {:noreply, ask_state}
+  end
+
   def handle(:agent, _from, state) do
     {:reply, Keyword.get(state.opts, :agent), state}
   end

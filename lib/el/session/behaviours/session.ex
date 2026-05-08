@@ -1,6 +1,7 @@
 defmodule El.Session.Behaviours.Session do
   @callback tell(term(), term()) :: term()
   @callback ask(term(), term()) :: term()
+  @callback probe_ask(term(), term()) :: term()
   @callback log(term()) :: term()
   @callback log(term(), term()) :: term()
   @callback clear(term()) :: term()

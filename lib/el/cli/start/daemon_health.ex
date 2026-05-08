@@ -10,7 +10,7 @@ defmodule El.CLI.Start.DaemonHealth do
   # credo:disable-for-next-line Credo.Check.Refactor.CyclomaticComplexity
   defp quiet_ask(name_atom, deps) do
     {original, null_device, gl} = redirect_to_null(deps)
-    ask_fn = fn -> session_api(deps).ask(name_atom, "who are you?") end
+    ask_fn = fn -> session_api(deps).probe_ask(name_atom, "who are you?") end
     try(do: ask_fn.(), after: restore_io(gl, original, null_device))
   end
 

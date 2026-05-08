@@ -140,6 +140,7 @@ Mox.stub(El.MockGroupLeader, :open_null_device, fn -> self() end)
 Mox.stub(El.MockGroupLeader, :close, fn _ -> :ok end)
 Mox.stub(El.MockGroupLeader, :get, fn -> self() end)
 Mox.stub(El.MockGroupLeader, :set, fn _, _ -> true end)
+Mox.stub(El.MockSessionApi, :probe_ask, fn _, _ -> :ok end)
 
 defmodule MockClaudeCodeSession do
   def stream(_pid, _message) do

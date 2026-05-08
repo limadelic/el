@@ -91,7 +91,7 @@ defmodule El.CLI.Start.Spec do
     end
 
     test "invokes ping_for_session_id when no agent in opts", %{base_deps: deps} do
-      expect(El.MockSessionApi, :ask, fn _, _ -> "test response" end)
+      expect(El.MockSessionApi, :probe_ask, fn _, _ -> "test response" end)
       opts = []
       expect(El.MockSessionApi, :info, 2, fn _name_atom ->
         %{
@@ -136,7 +136,7 @@ defmodule El.CLI.Start.Spec do
     end
 
     test "invokes ping_for_session_id when agent in opts", %{base_deps: deps} do
-      expect(El.MockSessionApi, :ask, fn _, _ -> "test response" end)
+      expect(El.MockSessionApi, :probe_ask, fn _, _ -> "test response" end)
       opts = [agent: :some_agent]
       expect(El.MockSessionApi, :info, 2, fn _name_atom ->
         %{

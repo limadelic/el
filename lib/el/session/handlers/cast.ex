@@ -30,6 +30,20 @@ defmodule El.Session.Handlers.Cast do
     {:noreply, updated_state}
   end
 
+  def handle({:complete_probe, from, _message, response, ref, _model, nil}, state) do
+    probe = %{from: from, ref: ref, response: response}
+    finalized = state.ask_module.finalize_probe(state, probe)
+    {:noreply, finalized}
+  end
+
+  def handle({:complete_probe, from, _message, response, ref, model, session_id}, state) do
+    probe = %{from: from, ref: ref, response: response}
+    finalized = state.ask_module.finalize_probe(state, probe)
+    updated_state = %{finalized | session_id: session_id}
+    persist_session_meta(updated_state, session_id, model)
+    {:noreply, updated_state}
+  end
+
   def handle({:cast_store_relay, message, response}, state) do
     entry = {"relay", message, response, %{from: state.name}}
     state.store_module.store_message(state.name, entry, message_store: state.opts[:message_store])

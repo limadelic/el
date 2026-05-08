@@ -12,9 +12,21 @@ defmodule El.Session.Commands.Ask do
     Store.store_ask_immediate(new_state, message, valid_routes)
   end
 
+  def prepare_probe(state, from, _message) do
+    ref = make_ref()
+    new_state = %{state | pending_calls: [from | state.pending_calls]}
+    {ref, new_state}
+  end
+
   def spawn_ask(state, ask_info, valid_routes, server_pid) do
     state.task_module.start(fn ->
       spawn_ask_task(state, ask_info, valid_routes, server_pid)
+    end)
+  end
+
+  def spawn_probe(state, ask_info, valid_routes, server_pid) do
+    state.task_module.start(fn ->
+      spawn_probe_task(state, ask_info, valid_routes, server_pid)
     end)
   end
 
@@ -24,6 +36,12 @@ defmodule El.Session.Commands.Ask do
     GenServer.cast(server_pid, {:complete_ask, from, message, response, ref, model, session_id})
   end
 
+  defp spawn_probe_task(state, ask_info, valid_routes, server_pid) do
+    {from, message, ref} = ask_info
+    {response, model, session_id} = state.claude_session.ask_work(state.claude_pid, message, valid_routes)
+    GenServer.cast(server_pid, {:complete_probe, from, message, response, ref, model, session_id})
+  end
+
   def finalize_ask(state, %{from: from, ref: ref, message: message, response: response, model: model} = ask) do
     Store.delete_ask_entry(state, message, ref)
     Store.store_ask_entry(state, {"ask", message, response, metadata_for(model)})
@@ -31,10 +49,20 @@ defmodule El.Session.Commands.Ask do
     finalize_ask_state(state, ask)
   end
 
+  def finalize_probe(state, %{from: from, response: response} = ask) do
+    Driver.safe_reply(from, response)
+    finalize_probe_state(state, ask)
+  end
+
   defp finalize_ask_state(state, %{from: from, ref: ref, message: message, response: response, model: model}) do
     new_messages = Store.replace_ask(state.messages, ref, message, response, model)
     new_pending = List.delete(state.pending_calls, from)
     %{state | messages: new_messages, pending_calls: new_pending}
+  end
+
+  defp finalize_probe_state(state, %{from: from}) do
+    new_pending = List.delete(state.pending_calls, from)
+    %{state | pending_calls: new_pending}
   end
 
   defp metadata_for(nil), do: %{}
