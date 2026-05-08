@@ -97,14 +97,17 @@ defmodule El.CLI do
 
   defp print_info(true, name, session_api, deps) do
     name_atom = String.to_atom(name)
-    agent = session_api.agent(name_atom)
     info = session_api.info(name_atom)
-    model = info[:model]
-    opts = []
-    opts = opts |> maybe_put(:agent, agent) |> maybe_put(:model, model)
+    opts = build_opts(session_api.agent(name_atom), info[:model])
     Start.print_session_info(name, opts, deps)
   end
   defp print_info(false, _name, _session_api, _deps), do: IO.puts(Output.usage_message())
+
+  defp build_opts(agent, model) do
+    []
+    |> maybe_put(:agent, agent)
+    |> maybe_put(:model, model)
+  end
 
   defp maybe_put(opts, _key, nil), do: opts
   defp maybe_put(opts, key, value), do: [{key, value} | opts]
