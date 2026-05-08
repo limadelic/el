@@ -41,6 +41,11 @@ defmodule El.Session do
   end
 
   @impl true
+  def handle_call({:probe_ask, _} = msg, from, state) do
+    Call.handle(msg, from, state)
+  end
+
+  @impl true
   def handle_call(:log, _from, state) do
     Log.handle_log(:log, state)
   end
