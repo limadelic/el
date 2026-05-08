@@ -18,7 +18,7 @@ defmodule El.CLI.Daemon.Env do
 
   @impl true
   def dev? do
-    dev_check(System.get_env("DEV"))
+    dev_check(env_module().get("DEV"))
   end
 
   defp daemon_node_for(true), do: :"el_dev@127.0.0.1"
@@ -36,4 +36,6 @@ defmodule El.CLI.Daemon.Env do
 
   defp is_relative(:relative), do: true
   defp is_relative(_), do: false
+
+  defp env_module, do: Application.get_env(:el, :env_module, El.Infra.Env)
 end
