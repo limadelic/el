@@ -13,7 +13,7 @@ defmodule El.Session.Id do
   def session_id(nil), do: generate_session_id()
   def session_id(id), do: id
 
-  def extract_resume_or_id(opts) do
+  def pop_resume(opts) do
     {resume, rest} = Keyword.pop(opts, :resume)
     {resume, rest}
   end
