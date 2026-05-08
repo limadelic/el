@@ -188,14 +188,16 @@ defmodule El.Session.Commands.Ask.Spec do
       {:ok, state: state}
     end
 
-    test "reset_session generates a session_id different from previous", %{state: state} do
+    test "reset_session leaves session_id as nil", %{state: state} do
       new_state = El.Session.Commands.Ask.reset_session(state)
-      assert new_state.session_id != "test-session-id"
+      assert new_state.session_id == nil
     end
 
-    test "reset_session generates a binary session_id", %{state: state} do
-      new_state = El.Session.Commands.Ask.reset_session(state)
-      assert is_binary(new_state.session_id)
+    test "reset_session strips :session_id from claude_opts", %{state: state} do
+      state_with_session_id = %{state | opts: [session_id: "some-id", other: "value"]}
+      new_state = El.Session.Commands.Ask.reset_session(state_with_session_id)
+      assert Keyword.get(new_state.claude_opts, :session_id) == nil
+      assert Keyword.get(new_state.claude_opts, :other) == "value"
     end
 
     test "clears state.messages to empty list", %{state: state} do

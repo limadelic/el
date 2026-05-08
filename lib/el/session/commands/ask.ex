@@ -80,9 +80,8 @@ defmodule El.Session.Commands.Ask do
   end
 
   defp start_new_session(state) do
-    session_id = El.Session.Id.generate_session_id()
-    opts = Keyword.put(state.opts, :session_id, session_id)
+    opts = Keyword.delete(state.opts, :session_id)
     pid = Driver.start(state.claude_module, opts)
-    %{state | claude_pid: pid, claude_opts: opts, session_id: session_id}
+    %{state | claude_pid: pid, claude_opts: opts, session_id: nil}
   end
 end
