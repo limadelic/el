@@ -25,4 +25,10 @@ defmodule El.Credo.FolderSize.Spec do
     assert defaults[:exempt] == []
     assert defaults[:exempt_names] == []
   end
+
+  test "exempt_names matches any path segment, not just basename" do
+    folder = "lib/el/claude_port/behaviours/parser"
+    exempt_names = ["behaviours"]
+    assert Enum.any?(Path.split(folder), &(&1 in exempt_names))
+  end
 end

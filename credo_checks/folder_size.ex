@@ -36,7 +36,7 @@ defmodule El.Credo.FolderSize do
     |> Enum.group_by(fn sf -> Path.dirname(sf.filename) end)
     |> Enum.each(fn {folder, files} ->
       folder_name = Path.basename(folder)
-      skip? = folder in exempt or folder_name in exempt_names
+      skip? = folder in exempt or Enum.any?(Path.split(folder), &(&1 in exempt_names))
       unless skip? do
         sf = hd(files)
         issue_meta = IssueMeta.for(sf, params)
