@@ -222,5 +222,14 @@ defmodule El.CLI.Start.SessionCard.Spec do
       assert Enum.any?(result, &String.contains?(&1, "model: opus"))
       assert Enum.any?(result, &String.contains?(&1, "msgs:  2"))
     end
+
+    test "no double emit of model when opts model provided without agent", %{info: info} do
+      opts = [model: "claude-opus-4-7"]
+      new_info = %{info | model: "claude-opus-4-7"}
+      result = El.CLI.Start.SessionCard.build_card_rows("test_session", opts, new_info)
+
+      model_lines = Enum.filter(result, &String.starts_with?(&1, "model:"))
+      assert Enum.count(model_lines) == 1
+    end
   end
 end
