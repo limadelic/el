@@ -1,3 +1,3 @@
 defmodule El.Infra.Behaviours.Executable do
-  @callback find(String.t()) :: charlist() | false
+  @callback find(charlist()) :: charlist() | false
 end

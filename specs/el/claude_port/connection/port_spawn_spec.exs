@@ -12,9 +12,16 @@ defmodule El.ClaudePort.Connection.PortSpawn.Spec do
   setup :verify_on_exit!
 
   describe "El.ClaudePort.Connection.PortSpawn.spawn" do
+    setup do
+      Application.put_env(:el, :executable_module, El.MockExecutable)
+      on_exit(fn -> Application.delete_env(:el, :executable_module) end)
+      :ok
+    end
+
     test "calls Env.get/0 to read environment variables" do
       expect(El.MockEnv, :get, fn -> %{} end)
       stub(El.MockPort, :open, fn _, _ -> {:ok, :port} end)
+      stub(El.MockExecutable, :find, fn _ -> '/bin/echo' end)
 
       Application.put_env(:el, :env_module, El.MockEnv)
       state = %{cwd: "/tmp", port_module: El.MockPort}
@@ -25,6 +32,7 @@ defmodule El.ClaudePort.Connection.PortSpawn.Spec do
     test "returns ok port tuple from Port.open" do
       stub(El.MockEnv, :get, fn -> %{} end)
       expect(El.MockPort, :open, fn _, _ -> {:ok, :port} end)
+      stub(El.MockExecutable, :find, fn _ -> '/bin/echo' end)
 
       Application.put_env(:el, :env_module, El.MockEnv)
       state = %{cwd: "/tmp", port_module: El.MockPort}
@@ -41,6 +49,7 @@ defmodule El.ClaudePort.Connection.PortSpawn.Spec do
         send(self(), {:port_opts, opts})
         {:ok, :port}
       end)
+      stub(El.MockExecutable, :find, fn _ -> '/bin/echo' end)
 
       Application.put_env(:el, :env_module, El.MockEnv)
       state = %{cwd: "/tmp", port_module: El.MockPort}
@@ -59,11 +68,9 @@ defmodule El.ClaudePort.Connection.PortSpawn.Spec do
       stub(El.MockEnv, :get, fn -> %{} end)
       stub(El.MockPort, :open, fn _, _ -> {:ok, :port} end)
 
-      Application.put_env(:el, :executable_module, El.MockExecutable)
       Application.put_env(:el, :env_module, El.MockEnv)
       state = %{cwd: "/tmp", port_module: El.MockPort}
       El.ClaudePort.Connection.PortSpawn.spawn({:ok, {"echo", []}}, state)
-      Application.delete_env(:el, :executable_module)
       Application.delete_env(:el, :env_module)
     end
 
@@ -71,11 +78,9 @@ defmodule El.ClaudePort.Connection.PortSpawn.Spec do
       expect(El.MockExecutable, :find, fn 'notfound' -> false end)
       stub(El.MockEnv, :get, fn -> %{} end)
 
-      Application.put_env(:el, :executable_module, El.MockExecutable)
       Application.put_env(:el, :env_module, El.MockEnv)
       state = %{cwd: "/tmp", port_module: El.MockPort}
       result = El.ClaudePort.Connection.PortSpawn.spawn({:ok, {"notfound", []}}, state)
-      Application.delete_env(:el, :executable_module)
       Application.delete_env(:el, :env_module)
 
       assert result == {:error, "CLI executable not found: notfound"}
@@ -89,11 +94,9 @@ defmodule El.ClaudePort.Connection.PortSpawn.Spec do
         {:ok, :port}
       end)
 
-      Application.put_env(:el, :executable_module, El.MockExecutable)
       Application.put_env(:el, :env_module, El.MockEnv)
       state = %{cwd: "/tmp", port_module: El.MockPort}
       El.ClaudePort.Connection.PortSpawn.spawn({:ok, {"echo", []}}, state)
-      Application.delete_env(:el, :executable_module)
       Application.delete_env(:el, :env_module)
 
       assert_received {:exe_path, '/bin/echo'}
