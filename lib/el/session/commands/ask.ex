@@ -3,7 +3,6 @@ defmodule El.Session.Commands.Ask do
 
   alias El.Session.Handlers.Router
   alias El.Session.Store
-  alias El.Session.Claude.Driver
 
   def prepare_ask(state, from, message) do
     routes = Router.detect_routes(message)
@@ -26,16 +25,31 @@ defmodule El.Session.Commands.Ask do
 
   def finalize_ask(state, %{from: from, ref: ref, message: message, response: response, model: model} = ask) do
     Store.delete_ask_entry(state, message, ref)
-    Store.store_ask_entry(state, {"ask", message, response, metadata_for(model)})
-    Driver.safe_reply(from, response)
+    driver_module = Map.get(state, :driver_module, El.Session.Claude.Driver)
+    should_store = message != "who are you?"
+
+    if should_store do
+      Store.store_ask_entry(state, {"ask", message, response, metadata_for(model)})
+    end
+
+    driver_module.safe_reply(from, response)
     finalize_ask_state(state, ask)
   end
 
   defp finalize_ask_state(state, %{from: from, ref: ref, message: message, response: response, model: model}) do
-    new_messages = Store.replace_ask(state.messages, ref, message, response, model)
+    new_messages =
+      if message == "who are you?" do
+        Enum.reject(state.messages, &match_probe_entry(&1, ref))
+      else
+        Store.replace_ask(state.messages, ref, message, response, model)
+      end
+
     new_pending = List.delete(state.pending_calls, from)
     %{state | messages: new_messages, pending_calls: new_pending}
   end
+
+  defp match_probe_entry({"ask", "who are you?", "", %{ref: entry_ref}}, ref), do: entry_ref == ref
+  defp match_probe_entry(_, _), do: false
 
   defp metadata_for(nil), do: %{}
   defp metadata_for(model), do: %{model: model}
@@ -54,7 +68,7 @@ defmodule El.Session.Commands.Ask do
   defp start_new_session(state) do
     session_id = El.Session.Id.generate_session_id()
     opts = Keyword.put(state.opts, :session_id, session_id)
-    pid = Driver.start(state.claude_module, opts)
+    pid = El.Session.Claude.Driver.start(state.claude_module, opts)
     %{state | claude_pid: pid, claude_opts: opts, session_id: session_id}
   end
 end
