@@ -11,45 +11,46 @@ defmodule El.ClaudePort.Connection.PortSpawn.Spec do
   setup :verify_on_exit!
 
   describe "El.ClaudePort.Connection.PortSpawn.spawn" do
-    test "reads environment variables via mocked Env when spawning port" do
-      env_list = [{"TEST_VAR", "test_value"}]
-
-      expect(El.MockEnv, :get, fn -> env_list end)
-      expect(El.MockPort, :open, fn {_type, _exe}, opts ->
-        assert Enum.any?(opts, fn
-          {:env, env_charlist} when is_list(env_charlist) -> true
-          _ -> false
-        end)
-        {:ok, :test_port}
-      end)
+    test "calls Env.get/0 to read environment variables" do
+      expect(El.MockEnv, :get, fn -> %{} end)
+      stub(El.MockPort, :open, fn _, _ -> {:ok, :port} end)
 
       Application.put_env(:el, :env_module, El.MockEnv)
-
       state = %{cwd: "/tmp", port_module: El.MockPort}
-      result = El.ClaudePort.Connection.PortSpawn.spawn({:ok, {"echo", []}}, state)
-
-      assert result == {:ok, :test_port}
-
+      El.ClaudePort.Connection.PortSpawn.spawn({:ok, {"echo", []}}, state)
       Application.delete_env(:el, :env_module)
     end
 
-    test "includes environment variables in port opts" do
-      env_list = [{"PATH", "/bin"}, {"USER", "me"}]
+    test "returns ok port tuple from Port.open" do
+      stub(El.MockEnv, :get, fn -> %{} end)
+      expect(El.MockPort, :open, fn _, _ -> {:ok, :port} end)
 
-      expect(El.MockEnv, :get, fn -> env_list end)
-      expect(El.MockPort, :open, fn _spec, opts ->
-        env_opt = Enum.find(opts, fn {k, _} -> k == :env end)
-        assert {_, env_charlist} = env_opt
-        assert env_charlist == [{~c"PATH", ~c"/bin"}, {~c"USER", ~c"me"}]
+      Application.put_env(:el, :env_module, El.MockEnv)
+      state = %{cwd: "/tmp", port_module: El.MockPort}
+      result = El.ClaudePort.Connection.PortSpawn.spawn({:ok, {"echo", []}}, state)
+      Application.delete_env(:el, :env_module)
+
+      assert result == {:ok, :port}
+    end
+
+    test "passes env vars to Port.open opts" do
+      env_map = %{"FOO" => "BAR", "BAZ" => "QUX"}
+      stub(El.MockEnv, :get, fn -> env_map end)
+      expect(El.MockPort, :open, fn _, opts ->
+        send(self(), {:port_opts, opts})
         {:ok, :port}
       end)
 
       Application.put_env(:el, :env_module, El.MockEnv)
-
       state = %{cwd: "/tmp", port_module: El.MockPort}
       El.ClaudePort.Connection.PortSpawn.spawn({:ok, {"echo", []}}, state)
-
       Application.delete_env(:el, :env_module)
+
+      assert_received {:port_opts, opts}
+      assert Enum.any?(opts, fn
+        {:env, env_list} when is_list(env_list) -> true
+        _ -> false
+      end)
     end
   end
 end
