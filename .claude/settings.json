@@ -1,7 +1,7 @@
 {
   "model": "opus",
   "permissions": {
-    "deny": ["Bash(*cucumber*)", "Bash(git push*)"]
+    "deny": ["Bash(* cucumber *)", "Bash(git push *)"]
   },
   "hooks": {
     "PreToolUse": [
