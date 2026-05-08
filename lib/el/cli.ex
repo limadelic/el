@@ -1,5 +1,5 @@
 defmodule El.CLI do
-  alias El.CLI.{Router, Output, Log, Pattern, Start, Msg, Json}
+  alias El.CLI.{Router, Output, Log, Pattern, Start, Msg, Json, Info}
 
   defp version do
     Application.spec(:el, :vsn) |> Output.format_version()
@@ -81,11 +81,8 @@ defmodule El.CLI do
     daemon(opts).restart_daemon(opts)
     IO.puts("daemon restarted")
   end
-  def execute(:info, [name], deps) do
-    session_api = Keyword.get(deps, :session_api, El.Session.Api)
-    print_info(session_api.alive?(String.to_atom(name)), name, session_api, deps)
-  end
-  def execute(:info_json, [name], deps), do: Json.execute_info(name, deps)
+  def execute(:info, args, deps), do: Info.execute(args, deps)
+  def execute(:info_json, args, deps), do: Info.execute_json(args, deps)
   def execute(:restart, [name, "restart"], opts) do
     Pattern.restart_by_kind(el(opts), Pattern.pattern?(name), name, opts)
   end
@@ -94,23 +91,6 @@ defmodule El.CLI do
     el(deps).restart(name_atom, deps)
     Start.print_session_info(name, [], deps)
   end
-
-  defp print_info(true, name, session_api, deps) do
-    name_atom = String.to_atom(name)
-    info = session_api.info(name_atom)
-    opts = build_opts(session_api.agent(name_atom), info[:model])
-    Start.print_session_info(name, opts, deps)
-  end
-  defp print_info(false, _name, _session_api, _deps), do: IO.puts(Output.usage_message())
-
-  defp build_opts(agent, model) do
-    []
-    |> maybe_put(:agent, agent)
-    |> maybe_put(:model, model)
-  end
-
-  defp maybe_put(opts, _key, nil), do: opts
-  defp maybe_put(opts, key, value), do: [{key, value} | opts]
 
   defp maybe_print_card(:created, name, opts, deps), do: Start.print_session_info(name, opts, deps)
   defp maybe_print_card(:already_running, _name, _opts, _deps), do: :ok
