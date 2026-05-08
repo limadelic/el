@@ -19,6 +19,7 @@ defmodule El.CLI.Start.DaemonHealth.Spec do
     @tag timeout: :infinity
     test "pings when agent_atom is nil and messages == 0", %{name: name, base_deps: deps} do
       expect(El.MockSessionApi, :info, fn _ -> %{messages: 0} end)
+      expect(El.MockSessionApi, :agent, fn _ -> nil end)
       expect(El.MockSessionApi, :probe_ask, fn _, _ -> "test response" end)
       opts = [agent: nil]
       result = El.CLI.Start.DaemonHealth.ping_for_session_id(name, opts, deps)
@@ -28,6 +29,7 @@ defmodule El.CLI.Start.DaemonHealth.Spec do
     @tag timeout: :infinity
     test "pings when no agent key in opts and messages == 0", %{name: name, base_deps: deps} do
       expect(El.MockSessionApi, :info, fn _ -> %{messages: 0} end)
+      expect(El.MockSessionApi, :agent, fn _ -> nil end)
       expect(El.MockSessionApi, :probe_ask, fn _, _ -> "test response" end)
       opts = []
       result = El.CLI.Start.DaemonHealth.ping_for_session_id(name, opts, deps)
@@ -36,6 +38,7 @@ defmodule El.CLI.Start.DaemonHealth.Spec do
 
     test "is no-op when messages > 0 in opts", %{name: name, base_deps: deps} do
       stub(El.MockSessionApi, :info, fn _ -> %{messages: 5} end)
+      stub(El.MockSessionApi, :agent, fn _ -> "kent" end)
       opts = [agent: :some_agent]
       result = El.CLI.Start.DaemonHealth.ping_for_session_id(name, opts, deps)
       assert result == :ok
@@ -44,6 +47,7 @@ defmodule El.CLI.Start.DaemonHealth.Spec do
     @tag timeout: :infinity
     test "executes ping when conditions met", %{name: name, base_deps: deps} do
       expect(El.MockSessionApi, :info, fn _ -> %{messages: 0} end)
+      expect(El.MockSessionApi, :agent, fn _ -> "kent" end)
       expect(El.MockSessionApi, :ask, fn _, _ -> "test response" end)
       opts = [agent: :some_agent]
       result = El.CLI.Start.DaemonHealth.ping_for_session_id(name, opts, deps)
