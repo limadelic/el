@@ -6,6 +6,11 @@ defmodule El.CLI.Start.SessionCard do
     |> add_message_history(info)
   end
 
+  def normalize_model("claude-opus-4-7"), do: "opus"
+  def normalize_model("claude-sonnet-4-6"), do: "sonnet"
+  def normalize_model("claude-haiku-4-5-20251001"), do: "haiku"
+  def normalize_model(model), do: model
+
   defp add_identity(rows, name, opts, info) do
     rows
     |> add_name_id(name, info.id)
@@ -59,8 +64,8 @@ defmodule El.CLI.Start.SessionCard do
   end
 
   defp add_model(rows, nil, nil), do: rows
-  defp add_model(rows, nil, info_model), do: rows ++ ["model: #{info_model}"]
-  defp add_model(rows, opts_model, _info_model), do: rows ++ ["model: #{opts_model}"]
+  defp add_model(rows, nil, info_model), do: rows ++ ["model: #{normalize_model(info_model)}"]
+  defp add_model(rows, opts_model, _info_model), do: rows ++ ["model: #{normalize_model(opts_model)}"]
 
   defp add_msgs(rows, 0), do: rows
   defp add_msgs(rows, count), do: rows ++ ["msgs:  #{count}"]
