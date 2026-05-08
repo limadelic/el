@@ -3,7 +3,7 @@ Feature: Exit
   Scenario: Single
     * > el ls:
       | (donny) |
-    * > el donny
+    * > el donny start
     * > el ls:
       | donny |
     * > el donny exit
