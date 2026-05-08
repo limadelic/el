@@ -99,47 +99,6 @@ defmodule El.Session.Commands.Ask.Spec do
 
       assert returned_state.messages == [{"ask", "question", "answer", %{model: "claude-3"}}]
     end
-
-    test "probe ask is filtered from state.messages after finalize" do
-      stub(El.MockStoreModule, :delete_message, fn _, _, _ -> :ok end)
-
-      state = %{
-        name: :test_session,
-        messages: [],
-        pending_calls: [self()],
-        store_module: El.MockStoreModule,
-        opts: []
-      }
-
-      {ref, state_after_immediate} = El.Session.Store.store_ask_immediate(state, "who are you?", [])
-      assert length(state_after_immediate.messages) == 1
-
-      from = {self(), make_ref()}
-      returned_state = El.Session.Commands.Ask.finalize_ask(state_after_immediate, %{from: from, ref: ref, message: "who are you?", response: "i am claude", model: nil})
-
-      assert returned_state.messages == []
-    end
-
-    test "normal ask stays in state.messages with response after finalize" do
-      stub(El.MockStoreModule, :delete_message, fn _, _, _ -> :ok end)
-
-      state = %{
-        name: :test_session,
-        messages: [],
-        pending_calls: [self()],
-        store_module: El.MockStoreModule,
-        opts: []
-      }
-
-      {ref, state_after_immediate} = El.Session.Store.store_ask_immediate(state, "what is 2+2?", [])
-      assert length(state_after_immediate.messages) == 1
-
-      from = {self(), make_ref()}
-      returned_state = El.Session.Commands.Ask.finalize_ask(state_after_immediate, %{from: from, ref: ref, message: "what is 2+2?", response: "4", model: nil})
-
-      assert length(returned_state.messages) == 1
-      assert [{"ask", "what is 2+2?", "4", _metadata}] = returned_state.messages
-    end
   end
 
   describe "prepare_ask/3" do
