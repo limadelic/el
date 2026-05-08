@@ -579,6 +579,7 @@ defmodule El.CLI.Spec do
     test "execute :info outputs session name" do
       stub(El.MockSessionApi, :alive?, fn :session -> true end)
       stub(El.MockSessionApi, :info, fn :session -> %{messages: 2, last_prompt: "who?", last_response: "me", model: "haiku", cwd: nil, id: nil} end)
+      stub(El.MockSessionApi, :agent, fn :session -> nil end)
 
       output =
         capture_io(fn ->

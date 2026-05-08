@@ -98,7 +98,11 @@ defmodule El.CLI do
   defp print_info(true, name, session_api, deps) do
     name_atom = String.to_atom(name)
     agent = session_api.agent(name_atom)
-    opts = if agent, do: [agent: agent], else: []
+    info = session_api.info(name_atom)
+    model = info[:model]
+    opts = []
+    opts = if agent, do: [agent: agent] ++ opts, else: opts
+    opts = if model, do: [model: model] ++ opts, else: opts
     Start.print_session_info(name, opts, deps)
   end
   defp print_info(false, _name, _session_api, _deps), do: IO.puts(Output.usage_message())
