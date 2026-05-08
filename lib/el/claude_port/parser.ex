@@ -1,4 +1,6 @@
 defmodule El.ClaudePort.Parser do
+  def normalize_keys(json), do: ClaudeCode.CLI.Parser.normalize_keys(json)
+
   def try_extract_result(buffer, session_id) do
     apply_extraction(line_extractor().extract_all_lines(buffer, []), session_id)
   end
@@ -39,7 +41,7 @@ defmodule El.ClaudePort.Parser do
     process_lines(rest, new_acc, session_id)
   end
 
-  defp cc_parser, do: Application.get_env(:el, :cc_parser, El.Platform.Parser)
+  defp cc_parser, do: Application.get_env(:el, :cc_parser, El.ClaudePort.Parser)
   defp json_decoder, do: Application.get_env(:el, :json_decoder, El.Infra.JSONDecoder)
   defp line_extractor, do: Application.get_env(:el, :line_extractor, El.ClaudePort.Parser.LineExtractor)
   defp result_module, do: Application.get_env(:el, :result_module, El.ClaudePort.Parser.Result)
