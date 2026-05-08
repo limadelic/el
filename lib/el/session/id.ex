@@ -9,7 +9,4 @@ defmodule El.Session.Id do
     <<a::binary-8, b::binary-4, c::binary-4, d::binary-4, e::binary-12>> = hex
     Enum.join([a, b, c, d, e], "-")
   end
-
-  def session_id(nil), do: generate_session_id()
-  def session_id(id), do: id
 end
