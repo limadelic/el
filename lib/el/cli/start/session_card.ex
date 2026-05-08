@@ -41,12 +41,6 @@ defmodule El.CLI.Start.SessionCard do
     |> add_response_lines(response)
   end
 
-  defp add_name_id(rows, name, nil) do
-    left = "name:  #{name}"
-    right = ""
-    rows ++ [card_box().frame_pair_row(left, right)]
-  end
-
   defp add_name_id(rows, name, id) do
     left = "name:  #{name}"
     right = "id: #{id}"

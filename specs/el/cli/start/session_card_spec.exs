@@ -265,21 +265,5 @@ defmodule El.CLI.Start.SessionCard.Spec do
       assert Enum.count(model_lines) == 1
       assert Enum.any?(result, &String.contains?(&1, "cwd:"))
     end
-
-    test "omits id label when id is nil" do
-      opts = []
-      info = %{
-        id: nil,
-        model: "claude-haiku-4-5-20251001",
-        cwd: "/tmp",
-        messages: 0,
-        last_prompt: nil,
-        last_response: nil
-      }
-      result = El.CLI.Start.SessionCard.build_card_rows("test_session", opts, info)
-
-      assert Enum.any?(result, &String.contains?(&1, "name:  test_session"))
-      assert Enum.all?(result, &(!String.contains?(&1, "id:")))
-    end
   end
 end
