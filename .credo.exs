@@ -21,18 +21,8 @@
         # You can give explicit globs or simply directories.
         # In the latter case `**/*.{ex,exs}` will be used.
         #
-        included: [
-          "lib/",
-          "specs/",
-          "src/",
-          "test/",
-          "web/",
-          "apps/*/lib/",
-          "apps/*/src/",
-          "apps/*/test/",
-          "apps/*/web/"
-        ],
-        excluded: [~r"/_build/", ~r"/deps/", ~r"/node_modules/", ~r"specs/"]
+        included: ["lib/"],
+        excluded: [~r"/_build/", ~r"/deps/", ~r"/node_modules/"]
       },
       #
       # Load and configure plugins here:
