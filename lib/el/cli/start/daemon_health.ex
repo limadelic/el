@@ -1,11 +1,11 @@
 defmodule El.CLI.Start.DaemonHealth do
-  def ping_if_agent(name_atom, opts, deps) do
-    do_ping(name_atom, Keyword.get(opts, :agent), session_api(deps).info(name_atom), deps)
+  def ping_for_session_id(name_atom, _opts, deps) do
+    info = session_api(deps).info(name_atom)
+    do_ping(name_atom, info, deps)
   end
 
-  defp do_ping(_name_atom, nil, _info, _deps), do: :ok
-  defp do_ping(_name_atom, _agent, %{messages: messages}, _deps) when messages > 0, do: :ok
-  defp do_ping(name_atom, _agent, _info, deps), do: quiet_ask(name_atom, deps)
+  defp do_ping(_name_atom, %{messages: messages}, _deps) when messages > 0, do: :ok
+  defp do_ping(name_atom, _info, deps), do: quiet_ask(name_atom, deps)
 
   # credo:disable-for-next-line Credo.Check.Refactor.CyclomaticComplexity
   defp quiet_ask(name_atom, deps) do

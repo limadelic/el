@@ -90,7 +90,7 @@ defmodule El.CLI.Start.Spec do
       }
     end
 
-    test "invokes ping_if_agent when agent in opts", %{base_deps: deps} do
+    test "invokes ping_for_session_id when agent in opts", %{base_deps: deps} do
       expect(El.MockSessionApi, :ask, fn _, _ -> "test response" end)
       opts = [agent: :some_agent]
       expect(El.MockSessionApi, :info, 2, fn _name_atom ->
