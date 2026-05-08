@@ -1,4 +1,4 @@
-defmodule El.CLI.Output.Json.Spec do
+defmodule El.CLI.OutputJson.Spec do
   use ExUnit.Case
 
   describe "info/1" do
@@ -15,7 +15,7 @@ defmodule El.CLI.Output.Json.Spec do
         alive: true
       }
 
-      assert El.CLI.Output.Json.info(data) |> Jason.decode!() == %{
+      assert El.CLI.OutputJson.info(data) |> Jason.decode!() == %{
         "name" => "myagent",
         "id" => "abc-123",
         "agent" => nil,
@@ -29,7 +29,7 @@ defmodule El.CLI.Output.Json.Spec do
     end
 
     test "encodes dead session to locked dead shape" do
-      assert El.CLI.Output.Json.info(%{name: "myagent", alive: false})
+      assert El.CLI.OutputJson.info(%{name: "myagent", alive: false})
              |> Jason.decode!() == %{"name" => "myagent", "alive" => false}
     end
   end
