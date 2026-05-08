@@ -14,11 +14,13 @@ defmodule El.Credo.FolderSize.Spec do
     assert El.Credo.FolderSize.run_on_all?() == true
   end
 
-  test "param_defaults includes both max and min" do
+  test "param_defaults includes max, min, and exempt" do
     defaults = El.Credo.FolderSize.param_defaults()
     assert Keyword.has_key?(defaults, :max)
     assert Keyword.has_key?(defaults, :min)
+    assert Keyword.has_key?(defaults, :exempt)
     assert defaults[:max] == 13
     assert defaults[:min] == 3
+    assert defaults[:exempt] == []
   end
 end
