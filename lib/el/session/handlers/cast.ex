@@ -1,6 +1,6 @@
 defmodule El.Session.Handlers.Cast do
   alias El.Session.Claude.Driver
-  alias El.Session.Commands.Tell
+  alias El.Session.Handlers.Tell
   alias El.Session.Store
   alias El.Session.Handlers.Router
 
