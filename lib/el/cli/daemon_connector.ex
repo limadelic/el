@@ -17,9 +17,16 @@ defmodule El.CLI.DaemonConnector do
   end
 
   defp retry_with_daemon_node(n, sleeper, connector) do
-    daemon_node = El.CLI.Daemon.daemon_node()
+    daemon_node = target_node()
     daemon_node
     |> connector.connect()
     |> check_connected(n, daemon_node, sleeper, connector)
   end
+
+  defp target_node do
+    El.CLI.Daemon.remote_node() |> remote_or_local()
+  end
+
+  defp remote_or_local(nil), do: El.CLI.Daemon.daemon_node()
+  defp remote_or_local(remote), do: String.to_atom(remote)
 end

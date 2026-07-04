@@ -36,4 +36,29 @@ defmodule El.CLI.DaemonConnector.Spec do
       assert El.CLI.DaemonConnector.wait_for_daemon(n, El.MockSleeper, El.MockNodeConnector) == {:error, :timeout}
     end
   end
+
+  describe "wait_for_daemon with EL_NODE" do
+    test "uses remote node when EL_NODE is set" do
+      System.put_env("EL_NODE", "el@home.local")
+      Mox.expect(El.MockSleeper, :sleep, 1, fn _ -> :ok end)
+      Mox.expect(El.MockNodeConnector, :connect, 1, fn node ->
+        node == :"el@home.local"
+      end)
+
+      assert El.CLI.DaemonConnector.wait_for_daemon(5, El.MockSleeper, El.MockNodeConnector) == :ok
+      System.delete_env("EL_NODE")
+    end
+
+    test "uses local daemon node when EL_NODE is not set" do
+      System.delete_env("EL_NODE")
+      System.delete_env("EL_HOST")
+      System.delete_env("DEV")
+      Mox.expect(El.MockSleeper, :sleep, 1, fn _ -> :ok end)
+      Mox.expect(El.MockNodeConnector, :connect, 1, fn node ->
+        node == :"el@127.0.0.1"
+      end)
+
+      assert El.CLI.DaemonConnector.wait_for_daemon(5, El.MockSleeper, El.MockNodeConnector) == :ok
+    end
+  end
 end
