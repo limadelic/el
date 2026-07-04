@@ -7,7 +7,7 @@ Feature: Agent support
     * > el kenny exit
 
   Scenario: Implicit agent detection from name
-    * > el kent:
+    * > el kent start:
       | agent | kent |
       | model | opus |
     * > el kent exit
@@ -19,7 +19,7 @@ Feature: Agent support
     * > el kent exit
 
   Scenario: Lisa agent with sonnet model
-    * > el lisa:
+    * > el lisa start:
       | agent | lisa   |
       | model | sonnet |
     * > el lisa exit

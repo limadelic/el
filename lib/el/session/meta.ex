@@ -18,6 +18,7 @@ defmodule El.Session.Meta do
   end
 
   defp match_session([{_name, session_id, agent, model}]), do: {:ok, session_id, agent, model}
+  defp match_session([{_name, session_id, agent, model} | _]), do: {:ok, session_id, agent, model}
   defp match_session([]), do: {:error, :not_found}
 
   def delete(name, deps \\ []) do

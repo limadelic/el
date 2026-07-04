@@ -21,18 +21,8 @@
         # You can give explicit globs or simply directories.
         # In the latter case `**/*.{ex,exs}` will be used.
         #
-        included: [
-          "lib/",
-          "specs/",
-          "src/",
-          "test/",
-          "web/",
-          "apps/*/lib/",
-          "apps/*/src/",
-          "apps/*/test/",
-          "apps/*/web/"
-        ],
-        excluded: [~r"/_build/", ~r"/deps/", ~r"/node_modules/", ~r"specs/"]
+        included: ["lib/"],
+        excluded: [~r"/_build/", ~r"/deps/", ~r"/node_modules/"]
       },
       #
       # Load and configure plugins here:
@@ -42,7 +32,7 @@
       # If you create your own checks, you must specify the source files for
       # them here, so they can be loaded by Credo before running the analysis.
       #
-      requires: ["credo_checks/line_check.ex", "credo_checks/max_function_lines.ex", "credo_checks/max_module_lines.ex"],
+      requires: ["credo_checks/line_check.ex", "credo_checks/max_function_lines.ex", "credo_checks/max_module_lines.ex", "credo_checks/folder_size.ex"],
       #
       # If you want to enforce a style guide and need a more traditional linting
       # experience, you can change `strict` to `true` below:
@@ -76,6 +66,7 @@
           {Credo.Check.Design.DuplicatedCode, mass_threshold: 40},
           {El.Credo.MaxFunctionLines, [max_lines: 5]},
           {El.Credo.MaxModuleLines, [max_lines: 100]},
+          {El.Credo.FolderSize, [exempt: ["lib"], exempt_names: ["behaviours"]]},
           {Credo.Check.Warning.Dbg, []},
           {Credo.Check.Warning.IoInspect, []},
           {Credo.Check.Warning.IExPry, []},

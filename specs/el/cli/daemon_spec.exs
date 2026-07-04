@@ -7,9 +7,19 @@ defmodule El.CLI.Daemon.Spec do
     Code.ensure_loaded!(El.Infra.Behaviours.System)
     Code.ensure_loaded!(El.Infra.Behaviours.NodeConnector)
     Code.ensure_loaded!(El.Infra.Behaviours.NetKernel)
+    Code.ensure_loaded!(El.Infra.Behaviours.RPC)
+    Code.ensure_loaded!(El.Infra.Behaviours.Sleeper)
+    Code.ensure_loaded!(El.Infra.Behaviours.NodeMonitor)
     Code.ensure_loaded!(El.Infra.System)
     Code.ensure_loaded!(El.Infra.NodeConnector)
     Code.ensure_loaded!(El.Infra.NetKernel)
+    Code.ensure_loaded!(El.Infra.RPC)
+    Code.ensure_loaded!(El.Infra.Sleeper)
+    Code.ensure_loaded!(El.Infra.NodeMonitor)
+    Code.ensure_loaded!(El.CLI.Daemon.Behaviours.Env)
+    Code.ensure_loaded!(El.CLI.Daemon.Env)
+    Code.ensure_loaded!(El.CLI.Daemon.Behaviours.Connection)
+    Code.ensure_loaded!(El.CLI.Daemon.Connection)
     :ok
   end
 
@@ -33,103 +43,70 @@ defmodule El.CLI.Daemon.Spec do
     end
   end
 
-  describe "host/0" do
-    test "returns EL_HOST env var if set" do
-      System.put_env("EL_HOST", "home.local")
-      assert El.CLI.Daemon.host() == "home.local"
-      System.delete_env("EL_HOST")
-    end
-
-    test "returns 127.0.0.1 as default" do
-      System.delete_env("EL_HOST")
-      assert El.CLI.Daemon.host() == "127.0.0.1"
+  describe "El.CLI.Daemon.Env" do
+    test "declares @behaviour El.CLI.Daemon.Behaviours.Env" do
+      assert El.CLI.Daemon.Behaviours.Env in El.CLI.Daemon.Env.module_info(:attributes)[:behaviour] || []
     end
   end
 
-  describe "remote_node/0" do
-    test "returns EL_NODE env var if set" do
-      System.put_env("EL_NODE", "el@home.local")
-      assert El.CLI.Daemon.remote_node() == "el@home.local"
-      System.delete_env("EL_NODE")
+  describe "El.CLI.Daemon.stop_daemon/0" do
+    setup do
+      stub(El.MockRPC, :call, fn _node, :init, :stop, [] -> :ok end)
+      stub(El.MockNodeMonitor, :list, fn -> [] end)
+      stub(El.MockSleeper, :sleep, fn _ms -> :ok end)
+      :ok
     end
 
-    test "returns nil if EL_NODE not set" do
-      System.delete_env("EL_NODE")
-      assert El.CLI.Daemon.remote_node() == nil
-    end
-  end
+    test "calls :init.stop on the daemon node via RPC" do
+      expected = El.CLI.Daemon.daemon_node()
+      expect(El.MockRPC, :call, fn ^expected, :init, :stop, [] -> :ok end)
 
-  describe "daemon_node/0" do
-    test "uses EL_HOST for non-dev daemon" do
-      System.put_env("EL_HOST", "work.local")
-      System.delete_env("DEV")
-      assert El.CLI.Daemon.daemon_node() == :"el@work.local"
-      System.delete_env("EL_HOST")
+      El.CLI.Daemon.stop_daemon(rpc: El.MockRPC, sleeper: El.MockSleeper, node_monitor: El.MockNodeMonitor)
     end
 
-    test "uses EL_HOST for dev daemon" do
-      System.put_env("EL_HOST", "work.local")
-      System.put_env("DEV", "1")
-      assert El.CLI.Daemon.daemon_node() == :"el_dev@work.local"
-      System.delete_env("EL_HOST")
-      System.delete_env("DEV")
+    test "invokes node monitor to check if node is still connected" do
+      expect(El.MockNodeMonitor, :list, fn -> [] end)
+
+      El.CLI.Daemon.stop_daemon(rpc: El.MockRPC, sleeper: El.MockSleeper, node_monitor: El.MockNodeMonitor)
     end
 
-    test "defaults to 127.0.0.1 when EL_HOST not set" do
-      System.delete_env("EL_HOST")
-      System.delete_env("DEV")
-      assert El.CLI.Daemon.daemon_node() == :"el@127.0.0.1"
+    test "accepts env parameter for dependency injection" do
+      stub(El.MockDaemonEnv, :daemon_node, fn -> :"el_dev@127.0.0.1" end)
+      expect(El.MockNodeMonitor, :list, fn -> [] end)
+
+      El.CLI.Daemon.stop_daemon(rpc: El.MockRPC, sleeper: El.MockSleeper, node_monitor: El.MockNodeMonitor, env: El.MockDaemonEnv)
     end
   end
 
-  describe "connect_to_daemon with EL_NODE" do
-    test "does not spawn local daemon when remote reachable" do
-      System.put_env("EL_NODE", "el@home.local")
-      System.delete_env("EL_HOST")
-      System.delete_env("DEV")
-      expect(El.MockSystem, :cmd, 1, fn _, _ -> :ok end)
-      expect(El.MockNodeConnector, :connect, 1, fn _ -> true end)
-      expect(El.MockNodeConnector, :set_cookie, 1, fn _ -> true end)
-      expect(El.MockNetKernel, :start, 1, fn [_, :longnames] -> {:ok, self()} end)
-
-      result = El.CLI.Daemon.connect_to_daemon(El.MockSystem, El.MockNodeConnector, El.MockNetKernel)
-      assert result == {:ok, :"el@127.0.0.1"}
-
-      System.delete_env("EL_NODE")
+  describe "El.CLI.Daemon.restart_daemon/1" do
+    setup do
+      stub(El.MockRPC, :call, fn _node, :init, :stop, [] -> :ok end)
+      stub(El.MockNodeMonitor, :list, fn -> [] end)
+      stub(El.MockSleeper, :sleep, fn _ms -> :ok end)
+      stub(El.MockDaemonConnection, :connect_to_daemon, fn _opts -> {:ok, :"el_dev@127.0.0.1"} end)
+      :ok
     end
 
-    @tag timeout: 1000
-    test "fails with clear error when remote unreachable" do
-      System.put_env("EL_NODE", "el@home.local")
-      expect(El.MockSystem, :cmd, 1, fn _, _ -> :ok end)
-      expect(El.MockNodeConnector, :connect, 1, fn _ -> false end)
-      expect(El.MockNodeConnector, :set_cookie, 1, fn _ -> true end)
-      expect(El.MockNetKernel, :start, 1, fn [_, :longnames] -> {:ok, self()} end)
+    test "stops daemon then connects" do
+      expect(El.MockRPC, :call, fn _node, :init, :stop, [] -> :ok end)
 
-      assert_raise RuntimeError, ~r/remote daemon unreachable/, fn ->
-        El.CLI.Daemon.connect_to_daemon(El.MockSystem, El.MockNodeConnector, El.MockNetKernel)
-      end
-
-      System.delete_env("EL_NODE")
-    end
-  end
-
-  describe "naming mode detection" do
-    test "uses longnames for hostnames with dots" do
-      System.delete_env("EL_HOST")
-      System.delete_env("DEV")
-      assert El.CLI.Daemon.daemon_node() == :"el@127.0.0.1"
-      System.put_env("EL_HOST", "home.local")
-      assert El.CLI.Daemon.daemon_node() == :"el@home.local"
-      System.delete_env("EL_HOST")
+      El.CLI.Daemon.restart_daemon(
+        rpc: El.MockRPC,
+        sleeper: El.MockSleeper,
+        node_monitor: El.MockNodeMonitor,
+        connection: El.MockDaemonConnection
+      )
     end
 
-    test "uses shortnames for hostnames without dots" do
-      System.put_env("EL_HOST", "localhost")
-      assert El.CLI.Daemon.daemon_node() == :"el@localhost"
-      System.put_env("EL_HOST", "myhost")
-      assert El.CLI.Daemon.daemon_node() == :"el@myhost"
-      System.delete_env("EL_HOST")
+    test "returns ok when daemon restarts successfully" do
+      result = El.CLI.Daemon.restart_daemon(
+        rpc: El.MockRPC,
+        sleeper: El.MockSleeper,
+        node_monitor: El.MockNodeMonitor,
+        connection: El.MockDaemonConnection
+      )
+
+      assert result == :ok
     end
   end
 end

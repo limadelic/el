@@ -7,7 +7,7 @@ rescue Timeout::Error
 end
 
 Before do |scenario|
-  scenario.tags.map(&:name).grep(/^@el_(.+)$/) { el($1) }
+  scenario.tags.map(&:name).grep(/^@el_(.+)$/) { el("#{$1} start") }
 end
 
 After do |scenario|

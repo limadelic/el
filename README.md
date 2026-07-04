@@ -30,12 +30,22 @@ brew install limadelic/tap/el
 
 ```
 > el
-el -v                        version
-el ls                        list sessions
-el <name> [-m <model>] [-a <agent>] start or status
-el <name> <msg>              send a msg
-el <name|glob> log [n|all]   view log (default: last 1)
-el <name|glob> clear         clear log
-el <name|glob> exit          exit session
-el exit                      exit all sessions
+el -v                                 version
+el ls                                 list names
+el <name> [-json]                     info
+el <name> log [n|all] [-json]         view log (default: last 1)
+
+el <name> start [args]                start session
+  args:
+    -m <model>                        model
+    -a <agent>                        agent
+
+el <name> <msg>                       send a msg
+
+el <name|glob> <cmd>                  apply command to one or many
+el <cmd>                              apply command to all
+  cmds:
+    clear                             start new session
+    exit                              exit session
+    restart                           restart session
 ```

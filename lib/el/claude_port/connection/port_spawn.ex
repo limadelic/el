@@ -3,7 +3,7 @@ defmodule El.ClaudePort.Connection.PortSpawn do
 
   def spawn({:error, reason}, _state), do: {:error, reason}
   def spawn({:ok, {executable, args}}, state) do
-    find_and_spawn(:os.find_executable(String.to_charlist(executable)), executable, args, state)
+    find_and_spawn(executable_module().find(String.to_charlist(executable)), executable, args, state)
   end
 
   defp find_and_spawn(false, executable, _args, _state) do
@@ -32,10 +32,14 @@ defmodule El.ClaudePort.Connection.PortSpawn do
   defp port_flags, do: [:binary, :exit_status, :stderr_to_stdout]
 
   defp env_charlist do
-    Enum.map(System.get_env(), &charlist_pair/1)
+    Enum.map(env_module().get(), &charlist_pair/1)
   end
 
   defp charlist_pair({k, v}) do
     {String.to_charlist(k), String.to_charlist(v)}
   end
+
+  defp env_module, do: Application.get_env(:el, :env_module, El.Infra.Env)
+
+  defp executable_module, do: Application.get_env(:el, :executable_module, El.Infra.Executable)
 end

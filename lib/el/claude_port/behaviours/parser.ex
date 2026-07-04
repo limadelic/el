@@ -1,3 +1,3 @@
 defmodule El.ClaudePort.Behaviours.Parser do
-  @callback try_extract_result(String.t(), String.t()) :: :incomplete | {:ok, term(), String.t()}
+  @callback normalize_keys(map()) :: map()
 end

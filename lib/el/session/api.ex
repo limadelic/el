@@ -20,6 +20,10 @@ defmodule El.Session.Api do
     GenServer.call(Registry.via_tuple(name), {:ask, message}, :infinity)
   end
 
+  def probe_ask(name, message) do
+    GenServer.call(Registry.via_tuple(name), {:probe_ask, message}, :infinity)
+  end
+
   def log(name) do
     GenServer.call(Registry.via_tuple(name), :log, :infinity)
   end

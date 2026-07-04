@@ -62,37 +62,32 @@ defmodule El do
   end
 
   @impl true
-  def exit_pattern(pattern, opts \\ []) do
-    ls(opts)
-    |> Enum.filter(&match_pattern?(&1, pattern))
-    |> Enum.each(&El.exit(&1, opts))
+  def restart(name, opts \\ []) do
+    El.Lifecycle.exit(name, :restart, opts)
+    resume_session(name, opts)
+  end
+
+  defp resume_session(name, opts) do
+    session_meta = Keyword.get(opts, :session_meta, El.Session.Meta)
+    resume_with_session_meta(name, opts, session_meta.lookup(name))
+  end
+
+  defp resume_with_session_meta(name, opts, {:ok, session_id, agent, model}) do
+    resume_opts = [resume: session_id, agent: agent, model: model] ++ opts
+    start(name, resume_opts)
   end
 
   @impl true
-  def clear_pattern(pattern, opts \\ []) do
-    ls(opts) |> Enum.filter(&match_pattern?(&1, pattern)) |> Enum.each(&El.clear(&1, opts))
-  end
+  defdelegate restart_pattern(pattern, opts \\ []), to: El.Pattern, as: :restart
 
   @impl true
-  def log_pattern(pattern, count, opts \\ []),
-    do:
-      ls(opts) |> Enum.filter(&match_pattern?(&1, pattern)) |> Enum.flat_map(&log_entries(&1, count, opts))
+  defdelegate exit_pattern(pattern, opts \\ []), to: El.Pattern, as: :exit
 
-  defp log_entries(name, count, opts) do
-    name |> session_api(opts).log(count) |> filter_found()
-  end
+  @impl true
+  defdelegate clear_pattern(pattern, opts \\ []), to: El.Pattern, as: :clear
 
-  defp filter_found(:not_found), do: []
-  defp filter_found(entries), do: entries
-
-  defp match_pattern?(name, pattern) do
-    name_str = Atom.to_string(name)
-    regex_pattern = pattern_to_regex(pattern)
-    Regex.match?(~r/^#{regex_pattern}$/, name_str)
-  end
-
-  defp pattern_to_regex(pattern),
-    do: pattern |> String.replace("*", ".*") |> String.replace("?", ".")
+  @impl true
+  defdelegate log_pattern(pattern, count, opts \\ []), to: El.Pattern, as: :log
 
   @impl true
   def ls(opts \\ []) do

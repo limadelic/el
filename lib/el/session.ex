@@ -12,8 +12,8 @@ defmodule El.Session do
   @impl true
   def init({name, opts}) do
     Process.flag(:trap_exit, true)
-    {session_id, rest} = El.Session.Id.extract_resume_or_id(opts)
-    cwd = file_system(opts).cwd()
+    {session_id, rest} = Keyword.pop(opts, :resume)
+    cwd = file_system(opts).cwd!()
     {:ok, state_module(opts).build(name, opts, rest, session_id, cwd), {:continue, :start_claude}}
   end
 
@@ -37,6 +37,11 @@ defmodule El.Session do
 
   @impl true
   def handle_call({:ask, _} = msg, from, state) do
+    Call.handle(msg, from, state)
+  end
+
+  @impl true
+  def handle_call({:probe_ask, _} = msg, from, state) do
     Call.handle(msg, from, state)
   end
 
