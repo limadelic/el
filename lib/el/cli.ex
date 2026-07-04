@@ -1,11 +1,13 @@
 defmodule El.CLI do
-  alias El.CLI.{Router, Output, Log, Pattern, Start, Msg}
+  alias El.CLI.{Router, Output, Log, Pattern, Start, Msg, Json, Info}
 
   defp version do
     Application.spec(:el, :vsn) |> Output.format_version()
   end
 
   defp el(opts), do: Keyword.fetch!(opts, :el_module)
+
+  defp daemon(opts), do: Keyword.get(opts, :daemon_module, El.CLI.Daemon)
 
   def dispatch(args), do: dispatch(args, El.Deps.production())
 
@@ -25,6 +27,8 @@ defmodule El.CLI do
   def execute(:daemon, ["--daemon", name, "-m", model], opts) do
     Start.start_daemon_node_for(name, model, el(opts), El.Infra.Sleeper, opts)
   end
+
+  def execute(:start, [name, "start" | rest], deps), do: execute(:start, [name | rest], deps)
 
   def execute(:start, [name], deps) do
     opts = Start.Options.merge_session_opts(name, nil, nil, deps)
@@ -48,10 +52,11 @@ defmodule El.CLI do
     maybe_print_card(status, name, opts, deps)
   end
 
-  def execute(:log, [name, "log"], opts), do: Log.execute_log(name, 1, el(opts), opts)
-
-  def execute(:log_n, [name, "log", n], opts) do
-    Log.execute_log(name, Log.parse_log_count(n), el(opts), opts)
+  def execute(:log, [name, "log"], opts), do: Log.execute(name, opts)
+  def execute(:log_json, [name, "log"], opts), do: Json.execute_log(name, 1, el(opts), opts)
+  def execute(:log_n, [name, "log", n], opts), do: Log.execute_n(name, n, opts)
+  def execute(:log_n_json, [name, "log", n, "-json"], opts) do
+    Json.execute_log_n(name, n, opts)
   end
 
   def execute(:exit, [name, "exit"], opts) do
@@ -65,6 +70,26 @@ defmodule El.CLI do
   def execute(:exit_all, ["exit"], opts) do
     el(opts).exit(:all, opts)
     IO.puts("exited all")
+  end
+
+  def execute(:clear_all, ["clear"], opts) do
+    el(opts).clear_pattern("*", opts)
+    IO.puts("cleared all")
+  end
+
+  def execute(:restart_daemon, ["restart"], opts) do
+    daemon(opts).restart_daemon(opts)
+    IO.puts("daemon restarted")
+  end
+  def execute(:info, args, deps), do: Info.execute(args, deps)
+  def execute(:info_json, args, deps), do: Info.execute_json(args, deps)
+  def execute(:restart, [name, "restart"], opts) do
+    Pattern.restart_by_kind(el(opts), Pattern.pattern?(name), name, opts)
+  end
+  def execute(:restart, [name], deps) do
+    name_atom = String.to_atom(name)
+    el(deps).restart(name_atom, deps)
+    Start.print_session_info(name, [], deps)
   end
 
   defp maybe_print_card(:created, name, opts, deps), do: Start.print_session_info(name, opts, deps)

@@ -38,6 +38,8 @@ defmodule El.ClaudePort.State do
     Map.new(@seam_defaults, fn {k, d} -> {k, Keyword.get(opts, k, d)} end)
   end
 
-  defp cwd(nil), do: File.cwd!()
+  defp cwd(nil), do: fs_module().cwd!()
   defp cwd(path), do: path
+
+  defp fs_module, do: Application.get_env(:el, :fs_module, El.Infra.FileSystem)
 end

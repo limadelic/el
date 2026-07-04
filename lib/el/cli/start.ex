@@ -7,7 +7,7 @@ defmodule El.CLI.Start do
   def handle_find_daemon_for_start(name, opts, el, deps \\ []) do
     name_atom = String.to_atom(name)
     el.start(name_atom, opts ++ deps)
-    DaemonHealth.ping_if_agent(name_atom, opts, deps)
+    DaemonHealth.ping_for_session_id(name_atom, opts, deps)
     print_session_info(name, opts, deps)
   end
 
@@ -24,7 +24,7 @@ defmodule El.CLI.Start do
   def handle_find_daemon_with_rest(name, opts, rest, el, deps \\ []) do
     name_atom = String.to_atom(name)
     el.start(name_atom, opts ++ deps)
-    DaemonHealth.ping_if_agent(name_atom, opts, deps)
+    DaemonHealth.ping_for_session_id(name_atom, opts, deps)
     print_session_info(name, opts, deps)
     dispatch_rest(rest, name, opts)
   end

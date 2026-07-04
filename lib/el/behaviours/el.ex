@@ -15,10 +15,14 @@ defmodule El.Behaviours.El do
   @callback exit_pattern(term(), term()) :: term()
   @callback clear_pattern(term()) :: term()
   @callback clear_pattern(term(), term()) :: term()
+  @callback restart_pattern(term()) :: term()
+  @callback restart_pattern(term(), term()) :: term()
   @callback log_pattern(term(), term()) :: term()
   @callback log_pattern(term(), term(), term()) :: term()
   @callback ls() :: term()
   @callback agent(term()) :: term()
   @callback agent(term(), term()) :: term()
+  @callback restart(term()) :: term()
+  @callback restart(term(), term()) :: term()
 end
 

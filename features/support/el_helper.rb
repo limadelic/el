@@ -21,7 +21,13 @@ module ElHelper
       next if words.empty?
 
       words.each do |word|
-        unless output.downcase.include?(word.downcase)
+        matched = output.downcase.include?(word.downcase) ||
+          begin
+            Regexp.new(word, Regexp::IGNORECASE).match?(output)
+          rescue RegexpError
+            false
+          end
+        unless matched
           missing_words << { word: word, source_line: expected_line }
         end
       end

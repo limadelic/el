@@ -6,6 +6,11 @@ defmodule El.CLI.Start.SessionCard do
     |> add_message_history(info)
   end
 
+  defp normalize_model("claude-opus-4-7"), do: "opus"
+  defp normalize_model("claude-sonnet-4-6"), do: "sonnet"
+  defp normalize_model("claude-haiku-4-5-20251001"), do: "haiku"
+  defp normalize_model(model), do: model
+
   defp add_identity(rows, name, opts, info) do
     rows
     |> add_name_id(name, info.id)
@@ -48,19 +53,20 @@ defmodule El.CLI.Start.SessionCard do
   end
 
   defp second_left_value(agent, _, _) when agent != nil, do: "agent: #{agent}"
-  defp second_left_value(nil, opts_model, _) when opts_model != nil, do: "model: #{opts_model}"
-  defp second_left_value(nil, nil, info_model) when info_model != nil, do: "model: #{info_model}"
-  defp second_left_value(_, _, _), do: nil
+  defp second_left_value(nil, _, _), do: nil
 
-  defp do_add_second_with_cwd(rows, nil, _cwd), do: rows
+  defp do_add_second_with_cwd(rows, nil, cwd) do
+    right = "cwd: #{cwd}"
+    rows ++ [card_box().frame_pair_row("", right)]
+  end
   defp do_add_second_with_cwd(rows, left, cwd) do
     right = "cwd: #{cwd}"
     rows ++ [card_box().frame_pair_row(left, right)]
   end
 
   defp add_model(rows, nil, nil), do: rows
-  defp add_model(rows, nil, info_model), do: rows ++ ["model: #{info_model}"]
-  defp add_model(rows, opts_model, _info_model), do: rows ++ ["model: #{opts_model}"]
+  defp add_model(rows, nil, info_model), do: rows ++ ["model: #{normalize_model(info_model)}"]
+  defp add_model(rows, opts_model, _info_model), do: rows ++ ["model: #{normalize_model(opts_model)}"]
 
   defp add_msgs(rows, 0), do: rows
   defp add_msgs(rows, count), do: rows ++ ["msgs:  #{count}"]

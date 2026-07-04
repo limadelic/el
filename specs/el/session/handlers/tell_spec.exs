@@ -1,4 +1,4 @@
-defmodule El.Session.Commands.Tell.Spec do
+defmodule El.Session.Handlers.Tell.Spec do
   use ExUnit.Case
   import Mox
 
@@ -21,7 +21,7 @@ defmodule El.Session.Commands.Tell.Spec do
       }
 
       ref = make_ref()
-      El.Session.Commands.Tell.process_tell(state, "hello", ref, [])
+      El.Session.Handlers.Tell.process_tell(state, "hello", ref, [])
 
       assert_receive {:asked, :fake_pid, "hello"}
     end
@@ -38,7 +38,7 @@ defmodule El.Session.Commands.Tell.Spec do
       }
 
       ref = make_ref()
-      El.Session.Commands.Tell.process_tell(state, "hello", ref, [])
+      El.Session.Handlers.Tell.process_tell(state, "hello", ref, [])
 
       assert_receive {:"$gen_cast", {:store_tell, ^ref, "hello", "the answer"}}
     end

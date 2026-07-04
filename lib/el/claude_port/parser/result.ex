@@ -1,7 +1,7 @@
 defmodule El.ClaudePort.Parser.Result do
   alias El.ClaudePort.Parser.EventSchema
 
-  @behaviour El.ClaudePort.Behaviours.Parser.Result
+  @behaviour El.ClaudePort.Behaviours.ParserExtract.Result
 
   def merge(normalized, acc) do
     {build_acc(normalized, acc), EventSchema.is_result_message(normalized)}

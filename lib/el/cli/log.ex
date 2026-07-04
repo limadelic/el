@@ -4,6 +4,14 @@ defmodule El.CLI.Log do
     El.CLI.Output.handle_log_result(result, name)
   end
 
+  def execute(name, opts) do
+    execute_log(name, 1, Keyword.fetch!(opts, :el_module), opts)
+  end
+
+  def execute_n(name, n, opts) do
+    execute_log(name, parse_log_count(n), Keyword.fetch!(opts, :el_module), opts)
+  end
+
   def log_for_name(name, count, el_module, opts) when is_binary(name) do
     log_by_kind(pattern?(name), name, count, el_module, opts)
   end
@@ -13,8 +21,15 @@ defmodule El.CLI.Log do
   end
 
   def log_by_kind(false, name, count, el_module, opts) do
+    api = Keyword.get(opts, :session_api, El.Session.Api)
+    do_log(api.alive?(String.to_atom(name)), name, count, el_module, opts)
+  end
+
+  defp do_log(true, name, count, el_module, opts) do
     el_module.log(String.to_atom(name), count, opts)
   end
+
+  defp do_log(false, _name, _count, _el_module, _opts), do: :not_found
 
   def parse_log_count("all"), do: :all
   def parse_log_count(n), do: String.to_integer(n)

@@ -1,95 +1,66 @@
 defmodule El.CLI.Daemon do
-  def daemon_script do
-    :escript.script_name() |> to_string() |> Path.expand()
+  @behaviour El.CLI.Behaviours.Daemon
+
+  defdelegate daemon_script, to: El.CLI.Daemon.Env
+  defdelegate daemon_node, to: El.CLI.Daemon.Env
+  defdelegate daemon_cookie, to: El.CLI.Daemon.Env
+  defdelegate dev?, to: El.CLI.Daemon.Env
+  defdelegate host, to: El.CLI.Daemon.Env
+  defdelegate remote_node, to: El.CLI.Daemon.Env
+  defdelegate naming_mode(h), to: El.CLI.Daemon.Env
+
+  def stop_daemon(opts \\ [])
+  def stop_daemon(opts) when is_list(opts) do
+    %{rpc: rpc, sleeper: sleeper, node_monitor: node_monitor, env: env, disconnect_timeout: disconnect_timeout, disconnect_poll_ms: disconnect_poll_ms} = stop_daemon_deps(opts)
+    rpc.call(daemon_node(), :init, :stop, [])
+    wait_for_node_disconnect(node_monitor, sleeper, env, timeout: disconnect_timeout, poll_ms: disconnect_poll_ms)
   end
 
-  def daemon_node do
-    dev?() |> daemon_node_for()
+  defp stop_daemon_deps(opts) do
+    defaults = %{rpc: El.Infra.RPC, sleeper: El.Infra.Sleeper, node_monitor: El.Infra.NodeMonitor, env: El.CLI.Daemon.Env, disconnect_timeout: 5000, disconnect_poll_ms: 100}
+    Map.merge(defaults, Map.new(opts))
   end
 
-  def connect_to_daemon(system \\ El.Infra.System, node_connector \\ El.Infra.NodeConnector, net_kernel \\ El.Infra.NetKernel) do
-    start_epmd(system)
-    start_client_node(net_kernel, node_connector) |> handle_client_started(system, node_connector)
+  @impl true
+  def restart_daemon(opts \\ [])
+  def restart_daemon(opts) when is_list(opts) do
+    stop_daemon(opts)
+    %{connection: connection} = restart_daemon_deps(opts)
+    connection.connect_to_daemon(opts)
+    :ok
   end
 
-  defp handle_client_started({:ok, _}, system, node_connector) do
-    ensure_daemon(system, node_connector) |> handle_daemon_ready()
+  defp restart_daemon_deps(opts) do
+    defaults = %{connection: El.CLI.Daemon.Connection}
+    Map.merge(defaults, Map.new(opts))
   end
 
-  defp handle_client_started(_, _system, _node_connector), do: :local
-
-  defp handle_daemon_ready(:ok), do: {:ok, daemon_node()}
-  defp handle_daemon_ready(_), do: :local
-
-  def start_daemon_node(system \\ El.Infra.System, node_connector \\ El.Infra.NodeConnector, net_kernel \\ El.Infra.NetKernel) do
-    start_epmd(system)
-    net_kernel.start([daemon_node(), :longnames])
-    node_connector.set_cookie(daemon_cookie())
+  defp wait_for_node_disconnect(node_monitor, sleeper, env, timeout: max_ms, poll_ms: poll_interval) do
+    state = %{node_monitor: node_monitor, sleeper: sleeper, start_ms: current_time_ms(), max_ms: max_ms, poll_interval: poll_interval, env: env}
+    wait_until_disconnected(state)
   end
 
-  def dev? do
-    dev_check(System.get_env("DEV"))
+  defp wait_until_disconnected(%{start_ms: start_ms, max_ms: max_ms}) when start_ms >= max_ms do
+    :ok
   end
 
-  def ensure_daemon(system \\ El.Infra.System, node_connector \\ El.Infra.NodeConnector) do
-    ensure_daemon_connected(node_connector.connect(daemon_node()), system, node_connector)
+  defp wait_until_disconnected(%{node_monitor: node_monitor, env: env} = state) do
+    node_disconnected?(node_monitor, env)
+    |> continue_or_retry(state)
   end
 
-  defp daemon_node_for(true), do: :"el_dev@127.0.0.1"
-  defp daemon_node_for(false), do: :"el@127.0.0.1"
+  defp continue_or_retry(true, _state), do: :ok
 
-  defp daemon_cookie_for(true), do: :el_dev
-  defp daemon_cookie_for(false), do: :el
-
-  defp daemon_cookie do
-    dev?() |> daemon_cookie_for()
+  defp continue_or_retry(false, %{sleeper: sleeper, start_ms: start_ms, poll_interval: poll_interval} = state) do
+    sleeper.sleep(poll_interval)
+    wait_until_disconnected(%{state | start_ms: start_ms + poll_interval})
   end
 
-  defp dev_check(nil), do: script_is_relative()
-  defp dev_check(_), do: true
-
-  defp script_is_relative do
-    :escript.script_name() |> to_string() |> Path.type() |> is_relative()
+  defp node_disconnected?(node_monitor, env) do
+    not Enum.member?(node_monitor.list(), env.daemon_node())
   end
 
-  defp is_relative(:relative), do: true
-  defp is_relative(_), do: false
-
-  defp start_client_node(net_kernel, node_connector) do
-    id = System.unique_integer([:positive])
-    start_node_with_id(id, net_kernel, node_connector)
+  defp current_time_ms do
+    System.monotonic_time(:millisecond)
   end
-
-  defp start_node_with_id(id, net_kernel, node_connector) do
-    net_kernel.start([:"el-cli-#{id}@127.0.0.1", :longnames])
-    |> maybe_set_cookie(node_connector)
-  end
-
-  defp maybe_set_cookie({:ok, _}, node_connector) do
-    node_connector.set_cookie(daemon_cookie())
-    {:ok, :started}
-  end
-
-  defp maybe_set_cookie(error, _node_connector), do: error
-
-  defp ensure_daemon_connected(true, _system, _node_connector), do: :ok
-  defp ensure_daemon_connected(false, system, _node_connector), do: spawn_and_wait(system)
-
-  defp spawn_and_wait(system) do
-    spawn_daemon(system)
-    El.CLI.DaemonConnector.wait_for_daemon(30)
-  end
-
-  defp start_epmd(system) do
-    system.cmd("epmd", ["-daemon"])
-  end
-
-  defp spawn_daemon(system) do
-    script = daemon_script()
-    prefix = dev?() |> env_prefix()
-    system.cmd("sh", ["-c", "#{prefix}#{script} --daemon > /dev/null 2>&1 &"])
-  end
-
-  defp env_prefix(true), do: "DEV=1 "
-  defp env_prefix(false), do: ""
 end

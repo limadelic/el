@@ -212,5 +212,58 @@ defmodule El.CLI.Start.SessionCard.Spec do
       assert length(prompt_rows) == 1
       assert String.starts_with?(hd(prompt_rows), "> ")
     end
+
+    test "renders agent, model short form, and message count", %{info: info} do
+      opts = [agent: "kent"]
+      new_info = %{info | model: "claude-opus-4-7", messages: 2, last_prompt: nil, last_response: nil}
+      result = El.CLI.Start.SessionCard.build_card_rows("test_session", opts, new_info)
+
+      assert Enum.any?(result, &String.contains?(&1, "agent: kent"))
+      assert Enum.any?(result, &String.contains?(&1, "model: opus"))
+      assert Enum.any?(result, &String.contains?(&1, "msgs:  2"))
+    end
+
+    test "no double emit of model when opts model provided without agent", %{info: info} do
+      opts = [model: "claude-opus-4-7"]
+      new_info = %{info | model: "claude-opus-4-7"}
+      result = El.CLI.Start.SessionCard.build_card_rows("test_session", opts, new_info)
+
+      model_lines = Enum.filter(result, &String.starts_with?(&1, "model:"))
+      assert Enum.count(model_lines) == 1
+    end
+
+    test "model emitted exactly once when no agent and info.model exists" do
+      opts = []
+      info = %{
+        id: "session-123",
+        model: "claude-haiku-4-5-20251001",
+        cwd: "/tmp",
+        messages: 0,
+        last_prompt: nil,
+        last_response: nil
+      }
+      result = El.CLI.Start.SessionCard.build_card_rows("test_session", opts, info)
+
+      model_lines = Enum.filter(result, &String.contains?(&1, "model:"))
+      assert Enum.count(model_lines) == 1
+      assert Enum.any?(result, &String.contains?(&1, "cwd:"))
+    end
+
+    test "model emitted exactly once when opts model provided without agent" do
+      opts = [model: "haiku"]
+      info = %{
+        id: "session-123",
+        model: "claude-sonnet-4-6",
+        cwd: "/tmp",
+        messages: 0,
+        last_prompt: nil,
+        last_response: nil
+      }
+      result = El.CLI.Start.SessionCard.build_card_rows("test_session", opts, info)
+
+      model_lines = Enum.filter(result, &String.contains?(&1, "model:"))
+      assert Enum.count(model_lines) == 1
+      assert Enum.any?(result, &String.contains?(&1, "cwd:"))
+    end
   end
 end
